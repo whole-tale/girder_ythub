@@ -255,6 +255,21 @@ def addDefaultFolders(event):
         folderModel.setUserAccess(folder, user, AccessType.ADMIN, save=True)
 
 
+def storeGlobusTokens(event):
+    if event.info['provider'].getProviderName() != 'globus':
+        return
+    user, token = event.info['user'], event.info['token']
+
+    try:
+        globus_tokens = {}
+        for gtoken in token['other_tokens']:
+            globus_tokens[gtoken['scope']] = gtoken
+        user['_globusTokens'] = globus_tokens
+        ModelImporter.model('user').save(user, validate=False)
+    except KeyError:
+        pass
+
+
 def load(info):
     Globus.addScopes([
         'urn:globus:auth:scope:transfer.api.globus.org:all'
@@ -275,6 +290,7 @@ def load(info):
     events.bind('jobs.job.update', 'wholetale', image.updateImageStatus)
     events.unbind('model.user.save.created', CoreEventHandler.USER_DEFAULT_FOLDERS)
     events.bind('model.user.save.created', 'wholetale', addDefaultFolders)
+    events.bind('oauth.auth_callback.after', 'wholetale', storeGlobusTokens)
     info['apiRoot'].repository = Repository()
     info['apiRoot'].folder.route('GET', ('registered',), listImportedData)
     info['apiRoot'].folder.route('GET', (':id', 'listing'), listFolder)
