@@ -272,12 +272,12 @@ def storeGlobusTokens(event):
 
 def load(info):
     Globus.addScopes([
-        'urn:globus:auth:scope:transfer.api.globus.org:all'
-        'urn:globus:auth:scope:api.materialsdatafacility.org:all'
-        'urn:globus:auth:scope:datasearch.api.globus.org:all'
-        'urn:globus:auth:scope:data.materialsdatafacility.org:all'
-        'urn:globus:auth:scope:auth.globus.org:view_identity_set'
-        'urn:globus:auth:scope:auth.globus.org:view_ssh_public_keys'
+        'urn:globus:auth:scope:transfer.api.globus.org:all',
+        'urn:globus:auth:scope:api.materialsdatafacility.org:all',
+        'urn:globus:auth:scope:datasearch.api.globus.org:all',
+        'urn:globus:auth:scope:data.materialsdatafacility.org:all',
+        'urn:globus:auth:scope:auth.globus.org:view_identity_set',
+        'urn:globus:auth:scope:auth.globus.org:view_ssh_public_keys',
         'urn:globus:auth:scope:search.api.globus.org:all'
     ])
     info['apiRoot'].wholetale = wholeTale()
