@@ -76,6 +76,34 @@ def _http_lookup(pid):
                 size=int(headers['Content-Length']))
 
 
+def _mdf_lookup(pid):
+    data = {
+        '@datatype': 'GSearchRequest',
+        '@version': '2017-09-01',
+        'q': '"{}"'.format(pid)
+    }
+    # TODO: inject globus token
+    headers = {'Content-Type': 'application/json'}
+
+    r = requests.post('https://search.api.globus.org/v1/index/mdf/search',
+                      json=data, headers=headers)
+    if r.ok:
+        data = r.json()
+        if data['count'] < 1:
+            return
+        try:
+            gmeta = data['gmeta'][0]['content'][0]['mdf']
+        except (KeyError, IndexError):
+            return
+
+        dataId = 'mdf.mdf_id:{}'.format(gmeta['mdf_id'])
+        name = gmeta['title']
+        doi = data['gmeta'][0]['subject']
+
+        return dict(dataId=dataId, name=name, repository='Globus',
+                    size=-1, doi=doi)
+
+
 class Repository(Resource):
 
     def __init__(self):
@@ -101,6 +129,7 @@ class Repository(Resource):
             for pid in dataId:
                 futures[executor.submit(D1_lookup, pid)] = pid
                 futures[executor.submit(_http_lookup, pid)] = pid
+                futures[executor.submit(_mdf_lookup, pid)] = pid
 
             for future in as_completed(futures):
                 try:
