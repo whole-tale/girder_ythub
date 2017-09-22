@@ -47,6 +47,10 @@ def register_Globus_resource(parent, parentType, progress, user, pid, name):
     # TODO: inject globus token
     headers = {'Content-Type': 'application/json'}
 
+    tokens = user['_globusTokens']
+    search_token = tokens['urn:globus:auth:scope:search+api+globus+org:all']
+    headers['Authorization'] = 'Bearer %s' % search_token['access_token']
+
     r = requests.post('https://search.api.globus.org/v1/index/mdf/search',
                       json=data, headers=headers)
     r.raise_for_status()
@@ -81,8 +85,9 @@ def register_Globus_resource(parent, parentType, progress, user, pid, name):
     gc_folder = ModelImporter.model('folder').setMetadata(
         gc_folder, {'identifier': doi_url, 'provider': 'Globus'})
 
-    transfer_token = '...'  # TODO: inject globus token
-    transfer_authorizer = globus_sdk.AccessTokenAuthorizer(transfer_token)
+    tf_token = tokens['urn:globus:auth:scope:transfer+api+globus+org:all']
+    tf_token = tf_token['access_token']
+    transfer_authorizer = globus_sdk.AccessTokenAuthorizer(tf_token)
     tc = globus_sdk.TransferClient(authorizer=transfer_authorizer)
 
     folderModel = ModelImporter.model('folder')
