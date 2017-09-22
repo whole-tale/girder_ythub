@@ -13,6 +13,7 @@ from ..schema.misc import dataMapListSchema
 from ..utils import getOrCreateRootFolder
 from .harvester import \
     register_http_resource, \
+    register_Globus_resource, \
     register_DataONE_resource
 
 
@@ -225,7 +226,11 @@ class Dataset(Resource):
                         register_http_resource(parent, parentType, ctx, user,
                                                data['dataId'], data['name'])
                     )
-
+                elif data['repository'] == 'Globus':
+                    importedData['folder'].append(
+                        register_Globus_resource(parent, parentType, ctx, user,
+                                                 data['dataId'], data['name'])
+                    )
         if copyToHome:
             with ProgressContext(progress, user=user,
                                  title='Copying to workspace') as ctx:

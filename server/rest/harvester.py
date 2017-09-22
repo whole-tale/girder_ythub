@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import os
 import requests
+from urllib.parse import urlparse, parse_qs
+from bs4 import BeautifulSoup
+import globus_sdk
 
 from girder.api import access
 from girder.api.describe import Description, autoDescribeRoute
@@ -31,6 +35,85 @@ def register_http_resource(parent, parentType, progress, user, url, name):
     gc_item['meta'] = {'identifier': 'unknown', 'provider': 'HTTP'}
     gc_item = ModelImporter.model('item').updateItem(gc_item)
     return gc_item
+
+
+def register_Globus_resource(parent, parentType, progress, user, pid, name):
+    progress.update(increment=1, message='Processing file {}.'.format(pid))
+    data = {
+        '@datatype': 'GSearchRequest',
+        '@version': '2017-09-01',
+        'q': '"{}"'.format(pid)
+    }
+    # TODO: inject globus token
+    headers = {'Content-Type': 'application/json'}
+
+    r = requests.post('https://search.api.globus.org/v1/index/mdf/search',
+                      json=data, headers=headers)
+    r.raise_for_status()
+    data = r.json()
+    if data['count'] < 1:
+        return
+    try:
+        gmeta = data['gmeta'][0]['content'][0]['mdf']
+    except (KeyError, IndexError):
+        return
+
+    doi_url = gmeta['links']['landing_page']
+
+    page = requests.get(doi_url, allow_redirects=True)
+    page.raise_for_status()
+
+    soup = BeautifulSoup(page.content, 'html.parser')
+    link = soup.find(attrs={'target': 'GlobusOps'})
+    if not link:
+        raise RestException('Link to Globus not found.')
+    data = parse_qs(urlparse(link.get('href')).query)
+
+    try:
+        endpoint = data['origin_id'][0]
+        path = data['origin_path'][0]
+    except KeyError:
+        raise RestException('Endpoint not found.')
+
+    gc_folder = ModelImporter.model('folder').createFolder(
+        parent, gmeta['title'], description=gmeta.get('description', ''),
+        parentType=parentType, creator=user, reuseExisting=True)
+    gc_folder = ModelImporter.model('folder').setMetadata(
+        gc_folder, {'identifier': doi_url, 'provider': 'Globus'})
+
+    transfer_token = '...'  # TODO: inject globus token
+    transfer_authorizer = globus_sdk.AccessTokenAuthorizer(transfer_token)
+    tc = globus_sdk.TransferClient(authorizer=transfer_authorizer)
+
+    folderModel = ModelImporter.model('folder')
+    itemModel = ModelImporter.model('item')
+    fileModel = ModelImporter.model('file')
+
+    def register_path(endpoint, parent, path, root=False):
+        folder_name = os.path.basename(path)
+        progress.update(
+            increment=1, message='Processing folder {}.'.format(folder_name))
+        if root:
+            gc_folder = parent
+        else:
+            gc_folder = folderModel.createFolder(
+                parent, folder_name, description='',
+                parentType='folder', creator=user, reuseExisting=True)
+
+        for obj in tc.operation_ls(endpoint, path=path):
+            if obj['type'] == 'file':
+                gc_item = itemModel.createItem(
+                    obj['name'], user, gc_folder, reuseExisting=True)
+                url = 'https://data.materialsdatafacility.org'
+                url += os.path.join(path, obj['name'])
+                fileModel.createLinkFile(
+                    url=url, parent=gc_item, name=obj['name'],
+                    creator=user, size=int(obj['size']),
+                    mimeType='application/octet-stream', reuseExisting=True)
+            else:
+                register_path(endpoint, gc_folder, "%s/%s" % (path, obj['name']))
+    register_path(endpoint, gc_folder, path, root=True)
+    return gc_folder
 
 
 def register_DataONE_resource(parent, parentType, progress, user, pid, name=None):
