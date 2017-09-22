@@ -2,3 +2,5 @@ rdflib
 cryptography
 tornado
 celery[redis]
+beautifulsoup4
+globus-sdk
