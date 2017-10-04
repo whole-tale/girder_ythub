@@ -97,9 +97,8 @@ def register_Globus_resource(parent, parentType, progress, user, pid, name):
                     obj['name'], user, gc_folder, reuseExisting=True)
                 url = 'https://data.materialsdatafacility.org'
                 url += os.path.join(path, obj['name'])
-                fileModel.createLinkFile(
-                    url=url, parent=gc_item, parentType='item',
-                    name=obj['name'], creator=user, size=int(obj['size']),
+                fileModel.createLinkFile(obj['name'], gc_item, 'item', url,
+                    user, size=int(obj['size']),
                     mimeType='application/octet-stream', reuseExisting=True)
             else:
                 register_path(endpoint, gc_folder, "%s/%s" % (path, obj['name']))
@@ -194,11 +193,9 @@ def register_DataONE_resource(parent, parentType, progress, user, pid, name=None
         gc_item = itemModel.setMetadata(
             gc_item, {'identifier': fileObj['identifier']})
 
-        fileModel.createLinkFile(
-            url=fileObj['url'], parent=gc_item,
-            name=fileName, parentType='item',
-            creator=user, size=int(fileObj['size']),
-            mimeType=fileObj['formatId'], reuseExisting=True)
+        fileModel.createLinkFile(fileName, gc_item, 'item', fileObj['url'],
+            user, size=int(fileObj['size']), mimeType=fileObj['formatId'],
+            reuseExisting=True)
 
     # Recurse and add child packages if any exist
     if children is not None and len(children) > 0:
