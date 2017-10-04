@@ -1,3 +1,4 @@
+  -r plugins/wt_sils/requirements.tx2
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
@@ -263,7 +264,7 @@ def storeGlobusTokens(event):
     try:
         globus_tokens = {}
         for gtoken in token['other_tokens']:
-            globus_tokens[gtoken['scope']] = gtoken
+            globus_tokens[gtoken['scope'].replace('.', '+')] = gtoken
         user['_globusTokens'] = globus_tokens
         ModelImporter.model('user').save(user, validate=False)
     except KeyError:
