@@ -3,7 +3,6 @@
 import os
 import requests
 from urllib.parse import urlparse, parse_qs
-from bs4 import BeautifulSoup
 import globus_sdk
 
 from girder.api import access
@@ -42,7 +41,7 @@ def register_Globus_resource(parent, parentType, progress, user, pid, name):
     data = {
         '@datatype': 'GSearchRequest',
         '@version': '2017-09-01',
-        'q': '"{}"'.format(pid)
+        'q': '{}'.format(pid)
     }
     # TODO: inject globus token
     headers = {'Content-Type': 'application/json'}
@@ -63,21 +62,8 @@ def register_Globus_resource(parent, parentType, progress, user, pid, name):
         return
 
     doi_url = gmeta['links']['landing_page']
-
-    page = requests.get(doi_url, allow_redirects=True)
-    page.raise_for_status()
-
-    soup = BeautifulSoup(page.content, 'html.parser')
-    link = soup.find(attrs={'target': 'GlobusOps'})
-    if not link:
-        raise RestException('Link to Globus not found.')
-    data = parse_qs(urlparse(link.get('href')).query)
-
-    try:
-        endpoint = data['origin_id'][0]
-        path = data['origin_path'][0]
-    except KeyError:
-        raise RestException('Endpoint not found.')
+    endpoint = gmeta['links']['dataset']['globus_endpoint']
+    path = gmeta['links']['dataset']['path']
 
     gc_folder = ModelImporter.model('folder').createFolder(
         parent, gmeta['title'], description=gmeta.get('description', ''),
