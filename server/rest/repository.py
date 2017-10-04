@@ -80,7 +80,7 @@ def _mdf_lookup(pid):
     data = {
         '@datatype': 'GSearchRequest',
         '@version': '2017-09-01',
-        'q': '"{}"'.format(pid)
+        'q': '"{}" AND mdf.resource_type:"dataset"'.format(pid)
     }
     # TODO: inject globus token
     headers = {'Content-Type': 'application/json'}
@@ -96,7 +96,7 @@ def _mdf_lookup(pid):
         except (KeyError, IndexError):
             return
 
-        dataId = 'mdf.mdf_id:{}'.format(gmeta['mdf_id'])
+        dataId = 'mdf.mdf_id:"{}"'.format(gmeta['mdf_id'])
         name = gmeta['title']
         doi = data['gmeta'][0]['subject']
 
