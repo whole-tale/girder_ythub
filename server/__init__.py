@@ -1,4 +1,3 @@
-  -r plugins/wt_sils/requirements.tx2
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
