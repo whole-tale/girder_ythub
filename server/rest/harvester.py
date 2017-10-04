@@ -98,8 +98,8 @@ def register_Globus_resource(parent, parentType, progress, user, pid, name):
                 url = 'https://data.materialsdatafacility.org'
                 url += os.path.join(path, obj['name'])
                 fileModel.createLinkFile(
-                    url=url, parent=gc_item, name=obj['name'],
-                    creator=user, size=int(obj['size']),
+                    url=url, parent=gc_item, parentType='item',
+                    name=obj['name'], creator=user, size=int(obj['size']),
                     mimeType='application/octet-stream', reuseExisting=True)
             else:
                 register_path(endpoint, gc_folder, "%s/%s" % (path, obj['name']))
