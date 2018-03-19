@@ -21,6 +21,7 @@ class PluginSettings:
     TMPNB_URL = 'wholetale.tmpnb_url'
     HUB_PRIV_KEY = 'wholetale.priv_key'
     HUB_PUB_KEY = 'wholetale.pub_key'
+    INSTANCE_CAP = 'wholetale.instance_cap'
 
 
 # Constants representing the setting keys for this plugin

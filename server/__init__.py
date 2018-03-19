@@ -81,6 +81,18 @@ def validateTmpNbUrl(doc):
             'TmpNB URL must not be empty.', 'value')
 
 
+@setting_utilities.validator(PluginSettings.INSTANCE_CAP)
+def validateInstanceCap(doc):
+    if not doc['value']:
+        raise ValidationException(
+            'Instance Cap needs to be set.', 'value')
+    try:
+        int(doc['value'])
+    except ValueError:
+        raise ValidationException(
+            'Instance Cap needs to be an integer.', 'value')
+
+
 @access.public(scope=TokenScope.DATA_READ)
 @loadmodel(model='folder', level=AccessType.READ)
 @describeRoute(

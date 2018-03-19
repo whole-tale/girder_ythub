@@ -1,6 +1,8 @@
 import mock
 import httmock
+import six
 from tests import base
+from girder.exceptions import ValidationException
 from .tests_helpers import \
     GOOD_REPO, GOOD_COMMIT, \
     mockOtherRequest, mockCommitRequest, mockReposRequest
@@ -33,10 +35,13 @@ class TaleTestCase(base.TestCase):
 
     def setUp(self):
         super(TaleTestCase, self).setUp()
-        global PluginSettings
+        global PluginSettings, instanceCapErrMsg
         from girder.plugins.wholetale.constants import PluginSettings
+        from girder.plugins.wholetale.rest.instance import instanceCapErrMsg
         self.model('setting').set(
-            PluginSettings.TMPNB_URL, "https://tmpnb.null")
+            PluginSettings.TMPNB_URL, 'https://tmpnb.null')
+        self.model('setting').set(
+            PluginSettings.INSTANCE_CAP, '2')
         users = ({
             'email': 'root@dev.null',
             'login': 'admin',
@@ -109,6 +114,39 @@ class TaleTestCase(base.TestCase):
                     params={'imageId': str(self.image['_id'])})
                 self.assertStatusOk(resp)
                 self.assertEqual(resp.json['_id'], instanceId)
+
+            resp = self.request(
+                path='/instance/{}'.format(instanceId), method='DELETE',
+                user=self.user)
+            self.assertStatusOk(resp)
+
+    def testInstanceCap(self):
+        with six.assertRaisesRegex(self, ValidationException,
+                                   '^Instance Cap needs to be set.$'):
+            self.model('setting').set(PluginSettings.INSTANCE_CAP, '')
+        with six.assertRaisesRegex(self, ValidationException,
+                                   '^Instance Cap needs to be an integer.$'):
+            self.model('setting').set(PluginSettings.INSTANCE_CAP, 'a')
+
+        setting = self.model('setting')
+
+        with mock.patch('celery.Celery') as celeryMock:
+            with mock.patch('tornado.httpclient.HTTPClient') as tornadoMock:
+                instance = celeryMock.return_value
+                instance.send_task.return_value = FakeAsyncResult()
+
+                req = tornadoMock.return_value
+                req.fetch.return_value = {}
+
+                current_cap = setting.get(PluginSettings.INSTANCE_CAP)
+                setting.set(PluginSettings.INSTANCE_CAP, '0')
+                resp = self.request(
+                    path='/instance', method='POST', user=self.user,
+                    params={'imageId': str(self.image['_id'])})
+                self.assertStatus(resp, 400)
+                self.assertEqual(
+                    resp.json['message'], instanceCapErrMsg.format('0'))
+                setting.set(PluginSettings.INSTANCE_CAP, current_cap)
 
     def testInstanceFlow(self):
         return  # FIXME
