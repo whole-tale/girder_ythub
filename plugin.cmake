@@ -5,5 +5,6 @@ add_python_test(image PLUGIN wholetale)
 add_python_test(tale PLUGIN wholetale)
 add_python_test(instance PLUGIN wholetale)
 add_python_test(dataone_register PLUGIN wholetale)
+add_python_test(dataone_upload PLUGIN wholetale)
 add_python_style_test(python_static_analysis_wholetale
                       "${PROJECT_SOURCE_DIR}/plugins/wholetale/server")
