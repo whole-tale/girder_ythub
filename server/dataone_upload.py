@@ -12,8 +12,8 @@ from d1_common import const as d1_const
 def create_client(repoName, auth_token):
     """
     Creates and returns a member node client
-    :param repoName:
-    :param auth_token:
+    :param repoName: The url of the member node repository
+    :param auth_token: The auth token for the user that is using the client
     :type repoName: str
     :type auth_token: dict
     :return: A client for communicating with a DataONE node
@@ -29,7 +29,7 @@ def check_pid(pid):
     check is done to make sure the programmer has converted it to a str before
     attempting to use it with the DataONE client.
 
-    :param pid:
+    :param pid: The pid that is being checked
     :type pid: str, int
     :return: Returns the pid as a str, or just the pid if it was already a str
     :rtype: str
@@ -52,7 +52,7 @@ def generate_system_metadata(pid, format_id, science_object):
     :param science_object: The object that is being described
     :type pid: str
     :type format_id: str
-    :type science_object:  unicode
+    :type science_object: unicode
     :return:
     """
 
@@ -84,6 +84,7 @@ def populate_sys_meta(pid, format_id, size, md5, now):
     :param size: The size of the document that is being described
     :param md5: The md5 hash of the document being described
     :param now: The current date & time
+    :return: The populated system metadata document
     """
 
     logger.debug('Entered generate_sys_meta')
