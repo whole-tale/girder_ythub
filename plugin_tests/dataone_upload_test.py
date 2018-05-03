@@ -3,7 +3,7 @@ from girder.api.rest import RestException
 from girder.constants import ROOT_DIR
 from girder.models.model_base import ValidationException
 
-from d1_client.mnclient_2_0 import *
+from d1_client.mnclient_2_0 import MemberNodeClient_2_0
 from d1_common.types import dataoneTypes
 import uuid
 
@@ -32,20 +32,6 @@ class TestDataONEUpload(base.TestCase):
         client = create_client(member_node, header)
         self.assertIsNotNone(client)
 
-    def test_check_pid(self):
-        # Test that the pid gets converted to a string if its a number
-        from server.dataone_upload import check_pid
-
-        # The most common case will be a uuid
-        pid = uuid.uuid4()
-        pid = check_pid(pid)
-
-        self.assertTrue(isinstance(pid, str))
-
-        # Check that it works if numbers are accidentally used
-        pid = 1234
-        pid = check_pid(pid)
-        self.assertTrue(isinstance(pid, str))
 
     def test_upload_failure(self):
         # Test that we're throwing exceptions when uploading fails

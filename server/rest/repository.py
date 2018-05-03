@@ -6,10 +6,13 @@ import requests
 from urllib.parse import urlparse
 from girder.api import access
 from girder.api.describe import Description, autoDescribeRoute
+from girder.constants import TokenScope, AccessType
 from girder.api.docs import addModel
 from girder.api.rest import Resource, RestException
+
 from ..dataone_register import D1_lookup
 from ..dataone_register import get_package_list
+from ..dataone_upload import create_upload_package
 
 dataMap = {
     'type': 'object',
@@ -130,6 +133,7 @@ class Repository(Resource):
 
         self.route('GET', ('lookup',), self.lookupData)
         self.route('GET', ('listFiles',), self.listFiles)
+        self.route('GET', ('createPackage',), self.createPackage)
 
     @access.public
     @autoDescribeRoute(
@@ -184,3 +188,35 @@ class Repository(Resource):
                     pass
 
             return results
+
+    @access.user(scope=TokenScope.DATA_WRITE)
+    @autoDescribeRoute(
+        Description('Creates a package and uploads it to a data repository')
+        .notes('This endpoint should be called when a tale and a series of files need '
+               'to be packaged and uploaded to a data repository. \n JSON parameters '
+               'should be in the form [{"key": "value"}].'
+               'For example, the itemIds parameter should look like [{"itemIds": ["1234, 5678"]}')
+        .jsonParam('itemIds',
+                   paramType='query',
+                   required=True,
+                   description='A JSON dict that has a list of item ids that will be included'
+                               ' in the package')
+        .param('taleId',
+               description='The ID of the tale that is will be packaged.',
+               required=True)
+        .param('repository',
+               description='The url for the repositorie\'s endpoint.',
+               required=False)
+    )
+    def createPackage(self, itemIds, taleId, repository):
+
+        user = self.getCurrentUser()
+        tale = self.model('tale',
+                          'wholetale').load(taleId,
+                                            user=user,
+                                            level=AccessType.READ)
+
+        create_upload_package(item_ids=itemIds[0]['itemIds'],
+                              tale=tale,
+                              user=user,
+                              repository=repository)
