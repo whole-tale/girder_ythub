@@ -10,22 +10,23 @@ from d1_common import const as d1_const
 from d1_common.resource_map import createSimpleResourceMap
 
 
-def create_resource_map(resmap_pid, metadata_pid, file_pids):
+def create_resource_map(resmap_pid, eml_pid, file_pids):
     """
     Creates a resource map for the package.
 
     :param resmap_pid: The pid od the resource map
-    :param metadata_pid: The pid of the science metadata
+    :param eml_pid: The pid of the science metadata
     :param file_pids: The pids for each file in the package
     :type resmap_pid: str
-    :type metadata_pid: str
+    :type eml_pid: str
     :type file_pids: list
     :return: The resource map for the package
     :rtype: bytes
     """
 
+    print("FILE_PIDS      ", file_pids)
     logger.debug('Entered create_resource_map')
-    res_map = createSimpleResourceMap(resmap_pid, metadata_pid, file_pids)
+    res_map = createSimpleResourceMap(resmap_pid, eml_pid, file_pids)
     # createSimpleResourceMap returns type d1_common.resource_map.ResourceMap
 
     logger.debug('Leaving create_resource_map')
@@ -44,8 +45,8 @@ def create_minimum_eml(tale, user):
     :return: The EML as as string of bytes
     :rtype: bytes
     """
-    logger.debug('Entered create_minimum_eml')
 
+    logger.debug('Entered create_minimum_eml')
     top = '<?xml version="1.0" encoding="UTF-8"?>'
     namespace = '<eml:eml xmlns:eml="eml://ecoinformatics.org/eml-2.1.1" ' \
                 'xmlns:stmml="http://www.xml-cml.org/schema/stmml-1.1" xmlns:' \

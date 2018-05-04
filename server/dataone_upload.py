@@ -29,29 +29,32 @@ def create_client(repoName, auth_token):
     return MemberNodeClient_2_0(repoName, **auth_token)
 
 
-def upload_file(client, pid, object, system_metadata):
+def upload_file(client, pid, file_object, system_metadata):
     """
     Uploads two files to a DataONE member node. The first is an object, which is just a data file.
     The second is a metadata file describing the file object.
 
     :param client: A client for communicating with a member node
     :param pid: The pid of the data object
-    :param object: The file object that will be uploaded to the member node
+    :param file_object: The file object that will be uploaded to the member node
     :param system_metadata: The metadata object describing the file object
     :type client: MemberNodeClient_2_0
     :type pid: str
-    :type object: str
+    :type file_object: str
     :type system_metadata: d1_common.types.generated.dataoneTypes_v2_0.SystemMetadata
     """
 
     logger.debug('Entered upload_file')
+    logger.debug('file_object has type   {}'.format(str(type(file_object))))
+    logger.debug('system_metadata has type   {}'.format(str(type(system_metadata))))
+    logger.debug(str(file_object))
     pid = check_pid(pid)
     try:
-        client.create(pid, object, system_metadata)
+        client.create(pid, file_object, system_metadata)
         logger.debug('Uploaded file')
 
     except Exception as e:
-        raise ValidationException('Error uploading file to DataONE {0}'.format(str(e)))
+        raise ValidationException('Error uploading file to DataONE. {0}'.format(str(e)))
 
 
 def create_upload_eml(tale, client, user):
@@ -81,38 +84,36 @@ def create_upload_eml(tale, client, user):
 
     # meta is type d1_common.types.generated.dataoneTypes_v2_0.SystemMetadata
     # Upload the EML document with its metadata
-    # upload_file(client=client, pid=eml_pid, document=eml_doc, system_metadata=meta)
+    upload_file(client=client, pid=eml_pid, file_object=eml_doc, system_metadata=meta)
     logger.debug('Leaving create_upload_eml')
+
     return eml_pid
 
 
-def create_upload_resmap(res_pid, metadata_pid, obj_pids, client):
+def create_upload_resmap(res_pid, eml_pid, obj_pids, client):
     """
     Create the resource map, create its metadata, and then upload them to DataONE
 
     :param res_pid: The pid for the resource map
-    :param metadata_pid: The pid for the metadata document
+    :param eml_pid: The pid for the metadata document
     :param obj_pids: A list of the pids for each object that was uploaded to DataONE;
      A list of pids that the resource map is documenting.
     :param client: The client to the DataONE member node
     :type res_pid: str
-    :type metadata_pid: str
+    :type eml_pid: str
     :type obj_pids: list
     :type client: MemberNodeClient_2_0
     :return: None
     """
 
     logger.debug('Entered create_upload_resmap')
-    logger.debug('Resource Map PID {0}'.format(res_pid))
-
-    res_map = create_resource_map(res_pid, metadata_pid, obj_pids)
-
+    res_map = create_resource_map(res_pid, eml_pid, obj_pids)
     meta = generate_system_metadata(res_pid,
                                     format_id='http://www.openarchives.org/ore/terms',
                                     file_object=res_map)
 
     # logger.debug('Uploading resource map')
-    # upload_file(client=client, pid=res_pid, document=res_map, system_metadata=meta)
+    upload_file(client=client, pid=res_pid, file_object=res_map, system_metadata=meta)
 
     logger.debug('Leaving create_upload_resmap')
 
@@ -138,12 +139,13 @@ def create_upload_object_metadata(client, file_object):
                                         format_id='http://www.openarchives.org/ore/terms',
                                         file_object=file_object,
                                         is_file=True)
-    # upload_file(client=client, pid=pid, document=file_object, system_metadata=meta)
+
+        upload_file(client=client, pid=pid, file_object=file_object, system_metadata=meta)
     logger.debug('Leaving create_upload_object_metadata')
     return pid
 
 
-def create_upload_package(item_ids, tale, user, repository='https://dev.nceas.ucsb.edu/knb/d1/mn/'):
+def create_upload_package(item_ids, tale, user, repository):
     """
     Called when the createPackage endpoint is hit. It takes a list of item ids, a tale id, and the user.
 
@@ -165,17 +167,19 @@ def create_upload_package(item_ids, tale, user, repository='https://dev.nceas.uc
     local_file_pids = list()
 
     try:
+        print(type(repository))
         client = create_client(repository, {"headers": {
             "Authorization": "Bearer <TOKEN>"}})
 
         # for object in dataone_urls:
         #    dataone_pids.append(create_upload_object_metadata(client, object))
 
-        for file in local_objects:
-            local_file_pids.append(create_upload_object_metadata(client, file))
+        # for file in local_objects:
+            # local_file_pids.append(create_upload_object_metadata(client, file))
 
         eml_pid = create_upload_eml(tale, client, user)
-        create_upload_resmap(str(uuid.uuid4()), eml_pid, dataone_objects+local_file_pids, client)
+        # Add local_file_pids to dataone_objects when it is time to support local files.
+        create_upload_resmap(str(uuid.uuid4()), eml_pid, dataone_objects, client)
     except DataONEException as e:
         logger.debug('DataONE Error: {0}'.format(e))
 

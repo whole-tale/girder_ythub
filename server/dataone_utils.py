@@ -73,7 +73,7 @@ def check_pid(pid):
     """
     logger.debug('Entered check_pid')
     if not isinstance(pid, str):
-        logger.debug('Warning: PID was passed to upload_file that is not a str')
+        logger.debug('Warning: PID was passed that is not a str')
         logger.debug('Leaving check_pid')
         return str(pid)
     else:
