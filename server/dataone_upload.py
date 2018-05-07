@@ -2,6 +2,7 @@ import uuid
 
 from girder import logger
 from girder.models.model_base import ValidationException
+from girder.models.file import File
 
 from .dataone_package import create_minimum_eml
 from .dataone_package import generate_system_metadata
@@ -132,22 +133,27 @@ def create_upload_object_metadata(client, file_object):
 
     logger.debug('Entered create_upload_object_metadata')
     pid = str(uuid.uuid4())
-    file_path = file_object.get('path', None)
 
-    if file_path is not None:
-        meta = generate_system_metadata(pid,
-                                        format_id='http://www.openarchives.org/ore/terms',
-                                        file_object=file_object,
-                                        is_file=True)
+    assetstore = File().getAssetstoreAdapter(file_object)
 
-        upload_file(client=client, pid=pid, file_object=file_object, system_metadata=meta)
+    meta = generate_system_metadata(pid,
+                                    format_id=file_object['mimeType'],
+                                    file_object=file_object,
+                                    is_file=True)
+
+    upload_file(client=client,
+                pid=pid,
+                file_object=assetstore.open(file_object).read(),
+                system_metadata=meta)
+
     logger.debug('Leaving create_upload_object_metadata')
     return pid
 
 
 def create_upload_package(item_ids, tale, user, repository):
     """
-    Called when the createPackage endpoint is hit. It takes a list of item ids, a tale id, and the user.
+    Called when the createPackage endpoint is hit. It takes a list of item ids, a tale id,
+     and the user.
 
     :param item_ids: A list of items that contain the files that will be uploaded to DataONE
     :param tale: The tale that is being packaged
@@ -174,12 +180,12 @@ def create_upload_package(item_ids, tale, user, repository):
         # for object in dataone_urls:
         #    dataone_pids.append(create_upload_object_metadata(client, object))
 
-        # for file in local_objects:
-            # local_file_pids.append(create_upload_object_metadata(client, file))
+        for file in local_objects:
+            local_file_pids.append(create_upload_object_metadata(client, file))
 
         eml_pid = create_upload_eml(tale, client, user)
         # Add local_file_pids to dataone_objects when it is time to support local files.
-        create_upload_resmap(str(uuid.uuid4()), eml_pid, dataone_objects, client)
+        create_upload_resmap(str(uuid.uuid4()), eml_pid, dataone_objects+local_file_pids, client)
     except DataONEException as e:
         logger.debug('DataONE Error: {0}'.format(e))
 

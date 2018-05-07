@@ -28,16 +28,17 @@ class TestDataONEUpload(base.TestCase):
         member_node='https://dev.nceas.ucsb.edu/knb/d1/mn/'
         header = {"headers": {
             "Authorization": "Bearer TOKEN"}}
-        print(type(header))
         client = create_client(member_node, header)
         self.assertIsNotNone(client)
 
 
-    def test_upload_failure(self):
-        # Test that we're throwing exceptions when uploading fails
+    def test_create_upload_eml(self):
+        # Test for create_upload_eml that will generate metadata and attempt to upload it.
+        # Note that the upload should not go thorugh, and we should catch an exception
+
         from server.dataone_upload import upload_file
         from server.dataone_upload import create_client
-        from server.dataone_upload import generate_system_metadata
+        from server.dataone_upload import create_upload_eml
 
         member_node = 'https://dev.nceas.ucsb.edu/knb/d1/mn/'
         header = {"headers": {
@@ -45,7 +46,30 @@ class TestDataONEUpload(base.TestCase):
         client = create_client(member_node, header)
         pid = str(uuid.uuid4())
         object = 'test data'
+        tale = {'title': 'test_title'}
+        user = {'lastName': 'test_last_name'}
 
-        sys_meta = generate_system_metadata(pid, 'text/csv', object)
+        self.assertRaises(ValidationException, create_upload_eml, tale, client, user)
 
-        self.assertRaises(ValidationException, upload_file, client, pid, object, sys_meta)
+    def test_create_upload_resmap(self):
+        # Test for create_upload_eml that will generate metadata and attempt to upload it.
+        # Note that the upload should not go thorugh, and we should catch an exception
+
+        from server.dataone_upload import create_upload_resmap
+        from server.dataone_upload import create_client
+        from server.dataone_upload import create_upload_eml
+
+        member_node = 'https://dev.nceas.ucsb.edu/knb/d1/mn/'
+        header = {"headers": {
+            "Authorization": "Bearer TOKEN"}}
+        client = create_client(member_node, header)
+        res_pid = str(uuid.uuid4())
+        eml_pid = str(uuid.uuid4())
+        obj_pids =['12345', '54321']
+
+        self.assertRaises(ValidationException,
+                          create_upload_resmap,
+                          res_pid,
+                          eml_pid,
+                          obj_pids,
+                          client)

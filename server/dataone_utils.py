@@ -83,7 +83,10 @@ def check_pid(pid):
 
 def filter_input_items(item_ids, user):
     """
-    Take a list of item ids and determine whether the file is linked to DataONE.
+    Take a list of item ids and determine whether the file is linked to DataONE. If it is, then
+    it stores its pid in the dict.
+
+    If the file is on the filesystem, the model.File describing the file is added to the dict.
 
     :param item_ids: A list of items to be processed
     :param user: The user that is requesting the package creation

@@ -149,8 +149,6 @@ def find_initial_pid(path):
             r'^http[s]?://cn.dataone.org/cn/d1/v[\d]/\w+/', '', path)
     elif re.search('https:\/\/cn-stage-2.test.dataone.org\/cn\/v2\/resolve\/', path):
         return re.sub('https:\/\/cn-stage-2.test.dataone.org\/cn\/v2\/resolve\/', '', path)
-
-
     elif doi is not None:
         return 'doi:{}'.format(doi.group())
     else:
