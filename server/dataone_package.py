@@ -1,9 +1,14 @@
 import datetime
 import hashlib
+import xml.etree.cElementTree as ET
 
 from girder import logger
 from girder.models.file import File
-from .dataone_utils import check_pid
+from girder.models.item import Item
+
+from .utils import check_pid
+from .utils import get_file_format
+from .utils import get_tale_description
 
 from d1_common.types import dataoneTypes
 from d1_common import const as d1_const
@@ -24,8 +29,10 @@ def create_resource_map(resmap_pid, eml_pid, file_pids):
     :rtype: bytes
     """
 
-    print("FILE_PIDS      ", file_pids)
     logger.debug('Entered create_resource_map')
+#    logger.debug('resmap_pids: {}'.format(resmap_pid))
+#    logger.debug('eml_pids: {}'.format(eml_pid))
+#    logger.debug('file_pids {}'.format(file_pids))
     res_map = createSimpleResourceMap(resmap_pid, eml_pid, file_pids)
     # createSimpleResourceMap returns type d1_common.resource_map.ResourceMap
 
@@ -33,48 +40,84 @@ def create_resource_map(resmap_pid, eml_pid, file_pids):
     return res_map.serialize()
 
 
-def create_minimum_eml(tale, user):
+def create_minimum_eml(tale, user, item_ids, eml_pid):
     """
-    Creates a bare minimum EML record for a package. This includes the title,
-    creator, and contact.
+    Creates a bare minimum EML record for a package.
 
     :param tale: The tale that is being packaged.
     :param user: The user that hit the endpoint
+    :param item_ids: A lsit of the item ids of the objects that are going to be packaged
+    :param eml_pid: The PID for the eml document. Assume that this is the package doi
     :type tale: wholetale.models.tale
     :type user: girder.models.user
+    :type item_ids: list
+    :type eml_pid: str
     :return: The EML as as string of bytes
     :rtype: bytes
     """
 
-    logger.debug('Entered create_minimum_eml')
-    top = '<?xml version="1.0" encoding="UTF-8"?>'
-    namespace = '<eml:eml xmlns:eml="eml://ecoinformatics.org/eml-2.1.1" ' \
-                'xmlns:stmml="http://www.xml-cml.org/schema/stmml-1.1" xmlns:' \
-                'xsi="http://www.w3.org/2001/XMLSchema-instance" packageId="' \
-                'doi:10.18739/A20Q25" system="https://arcticdata.io" xsi:' \
-                'schemaLocation="eml://ecoinformatics.org/eml-2.1.1 eml.xsd">'
+    # The surName in the EML record is taken by the user's last name. If
+    # it doesn't exist, try to use the first name.
+    lastName = user.get('lastName', 'None')
+    firstName = user.get('firstName', 'None')
+    ns = ET.Element('eml:eml')
 
-    dataset = '<dataset>\n'
-    title = '<title>{0}</title>\n'.format(str(tale.get('title', '')))
+    ns.set('xmlns:eml', "eml://ecoinformatics.org/eml-2.1.1")
+    ns.set('xsi:schemaLocation', "eml://ecoinformatics.org/eml-2.1.1 eml.xsd")
+    ns.set('xmlns:stmml', "http://www.xml-cml.org/schema/stmml-1.1")
+    ns.set('xmlns:xsi', "http://www.w3.org/2001/XMLSchema-instance")
+    ns.set('scope', "system")
+    ns.set('system', "knb")
+    ns.set('packageId', eml_pid)
 
-    individual_name = '<individualName>\n<surName>\n{0}\n</surName>\n</individualName>'.format(
-        str(user.get('lastName', '')))
+    dataset = ET.SubElement(ns, 'dataset')
+    ET.SubElement(dataset, 'title').text = str(tale.get('title', ''))
 
-    creator = '<creator>\n{0}\n</creator>\n'.format(individual_name)
-    contact = '<contact>\n{0}\n</contact>\n'.format(individual_name)
-    dataset_close = '</dataset>\n'
-    eml_close = '</eml:eml>'
+    creator = ET.SubElement(dataset, 'creator')
+    individual_name = ET.SubElement(creator, 'individualName')
+    ET.SubElement(individual_name, 'givenName').text = firstName
+    ET.SubElement(individual_name, 'surName').text = lastName
 
-    # Append the above xml together to form the EML document
-    xml = top+namespace+dataset+title+creator+contact+dataset_close+eml_close
+    abstract = ET.SubElement(dataset, 'abstract')
+    description = get_tale_description(tale)
+    ET.SubElement(abstract, 'para').text = description if\
+        bool(len(description)) else 'None'
 
+    contact = ET.SubElement(dataset, 'contact')
+    ind_name = ET.SubElement(contact, 'individualName')
+    ET.SubElement(ind_name, 'givenName').text = firstName
+    ET.SubElement(ind_name, 'surName').text = lastName
+
+    # Add a <otherEntity> block for each object
+    for item_id in item_ids:
+        item = Item().load(item_id, user=user)
+        description = item['description']
+
+        other_entity = ET.SubElement(dataset, 'otherEntity')
+        ET.SubElement(other_entity, 'entityName').text = item['name']
+        ET.SubElement(other_entity, 'entityDescription').text = description if\
+            bool(len(description)) else 'None'
+
+        physical = ET.SubElement(other_entity, 'physical')
+        ET.SubElement(physical, 'objectName').text = item['name']
+        ET.SubElement(physical, 'size').text = str(item['size'])
+
+        format = get_file_format(item_id, user)
+        data_format = ET.SubElement(physical, 'dataFormat')
+        externally_defined = ET.SubElement(data_format, 'externallyDefinedFormat')
+        ET.SubElement(externally_defined, 'formatName').text = format
+
+        ET.SubElement(other_entity, 'entityType').text = 'Other'
+
+    # call decode to get the string representation instead of as a byte str
+    xml = ET.tostring(ns, encoding='UTF-8', xml_declaration=True, method='xml').decode()
     logger.debug('Leaving create_minimum_eml')
-    return xml.encode("utf-8")
+    return xml
 
 
 def get_file_md5(file_object, md5):
     """
-    Computes the md5 of a file on the Girder Filesystem.
+    Computes the md5 of a file on the Girder filesystem.
 
     :param file_object: The file object that will be hashed
     :param md5: The md5 object which will generate and hold the hash
@@ -83,7 +126,7 @@ def get_file_md5(file_object, md5):
     :return: Returns an updated md5 object. Returns None if it fails
     :rtype: md5
     """
-
+    logger.debug('Entered get_file_md5')
     assetstore = File().getAssetstoreAdapter(file_object)
 
     try:
@@ -101,18 +144,22 @@ def get_file_md5(file_object, md5):
         return None
     handle.close()
     return md5
+    logger.debug('Leaving get_file_md5')
 
 
-def generate_system_metadata(pid, format_id, file_object, is_file=False):
+def generate_system_metadata(pid, format_id, file_object, name, is_file=False):
     """
-    Generates a metadata document describing the file_object
+    Generates a metadata document describing the file_object.
+
     :param pid: The pid that the object will have
     :param format_id: The format of the object (e.g text/csv)
     :param file_object: The object that is being described
+    :param name: The name of the object being described
     :param is_file: A bool set to true if file_object is a girder file
     :type pid: str
     :type format_id: str
-    :type file_object: unicode
+    :type file_object: unicode or girder.models.file
+    :type name: str
     :type is_file: Bool
     :return: The metadata describing file_object
     :rtype: d1_common.types.generated.dataoneTypes_v2_0.SystemMetadata
@@ -130,31 +177,37 @@ def generate_system_metadata(pid, format_id, file_object, is_file=False):
             if isinstance(file_object, str):
                 logger.debug('file_object detected to be a string. Attempting conversion')
                 file_object = file_object.encode("utf-8")
-            else:
-                raise ValueError('Supplied file_object is not unicode')
         md5.update(file_object)
         size = len(file_object)
 
     md5 = md5.hexdigest()
     now = datetime.datetime.now()
-    sys_meta = populate_sys_meta(pid, format_id, size, md5, now)
+    sys_meta = populate_sys_meta(pid,
+                                 format_id,
+                                 size,
+                                 md5,
+                                 now,
+                                 name)
     logger.debug('Leaving generate_system_metadata')
     return sys_meta
 
 
-def populate_sys_meta(pid, format_id, size, md5, now):
+def populate_sys_meta(pid, format_id, size, md5, now, name):
     """
     Fills out the system metadata object with the needed properties
+
     :param pid: The pid of the system metadata document
     :param format_id: The format of the document being described
     :param size: The size of the document that is being described
     :param md5: The md5 hash of the document being described
     :param now: The current date & time
+    :param name: The name of the file
     :type pid: str
     :type format_id: str
     :type size: int
     :type md5: str
     :type now: datetime
+    :type name: str
     :return: The populated system metadata document
     """
 
@@ -171,13 +224,15 @@ def populate_sys_meta(pid, format_id, size, md5, now):
     sys_meta.dateUploaded = now
     sys_meta.dateSysMetadataModified = now
     sys_meta.accessPolicy = generate_public_access_policy()
+    sys_meta.fileName = name
     logger.debug('Leaving generate_sys_meta')
     return sys_meta
 
 
 def generate_public_access_policy():
     """
-    Creates the access policy for the object. Note that the permission is set to 'read'.
+    Creates the access policy for the system metadata.
+     Note that the permission is set to 'read'.
 
     :return: The access policy
     :rtype: d1_common.types.generated.dataoneTypes_v1.AccessPolicy

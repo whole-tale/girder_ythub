@@ -192,22 +192,23 @@ class Repository(Resource):
 
     @access.user(scope=TokenScope.DATA_WRITE)
     @autoDescribeRoute(
-        Description('Creates a package and uploads it to a data repository')
-        .notes('This endpoint should be called when a tale and a series of files need '
-               'to be packaged and uploaded to a data repository. \n JSON parameters '
-               'should be in the form [{"key": "value"}].'
-               'For example, the itemIds parameter should look like [{"itemIds": ["1234, 5678"]}')
-        .jsonParam('itemIds',
+        Description('Uploads files to DataONE, which creates a package out of them.')
+        .notes('This endpoint takes a list of items, a tale, and a user-which are used to '
+               'upload the items and tale artifacts to DataONE. During this '
+               'process, any required metadata such as the EML document, system metadata, and '
+               'RDF document are generated.'
+               'The itemId parameter should be passed in as a JSON array. For example,'
+               '[{"itemIds": ["1234", "5678"]}]')
+        .jsonParam(name='itemIds',
                    paramType='query',
                    required=True,
-                   description='A JSON dict that has a list of item ids that will be included'
-                               ' in the package')
+                   description='The files that are going to be uploaded to DataONE')
         .param('taleId',
-               description='The ID of the tale that is will be packaged.',
+               description='The ID of the tale that the user wants to publish.',
                required=True)
         .param('repository',
-               description='The url for the repositorie\'s endpoint.',
-               required=False)
+               description='The url for the member node endpoint.',
+               required=True)
     )
     def createPackage(self, itemIds, taleId, repository):
         logger.debug('Entered createPackage')

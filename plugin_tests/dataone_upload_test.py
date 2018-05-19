@@ -46,10 +46,10 @@ class TestDataONEUpload(base.TestCase):
         client = create_client(member_node, header)
         pid = str(uuid.uuid4())
         object = 'test data'
-        tale = {'title': 'test_title'}
-        user = {'lastName': 'test_last_name'}
+        tale = {'title': 'test_title', 'description': 'Test tale description'}
+        user = {'lastName': 'testLastName', 'firstName': 'testFirstName'}
 
-        self.assertRaises(ValidationException, create_upload_eml, tale, client, user)
+        self.assertRaises(ValidationException, create_upload_eml, tale, client, user, [])
 
     def test_create_upload_resmap(self):
         # Test for create_upload_eml that will generate metadata and attempt to upload it.

@@ -8,6 +8,7 @@ from d1_common.types import dataoneTypes
 import uuid
 import datetime
 
+
 def setUpModule():
 
     base.enabledPlugins.append('wholetale')
@@ -34,8 +35,15 @@ class TestDataONEUpload(base.TestCase):
         format_id = 'text/csv'
         size=256
         md5='12345'
+        name = 'Test Object'
+
         now = datetime.datetime.now()
-        sys_meta = populate_sys_meta(pid, format_id, size, md5, now)
+        sys_meta = populate_sys_meta(pid,
+                                     format_id,
+                                     size,
+                                     md5,
+                                     now,
+                                     name)
         assert(sys_meta.checksum.algorithm == 'MD5')
         assert(sys_meta.dateUploaded == now)
         assert(sys_meta.dateSysMetadataModified == now)
@@ -50,8 +58,12 @@ class TestDataONEUpload(base.TestCase):
         pid = str(uuid.uuid4())
         format_id = 'text/csv'
         file_object='12345'
+        name = 'Test Object'
 
-        metadata = generate_system_metadata(pid, format_id, file_object)
+        metadata = generate_system_metadata(pid,
+                                            format_id,
+                                            file_object,
+                                            name)
         assert(metadata.size == len(file_object))
         assert (metadata.formatId == format_id)
         assert (metadata.checksum.algorithm == 'MD5')
@@ -65,3 +77,22 @@ class TestDataONEUpload(base.TestCase):
         file_pids = ['1234', '4321']
         res_map = create_resource_map(resmap_pid, eml_pid, file_pids)
         assert(len(res_map))
+
+    def test_create_minimum_eml(self):
+
+        from server.dataone_package import create_minimum_eml
+        import xml.etree.cElementTree as ET
+
+        tale = {'title': 'A tale test title', 'description': 'The tale description'}
+        user = {'lastName': 'testLastName', 'firstName': 'testFirstName'}
+        eml_pid ='123456789'
+
+        eml = create_minimum_eml(tale, user, [], eml_pid)
+
+        root = ET.fromstring(eml)
+
+        expected_root = {'packageId': '123456789',
+                        'scope': 'system',
+                        'system': 'knb',
+                        '{http://www.w3.org/2001/XMLSchema-instance}schemaLocation': 'eml://ecoinformatics.org/eml-2.1.1 eml.xsd'}
+        self.assertDictEqual(root.attrib, expected_root)
