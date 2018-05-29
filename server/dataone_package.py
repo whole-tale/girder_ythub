@@ -1,10 +1,10 @@
-import datetime
 import hashlib
 import xml.etree.cElementTree as ET
 
 from girder import logger
 from girder.models.file import File
 from girder.models.item import Item
+from girder.api.rest import RestException
 
 from .utils import check_pid
 from .utils import get_file_format
@@ -56,12 +56,20 @@ def create_minimum_eml(tale, user, item_ids, eml_pid):
     :rtype: bytes
     """
 
-    # The surName in the EML record is taken by the user's last name. If
-    # it doesn't exist, try to use the first name.
-    lastName = user.get('lastName', 'None')
-    firstName = user.get('firstName', 'None')
-    ns = ET.Element('eml:eml')
+    """
+    Check that we're able to assign a first, last, and email to the record.
+    If we aren't throw an exception and let the user know. We'll also check that
+    the user has an ORCID ID set.
+    """
+    lastName = user.get('lastName', None)
+    firstName = user.get('firstName', None)
+    email = user.get('email', None)
 
+    if any((None for x in [lastName, firstName, email])):
+        raise RestException('Unable to find your name or email address. Please ensure '
+                            'you have authenticated with DataONE.')
+
+    ns = ET.Element('eml:eml')
     ns.set('xmlns:eml', "eml://ecoinformatics.org/eml-2.1.1")
     ns.set('xsi:schemaLocation', "eml://ecoinformatics.org/eml-2.1.1 eml.xsd")
     ns.set('xmlns:stmml', "http://www.xml-cml.org/schema/stmml-1.1")
@@ -78,10 +86,11 @@ def create_minimum_eml(tale, user, item_ids, eml_pid):
     ET.SubElement(individual_name, 'givenName').text = firstName
     ET.SubElement(individual_name, 'surName').text = lastName
 
-    abstract = ET.SubElement(dataset, 'abstract')
+    # Only add an abstract section if the tale has a description
     description = get_tale_description(tale)
-    ET.SubElement(abstract, 'para').text = description if\
-        bool(len(description)) else 'None'
+    if description is not str():
+        abstract = ET.SubElement(dataset, 'abstract')
+        ET.SubElement(abstract, 'para').text = description
 
     contact = ET.SubElement(dataset, 'contact')
     ind_name = ET.SubElement(contact, 'individualName')
@@ -100,8 +109,9 @@ def create_minimum_eml(tale, user, item_ids, eml_pid):
 
         physical = ET.SubElement(other_entity, 'physical')
         ET.SubElement(physical, 'objectName').text = item['name']
-        ET.SubElement(physical, 'size').text = str(item['size'])
-
+        size_element = ET.SubElement(physical, 'size')
+        size_element.text = str(item['size'])
+        size_element.set('unit', 'bytes')
         format = get_file_format(item_id, user)
         data_format = ET.SubElement(physical, 'dataFormat')
         externally_defined = ET.SubElement(data_format, 'externallyDefinedFormat')
@@ -139,12 +149,12 @@ def get_file_md5(file_object, md5):
             md5.update(buf)
 
     except Exception as e:
-        logger.debug('Error: {}'.format(e))
-        handle.close()
+        logger.warning('Error: {}'.format(e))
         return None
-    handle.close()
-    return md5
+    finally:
+        handle.close()
     logger.debug('Leaving get_file_md5')
+    return md5
 
 
 def generate_system_metadata(pid, format_id, file_object, name, is_file=False):
@@ -181,18 +191,16 @@ def generate_system_metadata(pid, format_id, file_object, name, is_file=False):
         size = len(file_object)
 
     md5 = md5.hexdigest()
-    now = datetime.datetime.now()
     sys_meta = populate_sys_meta(pid,
                                  format_id,
                                  size,
                                  md5,
-                                 now,
                                  name)
     logger.debug('Leaving generate_system_metadata')
     return sys_meta
 
 
-def populate_sys_meta(pid, format_id, size, md5, now, name):
+def populate_sys_meta(pid, format_id, size, md5, name):
     """
     Fills out the system metadata object with the needed properties
 
@@ -200,13 +208,11 @@ def populate_sys_meta(pid, format_id, size, md5, now, name):
     :param format_id: The format of the document being described
     :param size: The size of the document that is being described
     :param md5: The md5 hash of the document being described
-    :param now: The current date & time
     :param name: The name of the file
     :type pid: str
     :type format_id: str
     :type size: int
     :type md5: str
-    :type now: datetime
     :type name: str
     :return: The populated system metadata document
     """
@@ -221,8 +227,6 @@ def populate_sys_meta(pid, format_id, size, md5, now, name):
 
     sys_meta.checksum = dataoneTypes.checksum(str(md5))
     sys_meta.checksum.algorithm = 'MD5'
-    sys_meta.dateUploaded = now
-    sys_meta.dateSysMetadataModified = now
     sys_meta.accessPolicy = generate_public_access_policy()
     sys_meta.fileName = name
     logger.debug('Leaving generate_sys_meta')

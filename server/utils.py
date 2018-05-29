@@ -3,6 +3,7 @@ from girder import logger
 from girder.models.item import Item
 from girder.models.folder import Folder
 from girder.constants import AccessType
+from girder.api.rest import RestException
 
 from .dataone_register import find_initial_pid
 
@@ -128,7 +129,12 @@ def get_dataone_url(item_id, user):
     :rtype: str, None
     """
     logger.debug('Entered check_in_dataone')
-    url = get_file_item(item_id, user).get('linkUrl')
+    file = get_file_item(item_id, user)
+    if file is None:
+        file_error = 'Failed to find the file with ID {}'.format(item_id)
+        logger.warning(file_error)
+        raise RestException(file_error)
+    url = file.get('linkUrl')
     if url is not None:
         if url.find('dataone.org'):
             logger.debug('Leaving check_in_dataone')

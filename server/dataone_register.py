@@ -144,13 +144,12 @@ def find_initial_pid(path):
     if re.search(r'^http[s]?:\/\/search.dataone.org\/#view\/', path):
         return re.sub(
             r'^http[s]?:\/\/search.dataone.org\/#view\/', '', path)
-    elif re.search(r'^http[s]?://cn.dataone.org/cn/d1/v[\d]/\w+/', path):
+    elif re.search(r'^http[s]?:\/\/cn.dataone.org\/cn(\/d1)?\/v[\d]/\w+\/', path):
+        print('sdfgsergewrgwefgewrg')
         return re.sub(
-            r'^http[s]?://cn.dataone.org/cn/d1/v[\d]/\w+/', '', path)
-    elif re.search('https:\/\/cn-stage-2.test.dataone.org\/cn\/v2\/resolve\/', path):
-        return re.sub('https:\/\/cn-stage-2.test.dataone.org\/cn\/v2\/resolve\/', path)
-    elif re.search(r'^http[s]?:\/\/cn.dataone.org\/cn\/v2\/resolve\/', path):
-        return re.sub('http[s]?:\/\/cn.dataone.org\/cn\/v2\/resolve\/', '', path)
+            r'^^http[s]?:\/\/cn.dataone.org\/cn(\/d1)?\/v[\d]/\w+\/', '', path)
+    elif re.search('\/v2\/resolve\/', path):
+        return path.split('/')[-1:][0]
     elif doi is not None:
         return 'doi:{}'.format(doi.group())
     else:

@@ -37,16 +37,12 @@ class TestDataONEUpload(base.TestCase):
         md5='12345'
         name = 'Test Object'
 
-        now = datetime.datetime.now()
         sys_meta = populate_sys_meta(pid,
                                      format_id,
                                      size,
                                      md5,
-                                     now,
                                      name)
         assert(sys_meta.checksum.algorithm == 'MD5')
-        assert(sys_meta.dateUploaded == now)
-        assert(sys_meta.dateSysMetadataModified == now)
         assert(sys_meta.formatId == format_id)
         assert(sys_meta.size == size)
 
@@ -96,3 +92,18 @@ class TestDataONEUpload(base.TestCase):
                         'system': 'knb',
                         '{http://www.w3.org/2001/XMLSchema-instance}schemaLocation': 'eml://ecoinformatics.org/eml-2.1.1 eml.xsd'}
         self.assertDictEqual(root.attrib, expected_root)
+
+    def test_create_minimum_eml_no_abstract(self):
+
+        from server.dataone_package import create_minimum_eml
+        import xml.etree.cElementTree as ET
+
+        tale = {'title': 'A tale test title', 'description': ''}
+        user = {'lastName': 'testLastName', 'firstName': 'testFirstName'}
+        eml_pid ='123456789'
+
+        eml = create_minimum_eml(tale, user, [], eml_pid)
+
+        root = ET.fromstring(eml)
+        abstract = root.findall('abstract')
+        self.assertTrue(not abstract)

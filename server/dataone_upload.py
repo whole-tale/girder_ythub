@@ -2,6 +2,7 @@ import uuid
 
 from girder import logger
 from girder.models.model_base import ValidationException
+from girder.api.rest import RestException
 from girder.models.file import File
 
 from .dataone_package import create_minimum_eml
@@ -16,19 +17,19 @@ from d1_client.mnclient_2_0 import MemberNodeClient_2_0
 from d1_common.types.exceptions import DataONEException
 
 
-def create_client(repoName, auth_token):
+def create_client(mn_base_url, auth_token):
     """
     Creates and returns a member node client
 
-    :param repoName: The url of the member node endpoint
+    :param mn_base_url: The url of the member node endpoint
     :param auth_token: The auth token for the user that is using the client
     Should be of the form {"headers": { "Authorization": "Bearer <TOKEN>}}
-    :type repoName: str
+    :type mn_base_url: str
     :type auth_token: dict
     :return: A client for communicating with a DataONE node
     :rtype: MemberNodeClient_2_0
     """
-    return MemberNodeClient_2_0(repoName, **auth_token)
+    return MemberNodeClient_2_0(mn_base_url, **auth_token)
 
 
 def upload_file(client, pid, file_object, system_metadata):
@@ -230,7 +231,7 @@ def create_upload_package(item_ids, tale, user, repository):
 
     try:
         client = create_client(repository, {"headers": {
-            "Authorization": "Bearer eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJodHRwOlwvXC9vcmNpZC5vcmdcLzAwMDAtMDAwMi0xNzU2LTIxMjgiLCJmdWxsTmFtZSI6IlRob21hcyBUaGVsZW4iLCJpc3N1ZWRBdCI6IjIwMTgtMDUtMTlUMTc6MTM6MTguMzgzKzAwOjAwIiwiY29uc3VtZXJLZXkiOiJ0aGVjb25zdW1lcmtleSIsImV4cCI6MTUyNjgxNDc5OCwidXNlcklkIjoiaHR0cDpcL1wvb3JjaWQub3JnXC8wMDAwLTAwMDItMTc1Ni0yMTI4IiwidHRsIjo2NDgwMCwiaWF0IjoxNTI2NzQ5OTk4fQ.g5lWjRqG71V0jaeOR8_v3KRWwkITQuVLt76_DYt6RvR9xVkLLdOcsB654SmbFZykrF7Hr4OityDXsu1U-eTRUvTTwsSlG3KyO1llmudcowFQ_CiYsTF0RJxIywwLhPbcXBWy8tjTgxA0Ni7rVNP4v_N8y9UQ1C0BvNVFp9RktLYik0u2tGYrdiotLIsVlNhvUwwjvrdHJ3QHlQIoi34TttIyss4O04iwVN9_wasS3YDrBQRWKkH3hJRcWQXHjcmd1-LUo7ek-cIL_ckcnmg4yV7Ods6FOrfK1Pz56IS-MWYAs1sJq5vWB2OxW1YGNryUwE5D7tf_bLdzO65BL-ZYfEvMUSnggliN6AxpX2dfGGEtBXAvcggX70jm0gR11zK46-bSQLf8ZLin0ZhtZTiPZ8X86NpJVZqmUUpEGU0dQGr5eSq9CrobdVbvyEPd4srwdiqfwVrafjJc-JevE0314VFhQjeko26UezPofUcXUmVT9x6Ydp-RiNdiAPImj3tnZTmPdZ-F8QFSoXj35PjCZbRUFk4SbFsl5OMHNfOo4pVNqSxJR14BW5OEA8UOVzYpdjes0-LsazkQmSsuCYj1F7Bn3lylxE9UqK4Jy1aNRFBs_DMrli2SCiqGf1iyfcme1R1hdSu0T8YZTkz4X6tcsN2fgepsJk6_rwGxg3kwu_o"}})
+            "Authorization": "Bearer <TOKEN>"}})
 
         for file in local_objects:
             local_file_pids.append(create_upload_object_metadata(client, file))
@@ -243,5 +244,5 @@ def create_upload_package(item_ids, tale, user, repository):
 
     except DataONEException as e:
         logger.debug('DataONE Error: {}'.format(e))
-        raise ValidationException('Error uploading file to DataONE. {0}'.format(str(e)))
+        raise RestException('Error uploading file to DataONE. {0}'.format(str(e)))
     logger.debug('Leaving create_package')

@@ -10,13 +10,11 @@ mocked JSON responses/data structures. '''
 
 
 def setUpModule():
-
     base.enabledPlugins.append('wholetale')
     base.startServer()
 
 
 def tearDownModule():
-
     base.stopServer()
 
 
@@ -28,17 +26,37 @@ class TestDataONERegister(base.TestCase):
         # Test that the regex is working for search.dataone urls
         pid = 'https://search.dataone.org/#view/urn:uuid:7ec733c4-aa63-405a-a58d-1d773a9025a9'
         res = find_initial_pid(pid)
-        assert res == 'urn:uuid:7ec733c4-aa63-405a-a58d-1d773a9025a9'
+        self.assertEqual (res,'urn:uuid:7ec733c4-aa63-405a-a58d-1d773a9025a9')
 
-        # Test that the regex is working for paths coming from the coordinating node
+        # Test that the regex is working for paths coming from the coordinating node v2
         pid = 'https://cn.dataone.org/cn/v2/object/urn:uuid:6f5533ab-6508-4ac7-82a3-1df88ed4580e'
         res = find_initial_pid(pid)
-        assert res == pid
+        self.assertEqual(res, 'urn:uuid:6f5533ab-6508-4ac7-82a3-1df88ed4580e')
+
+        # Test that the regex is working for paths coming from the coordinating node v1
+        pid = 'https://cn.dataone.org/cn/v1/object/urn:uuid:6f5533ab-6508-4ac7-82a3-1df88ed4580e'
+        res = find_initial_pid(pid)
+        self.assertEqual(res, 'urn:uuid:6f5533ab-6508-4ac7-82a3-1df88ed4580e')
+
+        # Test that the regex is working for paths with a d1
+        pid = 'https://cn.dataone.org/cn/d1/v2/object/urn:uuid:6f5533ab-6508-4ac7-82a3-1df88ed4580e'
+        res = find_initial_pid(pid)
+        self.assertEqual(res, 'urn:uuid:6f5533ab-6508-4ac7-82a3-1df88ed4580e')
+
+        # Test that the regex works for the test coordinating node
+        pid = 'https://cn-stage-2.test.dataone.org/cn/v2/resolve/abcdefg'
+        res = find_initial_pid(pid)
+        self.assertEqual(res, 'abcdefg')
+
+        # Test that the regex works for the production node
+        pid = 'https://cn.dataone.org/cn/v2/resolve/abcdefg'
+        res = find_initial_pid(pid)
+        self.assertEqual(res, 'abcdefg')
 
         # Test that if nothing was found, None is returned
         bad_url = 'localhost_01'
         res = find_initial_pid(bad_url)
-        assert res == bad_url
+        self.assertEqual(res, bad_url)
 
     def test_find_resource_pid(self):
         from server.dataone_register import find_resource_pid
