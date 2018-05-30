@@ -38,13 +38,13 @@ class TestDataONERegister(base.TestCase):
         res = find_initial_pid(pid)
         self.assertEqual(res, 'urn:uuid:6f5533ab-6508-4ac7-82a3-1df88ed4580e')
 
-        # Test that the regex is working for paths with a d1
-        pid = 'https://cn.dataone.org/cn/d1/v2/object/urn:uuid:6f5533ab-6508-4ac7-82a3-1df88ed4580e'
-        res = find_initial_pid(pid)
-        self.assertEqual(res, 'urn:uuid:6f5533ab-6508-4ac7-82a3-1df88ed4580e')
-
         # Test that the regex works for the test coordinating node
         pid = 'https://cn-stage-2.test.dataone.org/cn/v2/resolve/abcdefg'
+        res = find_initial_pid(pid)
+        self.assertEqual(res, 'abcdefg')
+
+        # Test that the regex works for the test coordinating node V1
+        pid = 'https://cn-stage-2.test.dataone.org/cn/v1/resolve/abcdefg'
         res = find_initial_pid(pid)
         self.assertEqual(res, 'abcdefg')
 
@@ -53,7 +53,7 @@ class TestDataONERegister(base.TestCase):
         res = find_initial_pid(pid)
         self.assertEqual(res, 'abcdefg')
 
-        # Test that if nothing was found, None is returned
+        # Test that if nothing was found, the passed in path is returned
         bad_url = 'localhost_01'
         res = find_initial_pid(bad_url)
         self.assertEqual(res, bad_url)

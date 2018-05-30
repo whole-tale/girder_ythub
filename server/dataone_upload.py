@@ -145,7 +145,6 @@ def create_upload_object_metadata(client, file_object):
 
     logger.debug('Entered create_upload_object_metadata')
     pid = str(uuid.uuid4())
-    logger.debug(file_object)
     assetstore = File().getAssetstoreAdapter(file_object)
 
     meta = generate_system_metadata(pid,

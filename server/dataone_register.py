@@ -19,13 +19,24 @@ D1_BASE = "https://cn.dataone.org/cn/v2"
 
 
 def esc(value):
-    """Escape a string so it can be used in a Solr query string"""
-
+    """
+    Escape a string so it can be used in a Solr query string
+    :param value: The string that will be escaped
+    :type value: str
+    :return: The escaped string
+    :rtype: str
+    """
     return urllib.parse.quote_plus(value)
 
 
 def unesc(value):
-    """Unescapes a string so it can uesd in URLS"""
+    """
+    Un-escapes a string so it can used in URLS.
+    :param value: The string that will be un-escaped
+    :type value: str
+    :return: The un-escaped string
+    :rtype: str
+    """
     return urllib.parse.unquote_plus(value)
 
 
@@ -59,25 +70,30 @@ def find_resource_pid(pid):
     """
     Find the PID of the resource map for a given PID, which may be a resource map
     """
-
+    logger.debug('Entered find_resource_pid')
     result = query(
         "identifier:\"{}\"".format(esc(pid)),
         fields=["identifier", "formatType", "formatId", "resourceMap"])
     result_len = int(result['response']['numFound'])
 
     if result_len == 0:
-        raise RestException('No object was found in the index for {}.'.format(pid))
+        error_msg = 'No object was found in the index for {}.'.format(pid)
+        logger.warning(error_msg)
+        raise RestException(error_msg)
     elif result_len > 1:
-        raise RestException(
-            'More than one object was found in the index for the identifier '
-            '{} which is an unexpected state.'.format(pid))
+        error_msg = 'More than one object was found in the index for the identifier ' \
+                    '{} which is an unexpected state.'.format(pid)
+        logger.warning(error_msg)
+        raise RestException(error_msg)
 
     # Find out if the PID is an OAI-ORE PID and return early if so
     try:
         if result['response']['docs'][0]['formatType'] == 'RESOURCE':
             return(result['response']['docs'][0]['identifier'])
     except KeyError:
-        raise RestException('Unable to find a resource file in the data package')
+        error_msg = 'Unable to find a resource file in the data package'
+        logger.warning(error_msg)
+        raise RestException(error_msg)
 
     try:
         if len(result['response']['docs'][0]['resourceMap']) == 1:
@@ -131,28 +147,33 @@ def find_nonobsolete_resmaps(pids):
 
 def find_initial_pid(path):
     """
-    Given some arbitrary path, which may be a landing page, resolve URI or
-    something else, find the PID the user intended (the package PID).
+    Extracts the pid from an arbitrary path to a DataOne object.
+    Supports:
+       - HTTP & HTTPS
+       - The MetacatUI landing page (#view)
+       - The D1 v2 Object URI (/object)
+       - The D1 v2 Resolve URI (/resolve)
 
-    This can parse the PID out of the HTTP and HTTPS versions of...
-        - The MetacatUI landing page (#view)
-        - The D1 v2 Object URI (/object)
-        - The D1 v2 Resolve URI (/resolve)
+    :param path:
+    :type path: str
+    :return: The object's pid, or the original path if one wasn't found
+    :rtype: str
     """
-
+    logger.debug('Entered find_initial_pid')
     doi = _DOI_REGEX.search(path)
     if re.search(r'^http[s]?:\/\/search.dataone.org\/#view\/', path):
         return re.sub(
             r'^http[s]?:\/\/search.dataone.org\/#view\/', '', path)
-    elif re.search(r'^http[s]?:\/\/cn.dataone.org\/cn(\/d1)?\/v[\d]/\w+\/', path):
-        print('sdfgsergewrgwefgewrg')
+    elif re.search(r'\Ahttp[s]?:\/\/cn[a-z\-\d\.]*\.dataone\.org\/cn\/v\d\/[a-zA-Z]+\/.+\Z', path):
         return re.sub(
-            r'^^http[s]?:\/\/cn.dataone.org\/cn(\/d1)?\/v[\d]/\w+\/', '', path)
-    elif re.search('\/v2\/resolve\/', path):
-        return path.split('/')[-1:][0]
+            r'\Ahttp[s]?:\/\/cn[a-z\-\d\.]*\.dataone\.org\/cn\/v\d\/[a-zA-Z]+\/', '', path)
+    # elif re.search('\/v[\d]\/resolve\/', path):
+    #     return path.split('/')[-1:][0]
     elif doi is not None:
+        logger.debug('Leaving find_initial_pid')
         return 'doi:{}'.format(doi.group())
     else:
+        logger.debug('Leaving find_initial_pid')
         return path
 
 
@@ -250,7 +271,6 @@ def D1_lookup(path):
     """Lookup and return information about a package on the
     DataONE network.
     """
-
     package_pid = get_package_pid(path)
     logger.debug('Found package PID of {}.'.format(package_pid))
 
