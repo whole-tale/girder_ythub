@@ -167,8 +167,6 @@ def find_initial_pid(path):
     elif re.search(r'\Ahttp[s]?:\/\/cn[a-z\-\d\.]*\.dataone\.org\/cn\/v\d\/[a-zA-Z]+\/.+\Z', path):
         return re.sub(
             r'\Ahttp[s]?:\/\/cn[a-z\-\d\.]*\.dataone\.org\/cn\/v\d\/[a-zA-Z]+\/', '', path)
-    # elif re.search('\/v[\d]\/resolve\/', path):
-    #     return path.split('/')[-1:][0]
     elif doi is not None:
         logger.debug('Leaving find_initial_pid')
         return 'doi:{}'.format(doi.group())
