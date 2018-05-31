@@ -5,13 +5,15 @@ from girder.models.model_base import ValidationException
 from girder.api.rest import RestException
 from girder.models.file import File
 
-from .dataone_package import create_minimum_eml
-from .dataone_package import generate_system_metadata
-from .dataone_package import create_resource_map
-from .utils import check_pid
-from .utils import filter_items
-from .utils import get_tale_artifacts
-from .utils import get_file_item
+from .dataone_package import \
+    create_minimum_eml, \
+    generate_system_metadata, \
+    create_resource_map
+from .utils import \
+    check_pid, \
+    get_file_item, \
+    get_dataone_url
+from .dataone_register import find_initial_pid
 
 from d1_client.mnclient_2_0 import MemberNodeClient_2_0
 from d1_common.types.exceptions import DataONEException
@@ -162,22 +164,38 @@ def create_upload_object_metadata(client, file_object):
     return pid
 
 
-def get_tale_files(tale, user):
+def filter_items(item_ids, user):
     """
-    Gets the tale artifacts and creates a list of files.
-
-    :param tale: The tale whose artifacts are being extracted
-    :param user: The user that is requesting the artifacts
-    :type tale: wholetale.models.Tale
+    Take a list of item ids and determine whether it:
+       1. Exists on the local file system
+       2. Exists on DataONE
+       3. Is linked to a remote location other than DataONE
+    :param item_ids: A list of items to be processed
+    :param user: The user that is requesting the package creation
+    :type item_ids: list
     :type user: girder.models.User
-    :return: A list of the files
-    :rtype list
+    :return: A dictionary of lists for each file location
+    :rtype: dict
     """
-    artifact_items = get_tale_artifacts(tale, user)
-    files = list()
-    for item in artifact_items:
-        files.append(get_file_item(item['_id'], user))
-    return files
+
+    logger.debug('Entered filter_input_items')
+    dataone_objects = list()
+    remote_objects = list()
+    local_objects = list()
+
+    for item_id in item_ids:
+        # Check if it points do a file on DataONE
+        url = get_dataone_url(item_id, user)
+        if url is not None:
+            dataone_objects.append(find_initial_pid(url))
+            continue
+
+        # If the file wasn't linked to a remote location, then it must exist locally. This
+        # is a list of girder.models.File objects
+        local_objects.append(get_file_item(item_id, user))
+
+    logger.debug('Leaving filter_input_items')
+    return {'dataone': dataone_objects, 'remote': remote_objects, 'local': local_objects}
 
 
 def create_upload_package(item_ids, tale, user, repository):
