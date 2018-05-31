@@ -6,10 +6,9 @@ from girder.models.file import File
 from girder.models.item import Item
 from girder.api.rest import RestException
 
-from .utils import \
-    check_pid, \
-    get_file_format, \
-    get_tale_description
+from .utils import check_pid
+from .utils import get_file_format
+from .utils import get_tale_description
 
 from d1_common.types import dataoneTypes
 from d1_common import const as d1_const
@@ -29,7 +28,11 @@ def create_resource_map(resmap_pid, eml_pid, file_pids):
     :return: The resource map for the package
     :rtype: bytes
     """
+
     logger.debug('Entered create_resource_map')
+#    logger.debug('resmap_pids: {}'.format(resmap_pid))
+#    logger.debug('eml_pids: {}'.format(eml_pid))
+#    logger.debug('file_pids {}'.format(file_pids))
     res_map = createSimpleResourceMap(resmap_pid, eml_pid, file_pids)
     # createSimpleResourceMap returns type d1_common.resource_map.ResourceMap
 
@@ -58,7 +61,6 @@ def create_minimum_eml(tale, user, item_ids, eml_pid):
     If we aren't throw an exception and let the user know. We'll also check that
     the user has an ORCID ID set.
     """
-    logger.debug('Entered create_minimum_eml')
     lastName = user.get('lastName', None)
     firstName = user.get('firstName', None)
     email = user.get('email', None)

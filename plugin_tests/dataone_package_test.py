@@ -10,11 +10,13 @@ import datetime
 
 
 def setUpModule():
+
     base.enabledPlugins.append('wholetale')
     base.startServer()
 
 
 def tearDownModule():
+
     base.stopServer()
 
 
@@ -40,9 +42,9 @@ class TestDataONEUpload(base.TestCase):
                                      size,
                                      md5,
                                      name)
-        self.assertEqual(sys_meta.checksum.algorithm, 'MD5')
-        self.assertEqual(sys_meta.formatId, format_id)
-        self.assertEqual(sys_meta.size, size)
+        assert(sys_meta.checksum.algorithm == 'MD5')
+        assert(sys_meta.formatId == format_id)
+        assert(sys_meta.size == size)
 
     def test_generate_system_metadata(self):
         # Test that the generate_system_metadata is giving the right state
@@ -58,9 +60,9 @@ class TestDataONEUpload(base.TestCase):
                                             format_id,
                                             file_object,
                                             name)
-        self.assertEqual(metadata.size, len(file_object))
-        self.assertEqual (metadata.formatId, format_id)
-        self.assertEqual (metadata.checksum.algorithm, 'MD5')
+        assert(metadata.size == len(file_object))
+        assert (metadata.formatId == format_id)
+        assert (metadata.checksum.algorithm == 'MD5')
 
     def test_create_resource_map(self):
 
