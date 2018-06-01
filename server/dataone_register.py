@@ -38,7 +38,7 @@ def unesc(value):
 
 
 def query(q,
-          url=DataONELocations.prod_cn.value,
+          base_url=DataONELocations.prod_cn.value,
           fields=["identifier"],
           rows=1000,
           start=0,
@@ -46,7 +46,7 @@ def query(q,
     """
     Query a DataONE Solr index.
     :param q: The query
-    :param url: The URL to the coordinating node
+    :param base_url: The URL to the coordinating node
     :param fields: The field to search for
     :param rows: Number of rows to return
     :param start: Which row to start at
@@ -57,7 +57,7 @@ def query(q,
 
     fl = ",".join(fields)
     query_url = "{}/query/solr/?q={}&fl={}&rows={}&start={}&wt=json".format(
-        url, q, fl, rows, start)
+        base_url, q, fl, rows, start)
 
     try:
         req = requests.get(query_url)
@@ -95,7 +95,7 @@ def find_resource_pid(pid, base_url):
     logger.debug('Entered find_resource_pid')
     result = query(
         q="identifier:\"{}\"".format(esc(pid)),
-        url=base_url,
+        base_url=base_url,
         fields=["identifier", "formatType", "formatId", "resourceMap"])
     result_len = int(result['response']['numFound'])
 
@@ -133,7 +133,7 @@ def find_resource_pid(pid, base_url):
         # Solr array type so the result is a list of lists
         nonobs = find_nonobsolete_resmaps(
             [item for items in resmaps for item in items],
-            url=base_url)
+            base_url=base_url)
 
         # Only return of one non-obsolete Resource Map was found
         # If we find multiple, that implies the original PID we queried for
@@ -163,7 +163,7 @@ def find_nonobsolete_resmaps(pids, base_url):
     logger.debug('Entered find_nonobsolete_resmaps')
     result = query(
         "identifier:(\"{}\")+AND+-obsoletedBy:*".format("\" OR \"".join(pids),
-                                                        url=base_url,
+                                                        base_url=base_url,
                                                         fields="identifier"))
     result_len = int(result['response']['numFound'])
 
@@ -209,94 +209,6 @@ def find_initial_pid(path):
     else:
         logger.debug('Leaving find_initial_pid')
         return path
-
-
-def get_aggregated_identifiers(pid, base_url):
-    """
-    Process an OAI-ORE aggregation into a set of aggregated identifiers.
-    Note that this is currently not being used in the project do to the amount
-    of time that parsing the graph takes.
-    :param pid:
-    :param base_url: The url to the member node endpoint
-    :type pid: str
-    :type base_url: str
-    :return: A set of pids each aggregated object
-    :rtype: set
-    """
-
-    g = rdflib.Graph()
-
-    graph_url = "{}/resolve/{}".format(base_url, esc(pid))
-    g.parse(graph_url, format='xml')
-
-    ore_aggregates = rdflib.term.URIRef(
-        'http://www.openarchives.org/ore/terms/aggregates')
-    dcterms_identifier = rdflib.term.URIRef(
-        'http://purl.org/dc/terms/identifier')
-
-    aggregated = g.objects(None, ore_aggregates)
-
-    pids = set()
-
-    # Get the PID of the aggregated Objects in the package
-    for object in aggregated:
-        identifiers = g.objects(object, dcterms_identifier)
-        [pids.add(unesc(id)) for id in identifiers]
-
-    return pids
-
-
-def verify_results(pid, docs, base_url):
-    """
-    Used to verify search results.
-    :param pid:
-    :param docs:
-    :param base_url: The url to the member node endpoint
-    :return:
-    """
-    aggregation = get_aggregated_identifiers(pid, base_url)
-    pids = set([unesc(doc['identifier']) for doc in docs])
-
-    if aggregation != pids:
-        raise RestException(
-            "The contents of the Resource Map don't match what's in the Solr "
-            "index. This is unexpected and unhandled.")
-
-
-def get_documenting_identifiers(pid, base_url=DataONELocations.prod_cn.value):
-    """
-    Find the set of identifiers in an OAI-ORE resource map documenting
-    other members of that resource map.
-        Note that this is currently not being used in the project do to the amount
-    of time that parsing the graph takes.
-    :param pid:
-    :param base_url: The url to the member node endpoint
-    :type pid: str
-    :type base_url: str
-    :return: A set of pids each object
-    :rtype: set
-    """
-
-    g = rdflib.Graph()
-
-    graph_url = "{}/resolve/{}".format(base_url, esc(pid))
-    g.parse(graph_url, format='xml')
-
-    cito_isDocumentedBy = rdflib.term.URIRef(
-        'http://purl.org/spar/cito/isDocumentedBy')
-    dcterms_identifier = rdflib.term.URIRef(
-        'http://purl.org/dc/terms/identifier')
-
-    documenting = g.objects(None, cito_isDocumentedBy)
-
-    pids = set()
-
-    # Get the PID of the documenting Objects in the package
-    for object in documenting:
-        identifiers = g.objects(object, dcterms_identifier)
-        [pids.add(unesc(id)) for id in identifiers]
-
-    return pids
 
 
 def get_package_pid(path, base_url):
@@ -375,7 +287,7 @@ def get_documents(package_pid, base_url):
     result = query(q='resourceMap:"{}"'.format(esc(package_pid)),
                    fields=["identifier", "formatType", "title", "size", "formatId",
                            "fileName", "documents"],
-                   url=base_url)
+                   base_url=base_url)
 
     if 'response' not in result or 'docs' not in result['response']:
         raise RestException(
