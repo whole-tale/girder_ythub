@@ -8,11 +8,10 @@ import re
 import json
 import six.moves.urllib as urllib
 import requests
-import rdflib
 
 from girder import logger
 from girder.api.rest import RestException
-from .utils import DataONELocations
+from .constants import DataONELocations
 
 
 def esc(value):
@@ -38,7 +37,7 @@ def unesc(value):
 
 
 def query(q,
-          base_url=DataONELocations.prod_cn.value,
+          base_url=DataONELocations.prod_cn,
           fields=["identifier"],
           rows=1000,
           start=0,

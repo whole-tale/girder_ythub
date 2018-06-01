@@ -175,6 +175,10 @@ def filter_items(item_ids, user):
     :type item_ids: list
     :type user: girder.models.User
     :return: A dictionary of lists for each file location
+    For example,
+     {'dataone': ['uuid:123456', 'doi.10x501'],
+     'remote_objects: ['url1', 'url2'],
+     local: [file_obj1, file_obj2]}
     :rtype: dict
     """
 

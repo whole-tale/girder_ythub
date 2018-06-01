@@ -85,14 +85,6 @@ class TestDataONEUtils(base.TestCase):
         pid = check_pid(pid)
         self.assertTrue(isinstance(pid, str))
 
-    def test_dataone_endpoints(self):
-        # Testing this to make sure the endpoints aren't accidentally changed
-        from server.utils import DataONELocations
-
-        self.assertEqual(DataONELocations.prod_cn.value, 'https://cn.dataone.org/cn/v2')
-        self.assertEqual(DataONELocations.dev_mn.value, 'https://dev.nceas.ucsb.edu/knb/d1/mn/v2')
-        self.assertEqual(DataONELocations.dev_cn.value, 'https://cn-stage-2.test.dataone.org/cn/v2')
-
     def test_get_file_item(self):
         # Test that files are being properly extracted out of items
         from server.utils import get_file_item

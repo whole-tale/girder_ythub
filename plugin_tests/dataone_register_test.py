@@ -60,12 +60,12 @@ class TestDataONERegister(base.TestCase):
 
     def test_find_resource_pid(self):
         from server.dataone_register import find_resource_pid
-        from server.utils import DataONELocations
+        from server.constants import DataONELocations
 
         # Test the case where no data object could be located
         with pytest.raises(RestException) as error:
             bad_url = 'localhost_01'
-            find_resource_pid(bad_url, DataONELocations.prod_cn.value)
+            find_resource_pid(bad_url, DataONELocations.prod_cn)
 
     def test_get_package_files_metadata(self):
         ''' Test that the metadata in a package is getting added to the list of files'''
@@ -93,7 +93,7 @@ class TestDataONERegister(base.TestCase):
         https://search.dataone.org/#view/urn:uuid:15403304-6eb8-4ede-8a56-332a3e92bef8
         """
         from server.dataone_register import get_package_files
-        from server.utils import DataONELocations
+        from server.constants import DataONELocations
 
         data = [{'identifier': 'urn:uuid:4eb73500-fa9b-46c2-a517-94c1a8b4afbb',
                             'fileName': 'HumanFootprint.ipynb', 'formatId': 'text/plain',
@@ -130,10 +130,10 @@ class TestDataONERegister(base.TestCase):
     def test_get_package_list_nested(self):
         # Test that we're getting all of the files in a nested package
         from server.dataone_register import get_package_list
-        from server.utils import DataONELocations
+        from server.constants import DataONELocations
 
         package = get_package_list("https://search.dataone.org/#view/urn:uuid:6f5533ab-6508-4ac7-82a3-1df88ed4580e",
-                                   DataONELocations.prod_cn.value)
+                                   DataONELocations.prod_cn)
 
         # Metadata that should be returned
         fname = os.path.join(ROOT_DIR, 'plugins', 'wholetale', 'plugin_tests',
@@ -146,10 +146,10 @@ class TestDataONERegister(base.TestCase):
     def test_get_package_list_flat(self):
         # Test that we're getting all of the files in a non-nested package
         from server.dataone_register import get_package_list
-        from server.utils import DataONELocations
+        from server.constants import DataONELocations
 
         package = get_package_list('https://search.dataone.org/#view/urn:uuid:7ec733c4-aa63-405a-a58d-1d773a9025a9',
-                                   DataONELocations.prod_cn.value)
+                                   DataONELocations.prod_cn)
         expected_result ={
             "Doctoral Dissertation Research: Mapping Community Exposure to Coastal Climate Hazards in the Arctic:"
              " A Case Study in Alaska's North Slope":

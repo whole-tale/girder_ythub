@@ -13,8 +13,8 @@ from girder.api.rest import Resource, RestException
 
 from ..dataone_register import \
     D1_lookup, \
-    get_package_list, \
-    DataONELocations
+    get_package_list
+from ..constants import DataONELocations
 from ..dataone_upload import create_upload_package
 
 dataMap = {
@@ -152,7 +152,7 @@ class Repository(Resource):
                            'be passed in as an ordinary string. Examples '
                            'include https://dev.nceas.ucsb.edu/knb/d1/mn/v2 and '
                            'https://cn.dataone.org/cn/v2',
-               required=False, dataType='string', default=DataONELocations.prod_cn.value)
+               required=False, dataType='string', default=DataONELocations.prod_cn)
         .responseClass('dataMap', array=True))
     def lookupData(self, dataId, base_url):
         from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -184,7 +184,7 @@ class Repository(Resource):
                            'to search datasets from custom networks ,'
                            'such as the DataONE development network.',
                required=False, dataType='string',
-               default=DataONELocations.prod_cn.value)
+               default=DataONELocations.prod_cn)
         .responseClass('fileMap', array=True))
     def listFiles(self, dataId, base_url):
         from concurrent.futures import ThreadPoolExecutor, as_completed

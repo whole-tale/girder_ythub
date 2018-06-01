@@ -13,7 +13,7 @@ from ..dataone_register import \
     extract_data_docs, \
     extract_resource_docs, \
     check_multiple_metadata
-from ..utils import DataONELocations
+from ..constants import DataONELocations
 
 
 def register_http_resource(parent, parentType, progress, user, url, name):
@@ -42,7 +42,7 @@ def register_DataONE_resource(parent,
                               user,
                               pid,
                               name=None,
-                              base_url=DataONELocations.prod_cn.value):
+                              base_url=DataONELocations.prod_cn):
     """Create a package description (Dict) suitable for dumping to JSON."""
     progress.update(increment=1, message='Processing package {}.'.format(pid))
 
