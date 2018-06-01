@@ -49,11 +49,9 @@ def upload_file(client, pid, file_object, system_metadata):
     :type system_metadata: d1_common.types.generated.dataoneTypes_v2_0.SystemMetadata
     """
 
-    logger.debug('Entered upload_file')
     pid = check_pid(pid)
     try:
         client.create(pid, file_object, system_metadata)
-        logger.debug('Uploaded file')
 
     except Exception as e:
         raise ValidationException('Error uploading file to DataONE. {0}'.format(str(e)))
@@ -77,7 +75,6 @@ def create_upload_eml(tale, client, user, item_ids):
     :rtype: str
     """
 
-    logger.debug('Entered create_upload_eml')
     # Create the EML metadata
     eml_pid = str(uuid.uuid4())
     eml_doc = create_minimum_eml(tale, user, item_ids, eml_pid)
@@ -91,7 +88,6 @@ def create_upload_eml(tale, client, user, item_ids):
     # meta is type d1_common.types.generated.dataoneTypes_v2_0.SystemMetadata
     # Upload the EML document with its metadata
     upload_file(client=client, pid=eml_pid, file_object=eml_doc, system_metadata=meta)
-    logger.debug('Leaving create_upload_eml')
     return eml_pid
 
 
@@ -117,7 +113,6 @@ def create_upload_resmap(res_pid, eml_pid, obj_pids, client):
     :return: None
     """
 
-    logger.debug('Entered create_upload_resmap')
     res_map = create_resource_map(res_pid, eml_pid, obj_pids)
     # To view the contents of res_map, call d1_common.xml.serialize_to_transport()
     meta = generate_system_metadata(res_pid,
@@ -126,7 +121,6 @@ def create_upload_resmap(res_pid, eml_pid, obj_pids, client):
                                     name=str())
 
     upload_file(client=client, pid=res_pid, file_object=res_map, system_metadata=meta)
-    logger.debug('Leaving create_upload_resmap')
 
 
 def create_upload_object_metadata(client, file_object):
@@ -145,7 +139,6 @@ def create_upload_object_metadata(client, file_object):
     :rtype: str
     """
 
-    logger.debug('Entered create_upload_object_metadata')
     pid = str(uuid.uuid4())
     assetstore = File().getAssetstoreAdapter(file_object)
 
@@ -160,7 +153,6 @@ def create_upload_object_metadata(client, file_object):
                 file_object=assetstore.open(file_object).read(),
                 system_metadata=meta)
 
-    logger.debug('Leaving create_upload_object_metadata')
     return pid
 
 
@@ -182,7 +174,6 @@ def filter_items(item_ids, user):
     :rtype: dict
     """
 
-    logger.debug('Entered filter_input_items')
     dataone_objects = list()
     remote_objects = list()
     local_objects = list()
@@ -198,7 +189,6 @@ def filter_items(item_ids, user):
         # is a list of girder.models.File objects
         local_objects.append(get_file_item(item_id, user))
 
-    logger.debug('Leaving filter_input_items')
     return {'dataone': dataone_objects, 'remote': remote_objects, 'local': local_objects}
 
 
@@ -243,7 +233,6 @@ def create_upload_package(item_ids, tale, user, repository):
     :return: None
     """
 
-    logger.debug('Entered create_upload_package')
     filtered_items = filter_items(item_ids, user)
     dataone_object_pids = filtered_items['dataone']
     local_objects = filtered_items['local']
@@ -264,6 +253,5 @@ def create_upload_package(item_ids, tale, user, repository):
         create_upload_resmap(str(uuid.uuid4()), eml_pid, upload_objects, client)
 
     except DataONEException as e:
-        logger.debug('DataONE Error: {}'.format(e))
+        logger.warning('DataONE Error: {}'.format(e))
         raise RestException('Error uploading file to DataONE. {0}'.format(str(e)))
-    logger.debug('Leaving create_package')

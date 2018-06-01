@@ -29,14 +29,13 @@ def get_tale_artifacts(tale, user):
     :return: A list of items that are in the folder
     :rtype list(girder.models.Item)
     """
-    logger.debug('Entered get_tale_artifacts')
+
     folder = Folder().load(
         id=tale['folderId'],
         user=user,
         level=AccessType.READ,
         exc=True)
     child_items = Folder().childItems(folder=folder)
-    logger.debug('Leaving get_tale_artifacts')
     return child_items
 
 
@@ -51,20 +50,19 @@ def get_file_item(item_id, user):
     :return: The file object or None
     :rtype: girder.models.file
     """
-    logger.debug('Entered get_file_item')
+
     doc = Item().load(item_id, level=AccessType.ADMIN, user=user)
 
     if doc is None:
-        logger.debug('Failed to load Item. Leaving get_file_item')
+        logger.warning('Failed to load item {}. Leaving get_file_item'.format(str(item_id)))
         return None
     child_files = Item().childFiles(doc)
 
     if bool(child_files):
         # We follow a rule of there only being one file per item, so return the 0th element
-        logger.debug('Leaving get_file_item')
         return child_files[0]
 
-    logger.debug('Failed to find a file. Leaving get_file_item')
+    logger.warning('Failed to find a file for item {}. Leaving get_file_item'.format(str(item_id)))
     return None
 
 
@@ -79,21 +77,10 @@ def get_file_format(item_id, user):
     :return: The file's extension
     :rtype: str
     """
-    logger.debug('Entered get_file_format')
-    doc = Item().load(item_id, level=AccessType.ADMIN, user=user)
 
-    if doc is None:
-        logger.debug('Failed to load Item. Leaving get_file_item')
-        return None
-    child_files = Item().childFiles(doc)
-
-    if bool(child_files):
-        # We follow a rule of there only being one file per item, so return the 0th element
-        logger.debug('Leaving get_file_item')
-        return child_files[0].get('mimeType', '')
-
-    logger.debug('Failed to find a file. Leaving get_file_format')
-    return None
+    file = get_file_item(item_id, user)
+    if file is not None:
+        return file.get('mimeType', '')
 
 
 def get_tale_description(tale):
@@ -126,7 +113,7 @@ def get_dataone_url(item_id, user):
     :return: The object's path in DataONE, None otherwise
     :rtype: str, None
     """
-    logger.debug('Entered check_in_dataone')
+
     file = get_file_item(item_id, user)
     if file is None:
         file_error = 'Failed to find the file with ID {}'.format(item_id)
@@ -135,11 +122,7 @@ def get_dataone_url(item_id, user):
     url = file.get('linkUrl')
     if url is not None:
         if url.find('dataone.org'):
-            logger.debug('Leaving check_in_dataone')
             return url
-
-    logger.debug('Leaving check_in_dataone')
-    return None
 
 
 def check_pid(pid):
@@ -153,13 +136,10 @@ def check_pid(pid):
     :return: Returns the pid as a str, or just the pid if it was already a str
     :rtype: str
     """
-    logger.debug('Entered check_pid')
+
     if not isinstance(pid, str):
-        logger.debug('Warning: PID was passed that is not a str')
-        logger.debug('Leaving check_pid')
         return str(pid)
     else:
-        logger.debug('Leaving check_pid')
         return pid
 
 

@@ -30,11 +30,8 @@ def create_resource_map(resmap_pid, eml_pid, file_pids):
     :rtype: bytes
     """
 
-    logger.debug('Entered create_resource_map')
     res_map = createSimpleResourceMap(resmap_pid, eml_pid, file_pids)
     # createSimpleResourceMap returns type d1_common.resource_map.ResourceMap
-
-    logger.debug('Leaving create_resource_map')
     return res_map.serialize()
 
 
@@ -59,7 +56,6 @@ def create_minimum_eml(tale, user, item_ids, eml_pid):
     If we aren't throw an exception and let the user know. We'll also check that
     the user has an ORCID ID set.
     """
-    logger.debug('Entered create_minimum_eml')
 
     lastName = user.get('lastName', None)
     firstName = user.get('firstName', None)
@@ -121,7 +117,6 @@ def create_minimum_eml(tale, user, item_ids, eml_pid):
 
     # call decode to get the string representation instead of as a byte str
     xml = ET.tostring(ns, encoding='UTF-8', xml_declaration=True, method='xml').decode()
-    logger.debug('Leaving create_minimum_eml')
     return xml
 
 
@@ -136,9 +131,8 @@ def get_file_md5(file_object, md5):
     :return: Returns an updated md5 object. Returns None if it fails
     :rtype: md5
     """
-    logger.debug('Entered get_file_md5')
-    assetstore = File().getAssetstoreAdapter(file_object)
 
+    assetstore = File().getAssetstoreAdapter(file_object)
     try:
         handle = assetstore.open(file_object)
 
@@ -153,7 +147,6 @@ def get_file_md5(file_object, md5):
         return None
     finally:
         handle.close()
-    logger.debug('Leaving get_file_md5')
     return md5
 
 
@@ -175,7 +168,6 @@ def generate_system_metadata(pid, format_id, file_object, name, is_file=False):
     :rtype: d1_common.types.generated.dataoneTypes_v2_0.SystemMetadata
     """
 
-    logger.debug('Entered generate_system_metadata')
     md5 = hashlib.md5()
     if is_file:
         md5 = get_file_md5(file_object, md5)
@@ -183,7 +175,6 @@ def generate_system_metadata(pid, format_id, file_object, name, is_file=False):
     else:
         # Check that the file_object is unicode, attempt to convert it if it's a str
         if not isinstance(file_object, bytes):
-            logger.debug('Warning: file_object is not unicode')
             if isinstance(file_object, str):
                 logger.debug('file_object detected to be a string. Attempting conversion')
                 file_object = file_object.encode("utf-8")
@@ -196,7 +187,6 @@ def generate_system_metadata(pid, format_id, file_object, name, is_file=False):
                                  size,
                                  md5,
                                  name)
-    logger.debug('Leaving generate_system_metadata')
     return sys_meta
 
 
@@ -217,7 +207,6 @@ def populate_sys_meta(pid, format_id, size, md5, name):
     :return: The populated system metadata document
     """
 
-    logger.debug('Entered generate_sys_meta')
     pid = check_pid(pid)
     sys_meta = dataoneTypes.systemMetadata()
     sys_meta.identifier = pid
@@ -229,7 +218,6 @@ def populate_sys_meta(pid, format_id, size, md5, name):
     sys_meta.checksum.algorithm = 'MD5'
     sys_meta.accessPolicy = generate_public_access_policy()
     sys_meta.fileName = name
-    logger.debug('Leaving generate_sys_meta')
     return sys_meta
 
 
@@ -242,12 +230,10 @@ def generate_public_access_policy():
     :rtype: d1_common.types.generated.dataoneTypes_v1.AccessPolicy
     """
 
-    logger.debug('Entering generate_public_access_policy')
     access_policy = dataoneTypes.accessPolicy()
     access_rule = dataoneTypes.AccessRule()
     access_rule.subject.append(d1_const.SUBJECT_PUBLIC)
     permission = dataoneTypes.Permission('read')
     access_rule.permission.append(permission)
     access_policy.append(access_rule)
-    logger.debug('Leaving generate_public_access_policy')
     return access_policy

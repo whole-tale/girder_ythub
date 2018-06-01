@@ -4,7 +4,6 @@ import os
 import re
 import requests
 from urllib.parse import urlparse
-from girder import logger
 from girder.api import access
 from girder.api.describe import Description, autoDescribeRoute
 from girder.constants import TokenScope, AccessType
@@ -225,7 +224,6 @@ class Repository(Resource):
                required=True)
     )
     def createPackage(self, itemIds, taleId, repository):
-        logger.debug('Entered createPackage')
         user = self.getCurrentUser()
         tale = self.model('tale',
                           'wholetale').load(taleId,

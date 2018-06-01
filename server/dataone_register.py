@@ -52,7 +52,6 @@ def query(q,
     :param test: Flag used when registering data from dev.nceas
     :return: The content of the response
     """
-    logger.debug('Entered query')
 
     fl = ",".join(fields)
     query_url = "{}/query/solr/?q={}&fl={}&rows={}&start={}&wt=json".format(
@@ -78,7 +77,6 @@ def query(q,
             "This could mean the query result is truncated. "
             "Implement paged queries.")
 
-    logger.debug('Leaving query')
     return content
 
 
@@ -91,7 +89,7 @@ def find_resource_pid(pid, base_url):
     :type base_url: str
     :return:
     """
-    logger.debug('Entered find_resource_pid')
+
     result = query(
         q="identifier:\"{}\"".format(esc(pid)),
         base_url=base_url,
@@ -159,7 +157,6 @@ def find_nonobsolete_resmaps(pids, base_url):
     :return:
     """
 
-    logger.debug('Entered find_nonobsolete_resmaps')
     result = query(
         "identifier:(\"{}\")+AND+-obsoletedBy:*".format("\" OR \"".join(pids),
                                                         base_url=base_url,
@@ -169,7 +166,6 @@ def find_nonobsolete_resmaps(pids, base_url):
     if result_len == 0:
         raise RestException('No results were found for identifier(s): {}.'.format(", ".join(pids)))
 
-    logger.debug('Leaving find_nonobsolete_resmaps')
     return [doc['identifier'] for doc in result['response']['docs']]
 
 
@@ -187,7 +183,6 @@ def find_initial_pid(path):
     :return: The object's pid, or the original path if one wasn't found
     :rtype: str
     """
-    logger.debug('Entered find_initial_pid')
 
     # http://blog.crossref.org/2015/08/doi-regular-expressions.html
     doi_regex = re.compile('(10.\d{4,9}/[-._;()/:A-Z0-9]+)', re.IGNORECASE)
@@ -199,14 +194,11 @@ def find_initial_pid(path):
         return re.sub(
             r'\Ahttp[s]?:\/\/cn[a-z\-\d\.]*\.dataone\.org\/cn\/v\d\/[a-zA-Z]+\/', '', path)
     if re.search(r'^http[s]?:\/\/dev.nceas.ucsb.edu\/#view\/', path):
-        logger.debug('Leaving find_initial_pid')
         return re.sub(
             r'^http[s]?:\/\/dev.nceas.ucsb.edu\/#view\/', '', path)
     elif doi is not None:
-        logger.debug('Leaving find_initial_pid')
         return 'doi:{}'.format(doi.group())
     else:
-        logger.debug('Leaving find_initial_pid')
         return path
 
 
@@ -219,10 +211,9 @@ def get_package_pid(path, base_url):
     :type base_url: str
     :return: The package's pid
     """
-    logger.debug('Entered get_package_pid')
+
     initial_pid = find_initial_pid(path)
     pid = find_resource_pid(initial_pid, base_url)
-    logger.debug('Leaving get_package_pid')
     return pid
 
 
@@ -255,7 +246,7 @@ def D1_lookup(path, base_url):
     :type base_url: str
     :return:
     """
-    logger.debug('Entered D1_lookup')
+
     package_pid = get_package_pid(path, base_url)
     docs = get_documents(package_pid, base_url)
 
@@ -282,7 +273,7 @@ def get_documents(package_pid, base_url):
     Retrieve a list of all the files in a data package. The metadata
     record providing information about the package is also in this list.
     """
-    logger.debug('Entered get_documents')
+
     result = query(q='resourceMap:"{}"'.format(esc(package_pid)),
                    fields=["identifier", "formatType", "title", "size", "formatId",
                            "fileName", "documents"],
@@ -292,7 +283,6 @@ def get_documents(package_pid, base_url):
         raise RestException(
             "Failed to get a result for the query\n {}".format(result))
 
-    logger.debug('Leaving get_documents')
     return result['response']['docs']
 
 
@@ -319,7 +309,7 @@ def get_package_list(path, base_url, package=None, isChild=False):
     :param isChild:
     :return:
     """
-    logger.debug('Entered get_package_list')
+
     if package is None:
         package = {}
 
