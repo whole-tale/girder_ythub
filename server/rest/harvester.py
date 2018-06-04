@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 import requests
 
+from girder import logger
 from girder.api import access
 from girder.api.describe import Description, autoDescribeRoute
 from girder.api.rest import boundHandler, filtermodel
@@ -48,6 +49,7 @@ def register_DataONE_resource(parent,
 
     # query for things in the resource map. At this point, it is assumed that the pid
     # has been correctly identified by the user in the UI.
+
     docs = get_documents(pid, base_url)
 
     # Filter the Solr result by TYPE so we can construct the package
@@ -109,12 +111,15 @@ def register_DataONE_resource(parent,
     # Recurse and add child packages if any exist
     if children is not None and len(children) > 0:
         for child in children:
+            logger.debug('Registering child package, {}'.debug(child['identifier']))
             register_DataONE_resource(gc_folder,
                                       'folder',
                                       progress,
                                       user,
                                       child['identifier'],
                                       base_url)
+
+    logger.debug('Finished registering dataset')
     return gc_folder
 
 

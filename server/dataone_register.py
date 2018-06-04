@@ -250,6 +250,8 @@ def D1_lookup(path, base_url):
     package_pid = get_package_pid(path, base_url)
     docs = get_documents(package_pid, base_url)
 
+    if not docs:
+        raise RestException('Failed to find any documents in the provided package')
     # Filter the Solr result by TYPE so we can construct the package
     metadata = [doc for doc in docs if doc['formatType'] == 'METADATA']
     if not metadata:
@@ -314,6 +316,7 @@ def get_package_list(path, base_url, package=None, isChild=False):
         package = {}
 
     package_pid = get_package_pid(path, base_url)
+
     docs = get_documents(package_pid, base_url)
 
     # Filter the Solr result by TYPE so we can construct the package
