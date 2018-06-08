@@ -1,4 +1,5 @@
 import uuid
+import json
 
 from girder import logger
 from girder.models.model_base import ValidationException
@@ -8,12 +9,14 @@ from girder.models.file import File
 from .dataone_package import \
     create_minimum_eml, \
     generate_system_metadata, \
-    create_resource_map
+    create_resource_map, \
+    create_external_reference_file
+from .dataone_register import find_initial_pid
 from .utils import \
     check_pid, \
     get_file_item, \
-    get_dataone_url
-from .dataone_register import find_initial_pid
+    get_remote_url, \
+    is_dataone_url
 
 from d1_client.mnclient_2_0 import MemberNodeClient_2_0
 from d1_common.types.exceptions import DataONEException
@@ -57,7 +60,7 @@ def upload_file(client, pid, file_object, system_metadata):
         raise ValidationException('Error uploading file to DataONE. {0}'.format(str(e)))
 
 
-def create_upload_eml(tale, client, user, item_ids):
+def create_upload_eml(tale, client, user, item_ids, external_data):
     """
     Creates the EML metadata document along with an additional metadata document
     and uploads them both to DataONE. A pid is created for the EML document, and is
@@ -67,24 +70,29 @@ def create_upload_eml(tale, client, user, item_ids):
     :param client: The client to DataONE
     :param user: The user that is requesting this action
     :param item_ids: The ids of the items that have been uploaded to DataONE
+    :param external_data: A dict with any parameters needed for a file describing external objects
     :type tale: wholetale.models.tale
     :type client: MemberNodeClient_2_0
     :type user: girder.models.user
     :type item_ids: list
+    :type external_data: dict
     :return: pid of the EML document
     :rtype: str
     """
 
     # Create the EML metadata
     eml_pid = str(uuid.uuid4())
-    eml_doc = create_minimum_eml(tale, user, item_ids, eml_pid)
+    eml_doc = create_minimum_eml(tale,
+                                 user,
+                                 item_ids,
+                                 eml_pid,
+                                 external_data)
 
     # Create the metadata describing the EML document
     meta = generate_system_metadata(pid=eml_pid,
                                     format_id='eml://ecoinformatics.org/eml-2.1.1',
                                     file_object=eml_doc,
                                     name='science_metadata.xml')
-
     # meta is type d1_common.types.generated.dataoneTypes_v2_0.SystemMetadata
     # Upload the EML document with its metadata
     upload_file(client=client, pid=eml_pid, file_object=eml_doc, system_metadata=meta)
@@ -156,6 +164,41 @@ def create_upload_object_metadata(client, file_object):
     return pid
 
 
+def create_upload_remote_file(client, globus_files, user):
+    """
+    Creates and uploads a file that describes files that exist on external
+      sources. An example of such an object is one on Globus.
+
+    :param client: The client for interfacing DataONE
+    :param globus_files: List of files that exist externally
+    :param user: The user that is requesting the upload
+    :type client: MemberNodeClient_2_0
+    :type globus_files: list
+    :type: user: girder.models.user
+    :return: A the file pid and the size of the file
+    """
+
+    if len(globus_files) is not 0:
+        file_pid = str(uuid.uuid4())
+
+        """
+        Create the file and save it as a string. The file is created as a
+         dict for ease, but is needed in string format. This file shouldn't
+         get too big, and should have a small memory footprint.
+        """
+        globus_file = json.dumps(create_external_reference_file(globus_files, user))
+
+        meta = generate_system_metadata(file_pid,
+                                        format_id='application/json',
+                                        file_object=globus_file,
+                                        name='globus_references.json')
+        upload_file(client=client,
+                    pid=file_pid,
+                    file_object=globus_file,
+                    system_metadata=meta)
+        return file_pid, len(globus_file)
+
+
 def filter_items(item_ids, user):
     """
     Take a list of item ids and determine whether it:
@@ -180,9 +223,16 @@ def filter_items(item_ids, user):
 
     for item_id in item_ids:
         # Check if it points do a file on DataONE
-        url = get_dataone_url(item_id, user)
-        if url is not None:
+        url = get_remote_url(item_id, user)
+        if url is not None and is_dataone_url(url):
             dataone_objects.append(find_initial_pid(url))
+            continue
+        """
+        If there is a url, and it's not pointing to a DataONE resource, then assume
+         it's pointing to an external object
+        """
+        if url is not None:
+            remote_objects.append(item_id)
             continue
 
         # If the file wasn't linked to a remote location, then it must exist locally. This
@@ -195,7 +245,6 @@ def filter_items(item_ids, user):
 def create_upload_package(item_ids, tale, user, repository):
     """
     Uploads local or remote files to a DataONE repository.
-
      There are four cases that need to be handled.
         1. The file  was uploaded directly to Whole Tale and physically exists in Girder.
            In this case, a metadata document needs to be generated for each local file. This
@@ -218,9 +267,9 @@ def create_upload_package(item_ids, tale, user, repository):
 
         4. A combination of 1, 2, or 3.
 
-    To handle the different cases, the item_ids are, depending on which case they fall under,
-     separated into different containers. Each container is then looped over, and the files
-     are dealt with.
+    To handle the different cases, the item_ids are sorted into a dict that provides easy access.
+    For each file that gets uploaded to DataONE, a pid is created for it. These are saved so that
+    we can reference them in the resource map, which is the last object that is uploaded.
 
     :param item_ids: A list of items that contain the files that will be uploaded to DataONE
     :param tale: The tale that is being packaged
@@ -233,25 +282,66 @@ def create_upload_package(item_ids, tale, user, repository):
     :return: None
     """
 
-    filtered_items = filter_items(item_ids, user)
-    dataone_object_pids = filtered_items['dataone']
-    local_objects = filtered_items['local']
-    # globus_objects = filtered_items['globus']
-    local_file_pids = list()
-
+    # create_client can throw DataONEException
     try:
+        """
+        Create a client object that is used to interface DataONE. This can interact with a
+         particular member node by specifying `repository`. It also needs an authentication token.
+         The auth portion is incomplete, and requires you to paste your token in <TOKEN>.
+        """
         client = create_client(repository, {"headers": {
             "Authorization": "Bearer <TOKEN>"}})
 
-        for file in local_objects:
+        """
+        If the client was successfully created, sort all of the items by their type:
+          a. Locally on the machine (bytes of the file are on disk)
+          b. Pointing to DataONE (The `models.file` has a `linkUrl` that points to an object on
+             DataONE).
+          c. Pointing to remote file not on DataONE (eg Globus)
+        """
+        filtered_items = filter_items(item_ids, user)
+
+        """
+        Iterate through the list of objects that are local (ie files without a `linkUrl`
+         and upload them to DataONE. The call to create_upload_object_metadata will
+         return a pid that describes the object (not the metadata object). We'll save
+         this pid so that we can pass it to the resource map.
+        """
+        # List that holds pids that are assigned to any local objects
+        local_file_pids = list()
+        for file in filtered_items['local']:
+            logger.debug('Processing local files for DataONE upload')
             local_file_pids.append(create_upload_object_metadata(client, file))
 
-        eml_pid = create_upload_eml(tale, client, user, item_ids)
+        """
+        If there are any objects that aren't local or referencing DataONE objects, then
+         we'll create a json file that lists the remote url along with an md5 of the file.
+         We need to upload the json file to DataONE, and eventually pass the pid of the file
+         to the resource map (so we save it).
+        """
+        remote_objects = filtered_items['remote']
+        external_file_pid = list()
+        # A dict that can be used to hold information about the external_data file
+        external_data = dict()
+        if len(remote_objects) > 0:
+            logger.debug('Processing remote objects.')
+            external_file_pid, length = create_upload_remote_file(client,
+                                                                  remote_objects,
+                                                                  user)
+            external_data['size'] = length
 
-        # Combine the lists of pids into a single list that will be used in the resource map
-        upload_objects = dataone_object_pids+local_file_pids
+        """
+        Create an EML document describing the data, and then upload it. Save the
+         pid for the resource map.
+        """
+        eml_pid = create_upload_eml(tale, client, user, item_ids, external_data)
+
+        """
+        Once all objects are uploaded, create and upload the resource map. This file describes
+         the object relations (ie the package). This should be the last file that is uploaded.
+        """
+        upload_objects = filtered_items['dataone'] + list(external_file_pid) + local_file_pids
         create_upload_resmap(str(uuid.uuid4()), eml_pid, upload_objects, client)
-
     except DataONEException as e:
         logger.warning('DataONE Error: {}'.format(e))
         raise RestException('Error uploading file to DataONE. {0}'.format(str(e)))

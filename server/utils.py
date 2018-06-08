@@ -121,8 +121,22 @@ def get_dataone_url(item_id, user):
         raise RestException(file_error)
     url = file.get('linkUrl')
     if url is not None:
-        if url.find('dataone.org'):
+        if is_dataone_url(url):
             return url
+
+
+def is_dataone_url(url):
+    """
+    Checks if a url has dataone in it
+    :param url: The url in question
+    :return: True if it does, False otherwise
+    """
+
+    res = url.find('dataone.org')
+    if res is not -1:
+        return True
+    else:
+        return False
 
 
 def check_pid(pid):
@@ -154,7 +168,13 @@ def get_remote_url(item_id, user):
     :return: The url that points to the object
     :rtype: str or None
     """
-    url = get_file_item(item_id, user).get('linkUrl')
+
+    file = get_file_item(item_id, user)
+    if file is None:
+        file_error = 'Failed to find the file with ID {}'.format(item_id)
+        logger.warning(file_error)
+        raise RestException(file_error)
+    url = file.get('linkUrl')
     if url is not None:
         return url
 

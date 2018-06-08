@@ -53,6 +53,11 @@ def query(q,
     :return: The content of the response
     """
 
+    """
+    Create the query section of the url. Note that the DataONE Python library
+     has functionality for solr queries. If time permits or if errors occur
+     in this area, it is worth looking into refactoring with it.
+    """
     fl = ",".join(fields)
     query_url = "{}/query/solr/?q={}&fl={}&rows={}&start={}&wt=json".format(
         base_url, q, fl, rows, start)
