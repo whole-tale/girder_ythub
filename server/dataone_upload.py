@@ -320,7 +320,7 @@ def create_upload_package(item_ids, tale, user, repository):
          to the resource map (so we save it).
         """
         remote_objects = filtered_items['remote']
-        external_file_pid = list()
+        external_file_pid = str()
         # A dict that can be used to hold information about the external_data file
         external_data = dict()
         if len(remote_objects) > 0:
@@ -340,7 +340,8 @@ def create_upload_package(item_ids, tale, user, repository):
         Once all objects are uploaded, create and upload the resource map. This file describes
          the object relations (ie the package). This should be the last file that is uploaded.
         """
-        upload_objects = filtered_items['dataone'] + list(external_file_pid) + local_file_pids
+        upload_objects = filtered_items['dataone'] + [external_file_pid] + local_file_pids
+
         create_upload_resmap(str(uuid.uuid4()), eml_pid, upload_objects, client)
     except DataONEException as e:
         logger.warning('DataONE Error: {}'.format(e))
