@@ -44,7 +44,7 @@ def create_minimum_eml(tale,
                        user,
                        item_ids,
                        eml_pid,
-                       external_data):
+                       external_data=dict()):
     """
     Creates a bare minimum EML record for a package.
 
@@ -52,7 +52,8 @@ def create_minimum_eml(tale,
     :param user: The user that hit the endpoint
     :param item_ids: A lsit of the item ids of the objects that are going to be packaged
     :param eml_pid: The PID for the eml document. Assume that this is the package doi
-    :param external_data: A dict with any parameters needed for a file describing external objects
+    :param external_data: A dict with any parameters needed for a file describing external objects.
+     An example is occasionally needing the size of the object, so throw it
     :type tale: wholetale.models.tale
     :type user: girder.models.user
     :type item_ids: list
@@ -67,7 +68,6 @@ def create_minimum_eml(tale,
     If we aren't throw an exception and let the user know. We'll also check that
     the user has an ORCID ID set.
     """
-
     lastName = user.get('lastName', None)
     firstName = user.get('firstName', None)
     email = user.get('email', None)
@@ -121,12 +121,13 @@ def create_minimum_eml(tale,
         :param description: The description of the object
         :type name: str
         :type description: str
-        :return:
+        :return: An entity section
+        :rtype: xml.etree.ElementTree.Element
         """
         other_entity = ET.SubElement(dataset, 'otherEntity')
         ET.SubElement(other_entity, 'entityName').text = name
-        ET.SubElement(other_entity, 'entityDescription').text = description if \
-            bool(len(description)) else 'None'
+        if description:
+            ET.SubElement(other_entity, 'entityDescription').text = description
         return other_entity
 
     def create_physical(other_entity_section, name, size):
@@ -148,10 +149,19 @@ def create_minimum_eml(tale,
         size_element.set('unit', 'bytes')
         return physical
 
-    def create_format(format, physical_section):
+    def create_format(object_format, physical_section):
+        """
+        Creates a `dataFormat` field in the EML to describe the format
+         of the object
+        :param object_format: The format of the object
+        :param physical_section: The etree element defining a `physical` EML section
+        :type object_format: str
+        :type physical_section: xml.etree.ElementTree.Element
+        :return: None
+        """
         data_format = ET.SubElement(physical_section, 'dataFormat')
         externally_defined = ET.SubElement(data_format, 'externallyDefinedFormat')
-        ET.SubElement(externally_defined, 'formatName').text = format
+        ET.SubElement(externally_defined, 'formatName').text = object_format
 
     def add_object_record(name, description, size, format):
         """
@@ -172,18 +182,18 @@ def create_minimum_eml(tale,
     # Add a <otherEntity> block for each object
     for item_id in item_ids:
         item = Item().load(item_id, user=user)
-        format = get_file_format(item_id, user)
+        object_format = get_file_format(item_id, user)
 
         # Create the record for the object
-        add_object_record(item['name'], item['description'], item['size'], format)
+        add_object_record(item['name'], item['description'], item['size'], object_format)
 
     # Add a section for the file describing any remote objects
     if bool(external_data):
         description = "Describes a set of objects that exist on remote repositories. This file " \
                       "contains the name, path, and md5 checksum of each file."
         name = 'globus_references.json'
-        format = 'application/json'
-        add_object_record(name, description, external_data['size'], format)
+        object_format = 'application/json'
+        add_object_record(name, description, external_data['size'], object_format)
 
     # call decode to get the string representation instead of a byte str
     xml = ET.tostring(ns, encoding='UTF-8', xml_declaration=True, method='xml').decode()
@@ -195,7 +205,8 @@ def compute_md5(file):
     Takes an file handle and computes the md5 of it. This uses duck typing
     to allow for any file handle that supports .read. Note that it is left to the
     caller to close the file handle and to handle any exceptions
-    :param file:
+
+    :param file: An open file handle that can be read
     :return: Returns an updated md5 object. Returns None if it fails
     :rtype: md5
     """
