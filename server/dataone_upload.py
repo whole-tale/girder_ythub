@@ -326,8 +326,8 @@ def create_upload_package(item_ids, tale, user, repository):
         if len(remote_objects) > 0:
             logger.debug('Processing remote objects.')
             external_file_pid, reference_file_length = create_upload_remote_file(client,
-                                                                  remote_objects,
-                                                                  user)
+                                                                                 remote_objects,
+                                                                                 user)
 
         """
         Create an EML document describing the data, and then upload it. Save the
