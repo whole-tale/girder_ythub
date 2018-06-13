@@ -44,21 +44,22 @@ def create_minimum_eml(tale,
                        user,
                        item_ids,
                        eml_pid,
-                       external_data=dict()):
+                       file_size=int()):
     """
     Creates a bare minimum EML record for a package.
 
     :param tale: The tale that is being packaged.
     :param user: The user that hit the endpoint
-    :param item_ids: A lsit of the item ids of the objects that are going to be packaged
+    :param item_ids: A list of the item ids of the objects that are going to be packaged
     :param eml_pid: The PID for the eml document. Assume that this is the package doi
-    :param external_data: A dict with any parameters needed for a file describing external objects.
+    :param file_size: We don't have access to remote files here, and all we need is
+     its' size, so pass it in here. If the file is not remote, leave the value to default
      An example is occasionally needing the size of the object, so throw it
     :type tale: wholetale.models.tale
     :type user: girder.models.user
     :type item_ids: list
     :type eml_pid: str
-    :type external_data: dict
+    :type file_size: int
     :return: The EML as as string of bytes
     :rtype: bytes
     """
@@ -114,7 +115,7 @@ def create_minimum_eml(tale,
     ET.SubElement(ind_name, 'givenName').text = firstName
     ET.SubElement(ind_name, 'surName').text = lastName
 
-    def create_other_entity(name, description):
+    def create_entity(name, description):
         """
         Create an otherEntity section
         :param name: The name of the object
@@ -124,11 +125,11 @@ def create_minimum_eml(tale,
         :return: An entity section
         :rtype: xml.etree.ElementTree.Element
         """
-        other_entity = ET.SubElement(dataset, 'otherEntity')
-        ET.SubElement(other_entity, 'entityName').text = name
+        entity = ET.SubElement(dataset, 'otherEntity')
+        ET.SubElement(entity, 'entityName').text = name
         if description:
-            ET.SubElement(other_entity, 'entityDescription').text = description
-        return other_entity
+            ET.SubElement(entity, 'entityDescription').text = description
+        return entity
 
     def create_physical(other_entity_section, name, size):
         """
@@ -163,21 +164,21 @@ def create_minimum_eml(tale,
         externally_defined = ET.SubElement(data_format, 'externallyDefinedFormat')
         ET.SubElement(externally_defined, 'formatName').text = object_format
 
-    def add_object_record(name, description, size, format):
+    def add_object_record(name, description, size, object_format):
         """
         Add a section to the EML that describes an object.
         :param name: The name of the object
         :param description: The object's description
         :param size: The size of the object
-        :param format: The format type
+        :param object_format: The format type
         :return: None
         """
-        other_entity_section = create_other_entity(name, description)
-        physical_section = create_physical(other_entity_section,
+        entity_section = create_entity(name, description)
+        physical_section = create_physical(entity_section,
                                            name,
                                            size)
-        create_format(format, physical_section)
-        ET.SubElement(other_entity_section, 'entityType').text = 'Other'
+        create_format(object_format, physical_section)
+        ET.SubElement(entity_section, 'entityType').text = 'dataTable'
 
     # Add a <otherEntity> block for each object
     for item_id in item_ids:
@@ -188,12 +189,12 @@ def create_minimum_eml(tale,
         add_object_record(item['name'], item['description'], item['size'], object_format)
 
     # Add a section for the file describing any remote objects
-    if bool(external_data):
+    if file_size:
         description = "Describes a set of objects that exist on remote repositories. This file " \
                       "contains the name, path, and md5 checksum of each file."
         name = 'globus_references.json'
         object_format = 'application/json'
-        add_object_record(name, description, external_data['size'], object_format)
+        add_object_record(name, description, file_size, object_format)
 
     # call decode to get the string representation instead of a byte str
     xml = ET.tostring(ns, encoding='UTF-8', xml_declaration=True, method='xml').decode()

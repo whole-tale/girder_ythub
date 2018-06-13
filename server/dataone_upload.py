@@ -60,7 +60,7 @@ def upload_file(client, pid, file_object, system_metadata):
         raise ValidationException('Error uploading file to DataONE. {0}'.format(str(e)))
 
 
-def create_upload_eml(tale, client, user, item_ids, external_data):
+def create_upload_eml(tale, client, user, item_ids, reference_file_length=int()):
     """
     Creates the EML metadata document along with an additional metadata document
     and uploads them both to DataONE. A pid is created for the EML document, and is
@@ -70,12 +70,12 @@ def create_upload_eml(tale, client, user, item_ids, external_data):
     :param client: The client to DataONE
     :param user: The user that is requesting this action
     :param item_ids: The ids of the items that have been uploaded to DataONE
-    :param external_data: A dict with any parameters needed for a file describing external objects
+    :param reference_file_length: Size of the file describing remote objects, in bytes
     :type tale: wholetale.models.tale
     :type client: MemberNodeClient_2_0
     :type user: girder.models.user
     :type item_ids: list
-    :type external_data: dict
+    :type reference_file_length: int
     :return: pid of the EML document
     :rtype: str
     """
@@ -86,7 +86,7 @@ def create_upload_eml(tale, client, user, item_ids, external_data):
                                  user,
                                  item_ids,
                                  eml_pid,
-                                 external_data)
+                                 reference_file_length)
 
     # Create the metadata describing the EML document
     meta = generate_system_metadata(pid=eml_pid,
@@ -322,19 +322,22 @@ def create_upload_package(item_ids, tale, user, repository):
         remote_objects = filtered_items['remote']
         external_file_pid = str()
         # A dict that can be used to hold information about the external_data file
-        external_data = dict()
+        reference_file_length = int()
         if len(remote_objects) > 0:
             logger.debug('Processing remote objects.')
-            external_file_pid, length = create_upload_remote_file(client,
+            external_file_pid, reference_file_length = create_upload_remote_file(client,
                                                                   remote_objects,
                                                                   user)
-            external_data['size'] = length
 
         """
         Create an EML document describing the data, and then upload it. Save the
          pid for the resource map.
         """
-        eml_pid = create_upload_eml(tale, client, user, item_ids, external_data)
+        eml_pid = create_upload_eml(tale,
+                                    client,
+                                    user,
+                                    item_ids,
+                                    reference_file_length)
 
         """
         Once all objects are uploaded, create and upload the resource map. This file describes
