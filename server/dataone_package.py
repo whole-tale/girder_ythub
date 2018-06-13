@@ -52,9 +52,9 @@ def create_minimum_eml(tale,
     :param user: The user that hit the endpoint
     :param item_ids: A list of the item ids of the objects that are going to be packaged
     :param eml_pid: The PID for the eml document. Assume that this is the package doi
-    :param file_size: We don't have access to remote files here, and all we need is
-     its' size, so pass it in here. If the file is not remote, leave the value to default
-     An example is occasionally needing the size of the object, so throw it
+    :param file_size: We need the size of the json file describing files from Globus, pass
+     it in here. It is optional because sometimes, we won't be registering a package with
+     files from Globus.
     :type tale: wholetale.models.tale
     :type user: girder.models.user
     :type item_ids: list
