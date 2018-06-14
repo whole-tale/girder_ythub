@@ -1,4 +1,5 @@
 import hashlib
+import io
 import tempfile
 import xml.etree.cElementTree as ET
 from urllib.request import urlopen
@@ -196,9 +197,21 @@ def create_minimum_eml(tale,
         object_format = 'application/json'
         add_object_record(name, description, file_size, object_format)
 
-    # call decode to get the string representation instead of a byte str
-    xml = ET.tostring(ns, encoding='UTF-8', xml_declaration=True, method='xml').decode()
-    return xml
+    """
+    Emulate the behavior of ElementTree.tostring in Python 3.6.0
+     Write the contents to a stream and then return its content. 
+     The Python 3.4 version of ElementTree.tostring doesn't allow for 
+     `xml_declaration` to be set, so make a direct call to 
+     ElementTree.write, passing xml_declaration in.
+    """
+    stream = io.BytesIO()
+    ET.ElementTree(ns).write(file_or_filename=stream,
+             encoding='UTF-8',
+             xml_declaration=True,
+             method='xml',
+             short_empty_elements=True)
+
+    return stream.getvalue()
 
 
 def compute_md5(file):
