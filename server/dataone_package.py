@@ -199,17 +199,17 @@ def create_minimum_eml(tale,
 
     """
     Emulate the behavior of ElementTree.tostring in Python 3.6.0
-     Write the contents to a stream and then return its content. 
-     The Python 3.4 version of ElementTree.tostring doesn't allow for 
-     `xml_declaration` to be set, so make a direct call to 
+     Write the contents to a stream and then return its content.
+     The Python 3.4 version of ElementTree.tostring doesn't allow for
+     `xml_declaration` to be set, so make a direct call to
      ElementTree.write, passing xml_declaration in.
     """
     stream = io.BytesIO()
     ET.ElementTree(ns).write(file_or_filename=stream,
-             encoding='UTF-8',
-             xml_declaration=True,
-             method='xml',
-             short_empty_elements=True)
+                             encoding='UTF-8',
+                             xml_declaration=True,
+                             method='xml',
+                             short_empty_elements=True)
 
     return stream.getvalue()
 
