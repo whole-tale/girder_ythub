@@ -1,9 +1,9 @@
 rdflib
-cryptography==2.1.4
+cryptography
 tornado
 celery[redis]
 requests
 redis
-git+https://github.com/DataONEorg/d1_python.git@2.4.2#egg=dataone.common&subdirectory=lib_common/src
-git+https://github.com/DataONEorg/d1_python.git@2.4.2#egg=dataone.libclient&subdirectory=lib_client/src
-git+https://github.com/DataONEorg/d1_python.git@2.4.2#egg=dataone.cli&subdirectory=client_cli/src
+dataone.common
+dataone.libclient
+dataone.cli
