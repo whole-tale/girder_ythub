@@ -246,7 +246,7 @@ def filter_items(item_ids, user):
     return {'dataone': dataone_objects, 'remote': remote_objects, 'local': local_objects}
 
 
-def create_upload_file_paths(item_ids, client):
+def create_upload_file_paths(item_ids, client, user):
     """
     Creates a file that lists the path that each item is located at. This is needed
      to preserve the file structure when round tripping a tale.
@@ -264,13 +264,10 @@ def create_upload_file_paths(item_ids, client):
     """
     path_file = dict()
 
-    # Get an admin user to access the folder
-    admin_user = ModelImporter.model('user').getAdmins()[0]
-
     for item_id in item_ids:
         item = ModelImporter.model('item').load(item_id,
                                                 level=AccessType.READ,
-                                                user=admin_user)
+                                                user=user)
         path = getResourcePath('item', item, force=True)
         path_file[item['name']] = path
 
@@ -368,7 +365,7 @@ def create_upload_package(item_ids, tale, user, repository):
          also save the file size so that it can be properly documented in the EML
         """
         paths_file_length = int()
-        paths_file_pid, paths_file_length = create_upload_file_paths(item_ids, client)
+        paths_file_pid, paths_file_length = create_upload_file_paths(item_ids, client, user)
 
         """
         If there are any objects that aren't local or referencing DataONE objects, then
@@ -403,8 +400,11 @@ def create_upload_package(item_ids, tale, user, repository):
         Once all objects are uploaded, create and upload the resource map. This file describes
          the object relations (ie the package). This should be the last file that is uploaded.
         """
-        upload_objects = filtered_items['dataone'] + [external_file_pid] +\
-            local_file_pids + [paths_file_pid]
+        upload_objects = filtered_items['dataone'] + local_file_pids + [paths_file_pid]
+
+        # Make sure we don't accidentally add a list with an empty string
+        if external_file_pid != str():
+            upload_objects += [external_file_pid]
 
         create_upload_resmap(str(uuid.uuid4()), eml_pid, upload_objects, client)
     except DataONEException as e:
