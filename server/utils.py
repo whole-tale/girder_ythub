@@ -194,29 +194,3 @@ def get_tale_files(tale, user):
     for item in artifact_items:
         files.append(get_file_item(item['_id'], user))
     return files
-
-
-def delete_keys_from_dict(dict_del, lst_keys):
-    """
-    Recursively removes keys from a dict object. This code was taken and modified from
-    https://stackoverflow.com/questions/3405715/elegant-way-to-remove-fields-from-nested-dictionaries
-
-    :param dict_del: The dictionary to be processed
-    :param lst_keys: A list of keys that will be removed
-    :return: A dictionary without lst_keys in it
-    :type dict_del: dict
-    :type lst_keys: list
-    :rtype: dict
-    :return: dict_del without keys from lst_keys
-    :rtype: dict
-    """
-    for k in lst_keys:
-        try:
-            del dict_del[k]
-        except KeyError:
-            pass
-    for v in dict_del.values():
-        if isinstance(v, dict):
-            delete_keys_from_dict(v, lst_keys)
-
-    return dict_del

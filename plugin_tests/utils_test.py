@@ -121,14 +121,3 @@ class TestDataONEUtils(base.TestCase):
         # Check that if the url isn't DataONE, we get None back
         result = get_dataone_url(self.item_3['_id'], self.user)
         self.assertEqual(result, None)
-
-    def test_delete_keys_from_dict(self):
-        from server.utils import delete_keys_from_dict
-
-        my_dict = {'key1': [{'nested1': '1', 'nested2': 2}],
-                  'key2': {'nested3': 4}}
-        del_keys = ['nested2', 'nested3']
-        new_dict = delete_keys_from_dict(my_dict, del_keys)
-        print(new_dict)
-        self.assertRaises(KeyError, new_dict['key2']['nested3'])
-        self.assertRaises(KeyError, new_dict['key1']['nested1'])

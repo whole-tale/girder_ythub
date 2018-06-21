@@ -7,6 +7,7 @@ from girder.api.rest import RestException
 from girder.models.file import File
 from girder.constants import AccessType
 from girder.utility.model_importer import ModelImporter
+from girder.utility.path import getResourcePath
 
 from .dataone_package import \
     create_minimum_eml, \
@@ -18,9 +19,7 @@ from .utils import \
     check_pid, \
     get_file_item, \
     get_remote_url, \
-    is_dataone_url, \
-    delete_keys_from_dict
-
+    is_dataone_url
 from d1_client.mnclient_2_0 import MemberNodeClient_2_0
 from d1_common.types.exceptions import DataONEException
 
@@ -265,15 +264,6 @@ def create_upload_file_paths(item_ids, client):
     """
     path_file = dict()
 
-    """
-    parentsToRoot returns a list of dicts; some of the dictionaries contain
-     irrelevant information that we can discard. If there comes a time where
-     we want more or less information, it can be done by adding removing
-     keys from the list.
-    """
-    remove_keys = ['created', 'updated', 'public', '_id', '_accessLevel',
-                   'creatorId', 'parentId', 'parentCollection', 'baseParentId',
-                   'baseParentType', 'access', 'lowerName', 'size']
     # Get an admin user to access the folder
     admin_user = ModelImporter.model('user').getAdmins()[0]
 
@@ -281,18 +271,8 @@ def create_upload_file_paths(item_ids, client):
         item = ModelImporter.model('item').load(item_id,
                                                 level=AccessType.READ,
                                                 user=admin_user)
-        path = ModelImporter.model('item').parentsToRoot(item, force=True)
-
-        """
-        Iterate over each dict in the path. Each dict can be a collection,
-         folder, etc... There is also the case that the type is a `user`,
-         so we are explicit in not adding that record.
-        """
-        full_path = list()
-        for obj in path:
-            if obj.get('type') != 'user':
-                full_path.append(delete_keys_from_dict(obj, remove_keys))
-                path_file[item['name']] = full_path
+        path = getResourcePath('item', item, force=True)
+        path_file[item['name']] = path
 
     path_file = json.dumps(path_file, default=str)
 
