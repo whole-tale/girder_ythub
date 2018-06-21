@@ -5,6 +5,8 @@ from girder import logger
 from girder.models.model_base import ValidationException
 from girder.api.rest import RestException
 from girder.models.file import File
+from girder.constants import AccessType
+from girder.utility.model_importer import ModelImporter
 
 from .dataone_package import \
     create_minimum_eml, \
@@ -16,7 +18,8 @@ from .utils import \
     check_pid, \
     get_file_item, \
     get_remote_url, \
-    is_dataone_url
+    is_dataone_url, \
+    delete_keys_from_dict
 
 from d1_client.mnclient_2_0 import MemberNodeClient_2_0
 from d1_common.types.exceptions import DataONEException
@@ -60,7 +63,7 @@ def upload_file(client, pid, file_object, system_metadata):
         raise ValidationException('Error uploading file to DataONE. {0}'.format(str(e)))
 
 
-def create_upload_eml(tale, client, user, item_ids, reference_file_length=int()):
+def create_upload_eml(tale, client, user, item_ids, file_sizes=dict()):
     """
     Creates the EML metadata document along with an additional metadata document
     and uploads them both to DataONE. A pid is created for the EML document, and is
@@ -70,12 +73,14 @@ def create_upload_eml(tale, client, user, item_ids, reference_file_length=int())
     :param client: The client to DataONE
     :param user: The user that is requesting this action
     :param item_ids: The ids of the items that have been uploaded to DataONE
-    :param reference_file_length: Size of the file describing remote objects, in bytes
+    :param file_sizes: We need to sometimes account for the file that lists the file paths
+    and the file that describes remote objects. The size needs to be in the EML record
+    so pass them in here. The size should be described in bytes
     :type tale: wholetale.models.tale
     :type client: MemberNodeClient_2_0
     :type user: girder.models.user
     :type item_ids: list
-    :type reference_file_length: int
+    :type file_sizes: dict
     :return: pid of the EML document
     :rtype: str
     """
@@ -86,7 +91,7 @@ def create_upload_eml(tale, client, user, item_ids, reference_file_length=int())
                                  user,
                                  item_ids,
                                  eml_pid,
-                                 reference_file_length)
+                                 file_sizes)
 
     # Create the metadata describing the EML document
     meta = generate_system_metadata(pid=eml_pid,
@@ -166,7 +171,7 @@ def create_upload_object_metadata(client, file_object):
 
 def create_upload_remote_file(client, globus_files, user):
     """
-    Creates and uploads a file that describes files that exist on external
+    Creates and uploads a file that describes a resource that exists on external
       sources. An example of such an object is one on Globus.
 
     :param client: The client for interfacing DataONE
@@ -242,6 +247,69 @@ def filter_items(item_ids, user):
     return {'dataone': dataone_objects, 'remote': remote_objects, 'local': local_objects}
 
 
+def create_upload_file_paths(item_ids, client):
+    """
+    Creates a file that lists the path that each item is located at. This is needed
+     to preserve the file structure when round tripping a tale.
+    :param item_ids: A list of items that are in the tale
+    :param client: The client object that is interfacing the member node
+    :type item_ids: list
+    :type client: MemberNodeClient_2_0
+    :return: The pid that describes the file in DataONE and its size
+    :rtype: tuple
+    """
+
+    """
+    We'll use a dict structure to hold the file contents during creation for
+     convenience. It will eventually be dumped to a string.
+    """
+    path_file = dict()
+
+    """
+    parentsToRoot returns a list of dicts; some of the dictionaries contain
+     irrelevant information that we can discard. If there comes a time where
+     we want more or less information, it can be done by adding removing
+     keys from the list.
+    """
+    remove_keys = ['created', 'updated', 'public', '_id', '_accessLevel',
+                   'creatorId', 'parentId', 'parentCollection', 'baseParentId',
+                   'baseParentType', 'access', 'lowerName', 'size']
+    # Get an admin user to access the folder
+    admin_user = ModelImporter.model('user').getAdmins()[0]
+
+    for item_id in item_ids:
+        item = ModelImporter.model('item').load(item_id,
+                                                level=AccessType.READ,
+                                                user=admin_user)
+        path = ModelImporter.model('item').parentsToRoot(item, force=True)
+
+        """
+        Iterate over each dict in the path. Each dict can be a collection,
+         folder, etc... There is also the case that the type is a `user`,
+         so we are explicit in not adding that record.
+        """
+        full_path = list()
+        for obj in path:
+            if obj.get('type') != 'user':
+                full_path.append(delete_keys_from_dict(obj, remove_keys))
+                path_file[item['name']] = full_path
+
+    path_file = json.dumps(path_file, default=str)
+
+    # Generate a pid to identify it in DataONE
+    pid = str(uuid.uuid4())
+    meta = generate_system_metadata(pid,
+                                    format_id='application/json',
+                                    file_object=path_file,
+                                    name='file_paths.json')
+    upload_file(client=client,
+                pid=pid,
+                file_object=path_file,
+                system_metadata=meta)
+
+    return pid, len(path_file)
+
+
 def create_upload_package(item_ids, tale, user, repository):
     """
     Uploads local or remote files to a DataONE repository.
@@ -290,7 +358,7 @@ def create_upload_package(item_ids, tale, user, repository):
          The auth portion is incomplete, and requires you to paste your token in <TOKEN>.
         """
         client = create_client(repository, {"headers": {
-            "Authorization": "Bearer <TOKEN>"}})
+            "Authorization": "Bearer eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJodHRwOlwvXC9vcmNpZC5vcmdcLzAwMDAtMDAwMi0xNzU2LTIxMjgiLCJmdWxsTmFtZSI6IlRob21hcyBUaGVsZW4iLCJpc3N1ZWRBdCI6IjIwMTgtMDYtMjFUMTg6MTg6MDguMDcwKzAwOjAwIiwiY29uc3VtZXJLZXkiOiJ0aGVjb25zdW1lcmtleSIsImV4cCI6MTUyOTY2OTg4OCwidXNlcklkIjoiaHR0cDpcL1wvb3JjaWQub3JnXC8wMDAwLTAwMDItMTc1Ni0yMTI4IiwidHRsIjo2NDgwMCwiaWF0IjoxNTI5NjA1MDg4fQ.p1nIKOAX88C17oZrT68vjAd144kkomoZb2yzGcvWkYKbWCJO5IIfkb4OCyFCke4uT3d-jLRew0HbqjsK4lXLLU4dInZCGEf0euAkNVhqhtixcS5kzp25rpy07ubW8GSVRqmGv-3ArfoGZz59jRRKGl9D1-CnPbPBD79u0FNgmbixvMHbLv8Ajsz8UT3HGdCV-CWXvHywting18Vqs5KtYwKWFfrDuxCiXw8G77ecuGU6j0HOJlnpswU3hl0ymAaled6SzHNrS0LYI-rS1Txj2LoC_xxIkrZoYSkQgZDxfPcDT4s540m7ul8raXr5fKq5pMM_gLknVKf6OHvH9Iu6qw"}})
 
         """
         If the client was successfully created, sort all of the items by their type:
@@ -314,6 +382,15 @@ def create_upload_package(item_ids, tale, user, repository):
             local_file_pids.append(create_upload_object_metadata(client, file))
 
         """
+        We need to keep track of the file structure so that when we re-import tales, we can
+         re-construct the filesystem correctly. Note that this may not be permanent, and is
+         a consequence of not being able to properly represent folders in DataONE. We'll
+         also save the file size so that it can be properly documented in the EML
+        """
+        paths_file_length = int()
+        paths_file_pid, paths_file_length = create_upload_file_paths(item_ids, client)
+
+        """
         If there are any objects that aren't local or referencing DataONE objects, then
          we'll create a json file that lists the remote url along with an md5 of the file.
          We need to upload the json file to DataONE, and eventually pass the pid of the file
@@ -331,19 +408,23 @@ def create_upload_package(item_ids, tale, user, repository):
 
         """
         Create an EML document describing the data, and then upload it. Save the
-         pid for the resource map.
+         pid for the resource map. Also create a dict for the reference file length
+         and the paths file length.
         """
+        file_sizes = {'external_files': reference_file_length,
+                      'file_paths': paths_file_length}
         eml_pid = create_upload_eml(tale,
                                     client,
                                     user,
                                     item_ids,
-                                    reference_file_length)
+                                    file_sizes)
 
         """
         Once all objects are uploaded, create and upload the resource map. This file describes
          the object relations (ie the package). This should be the last file that is uploaded.
         """
-        upload_objects = filtered_items['dataone'] + [external_file_pid] + local_file_pids
+        upload_objects = filtered_items['dataone'] + [external_file_pid] +\
+            local_file_pids + [paths_file_pid]
 
         create_upload_resmap(str(uuid.uuid4()), eml_pid, upload_objects, client)
     except DataONEException as e:

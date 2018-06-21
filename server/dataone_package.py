@@ -10,6 +10,7 @@ from girder import logger
 from girder.models.file import File
 from girder.models.item import Item
 from girder.api.rest import RestException
+from girder.constants import AccessType
 
 from .utils import \
     check_pid, \
@@ -45,7 +46,7 @@ def create_minimum_eml(tale,
                        user,
                        item_ids,
                        eml_pid,
-                       file_size=int()):
+                       file_sizes):
     """
     Creates a bare minimum EML record for a package.
 
@@ -54,13 +55,13 @@ def create_minimum_eml(tale,
     :param item_ids: A list of the item ids of the objects that are going to be packaged
     :param eml_pid: The PID for the eml document. Assume that this is the package doi
     :param file_size: We need the size of the json file describing files from Globus, pass
-     it in here. It is optional because sometimes, we won't be registering a package with
-     files from Globus.
+     it in here. We also need the length of the file that lists the paths to the files. These
+     two variables are stored in file_sizes.
     :type tale: wholetale.models.tale
     :type user: girder.models.user
     :type item_ids: list
     :type eml_pid: str
-    :type file_size: int
+    :type file_sizes: dict
     :return: The EML as as string of bytes
     :rtype: bytes
     """
@@ -183,19 +184,25 @@ def create_minimum_eml(tale,
 
     # Add a <otherEntity> block for each object
     for item_id in item_ids:
-        item = Item().load(item_id, user=user)
+        item = Item().load(item_id, user=user, level=AccessType.READ)
         object_format = get_file_format(item_id, user)
 
         # Create the record for the object
         add_object_record(item['name'], item['description'], item['size'], object_format)
 
     # Add a section for the file describing any remote objects
-    if file_size:
+    if file_sizes.get('external_files') is not int() or None:
         description = "Describes a set of objects that exist on remote repositories. This file " \
                       "contains the name, path, and md5 checksum of each file."
         name = 'globus_references.json'
         object_format = 'application/json'
-        add_object_record(name, description, file_size, object_format)
+        add_object_record(name, description, file_sizes.get('external_files'), object_format)
+
+    if file_sizes.get('file_paths') is not int() or None:
+        description = "Lists the filesystem hierarchy of each file in Whole Tale."
+        name = 'file_paths.json'
+        object_format = 'application/json'
+        add_object_record(name, description, file_sizes.get('file_paths'), object_format)
 
     """
     Emulate the behavior of ElementTree.tostring in Python 3.6.0
