@@ -358,7 +358,7 @@ def create_upload_package(item_ids, tale, user, repository):
          The auth portion is incomplete, and requires you to paste your token in <TOKEN>.
         """
         client = create_client(repository, {"headers": {
-            "Authorization": "Bearer eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJodHRwOlwvXC9vcmNpZC5vcmdcLzAwMDAtMDAwMi0xNzU2LTIxMjgiLCJmdWxsTmFtZSI6IlRob21hcyBUaGVsZW4iLCJpc3N1ZWRBdCI6IjIwMTgtMDYtMjFUMTg6MTg6MDguMDcwKzAwOjAwIiwiY29uc3VtZXJLZXkiOiJ0aGVjb25zdW1lcmtleSIsImV4cCI6MTUyOTY2OTg4OCwidXNlcklkIjoiaHR0cDpcL1wvb3JjaWQub3JnXC8wMDAwLTAwMDItMTc1Ni0yMTI4IiwidHRsIjo2NDgwMCwiaWF0IjoxNTI5NjA1MDg4fQ.p1nIKOAX88C17oZrT68vjAd144kkomoZb2yzGcvWkYKbWCJO5IIfkb4OCyFCke4uT3d-jLRew0HbqjsK4lXLLU4dInZCGEf0euAkNVhqhtixcS5kzp25rpy07ubW8GSVRqmGv-3ArfoGZz59jRRKGl9D1-CnPbPBD79u0FNgmbixvMHbLv8Ajsz8UT3HGdCV-CWXvHywting18Vqs5KtYwKWFfrDuxCiXw8G77ecuGU6j0HOJlnpswU3hl0ymAaled6SzHNrS0LYI-rS1Txj2LoC_xxIkrZoYSkQgZDxfPcDT4s540m7ul8raXr5fKq5pMM_gLknVKf6OHvH9Iu6qw"}})
+            "Authorization": "Bearer <TOKEN>"}})
 
         """
         If the client was successfully created, sort all of the items by their type:
