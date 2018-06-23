@@ -10,13 +10,15 @@ from girder import logger
 from girder.models.file import File
 from girder.models.item import Item
 from girder.api.rest import RestException
-from girder.constants import AccessType
+from girder.constants import \
+    AccessType
 
 from .utils import \
     check_pid, \
     get_file_format, \
     get_tale_description, \
     get_file_item
+from .constants import ExtraFileNames
 
 from d1_common.types import dataoneTypes
 from d1_common import const as d1_const
@@ -54,9 +56,8 @@ def create_minimum_eml(tale,
     :param user: The user that hit the endpoint
     :param item_ids: A list of the item ids of the objects that are going to be packaged
     :param eml_pid: The PID for the eml document. Assume that this is the package doi
-    :param file_size: We need the size of the json file describing files from Globus, pass
-     it in here. We also need the length of the file that lists the paths to the files. These
-     two variables are stored in file_sizes.
+    :param file_sizes: When we upload files that are not in the girder systems (ie not
+     files or items) we need to manually pass their size in. Use this dict to do that.
     :type tale: wholetale.models.tale
     :type user: girder.models.user
     :type item_ids: list
@@ -190,19 +191,13 @@ def create_minimum_eml(tale,
         # Create the record for the object
         add_object_record(item['name'], item['description'], item['size'], object_format)
 
-    # Add a section for the file describing any remote objects
-    if file_sizes.get('external_files') is not int() or None:
-        description = "Describes a set of objects that exist on remote repositories. This file " \
-                      "contains the name, path, and md5 checksum of each file."
-        name = 'globus_references.json'
-        object_format = 'application/json'
+    # Add a section for the tale.yml file
+    if file_sizes.get('tale_yaml') is not int() or None:
+        description = "Configuration file that has information that will be useful " \
+                      "for re-creating the computational environment."
+        name = ExtraFileNames.tale_config
+        object_format = 'text/plain'
         add_object_record(name, description, file_sizes.get('external_files'), object_format)
-
-    if file_sizes.get('file_paths') is not int() or None:
-        description = "Lists the filesystem hierarchy of each file in Whole Tale."
-        name = 'file_paths.json'
-        object_format = 'application/json'
-        add_object_record(name, description, file_sizes.get('file_paths'), object_format)
 
     """
     Emulate the behavior of ElementTree.tostring in Python 3.6.0
@@ -263,18 +258,19 @@ def get_file_md5(file_object):
     return md5
 
 
-def create_external_reference_file(external_files, user):
+def create_external_object_structure(external_files, user):
     """
     Creates a JSON file that describes a file in Globus which has the following format
      {file_name : {'url': url, 'md5': md5}
      We'll want to compute the md5, so we have to save the file
      temporarily.
 
-    :param external_files:
-    :param user:
-    :type external_files:
-    :type user:
-    :return:
+    :param external_files: A list of files that exist outside WholeTale
+    :param user: The user publishing the tale
+    :type external_files: list
+    :type user: girder.mnodels.user
+    :return: A dictionary that lists each remote file with its md5
+    :rtype: dict
     """
 
     reference_file = dict()
@@ -295,7 +291,7 @@ def create_external_reference_file(external_files, user):
                     temp_file = tempfile.NamedTemporaryFile()
                     src = urlopen(url)
                     try:
-                        # Copy the repsone into the temporary file
+                        # Copy the response into the temporary file
                         copyfileobj(src, temp_file)
                     except Exception as e:
                         error_msg = 'Error Copying File: {}'.format(e)

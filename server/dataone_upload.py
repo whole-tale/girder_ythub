@@ -1,11 +1,12 @@
 import uuid
-import json
+import yaml as yaml
 
 from girder import logger
 from girder.models.model_base import ValidationException
 from girder.api.rest import RestException
 from girder.models.file import File
-from girder.constants import AccessType
+from girder.constants import \
+    AccessType
 from girder.utility.model_importer import ModelImporter
 from girder.utility.path import getResourcePath
 
@@ -13,13 +14,17 @@ from .dataone_package import \
     create_minimum_eml, \
     generate_system_metadata, \
     create_resource_map, \
-    create_external_reference_file
+    create_external_object_structure
 from .dataone_register import find_initial_pid
 from .utils import \
     check_pid, \
     get_file_item, \
     get_remote_url, \
     is_dataone_url
+from .constants import \
+    API_VERSION, \
+    ExtraFileNames
+
 from d1_client.mnclient_2_0 import MemberNodeClient_2_0
 from d1_common.types.exceptions import DataONEException
 
@@ -72,9 +77,9 @@ def create_upload_eml(tale, client, user, item_ids, file_sizes=dict()):
     :param client: The client to DataONE
     :param user: The user that is requesting this action
     :param item_ids: The ids of the items that have been uploaded to DataONE
-    :param file_sizes: We need to sometimes account for the file that lists the file paths
-    and the file that describes remote objects. The size needs to be in the EML record
-    so pass them in here. The size should be described in bytes
+    :param file_sizes: We need to sometimes account for non-data files
+     (like tale.yml) .The size needs to be in the EML record so pass them
+      in here. The size should be described in bytes
     :type tale: wholetale.models.tale
     :type client: MemberNodeClient_2_0
     :type user: girder.models.user
@@ -168,41 +173,6 @@ def create_upload_object_metadata(client, file_object):
     return pid
 
 
-def create_upload_remote_file(client, globus_files, user):
-    """
-    Creates and uploads a file that describes a resource that exists on external
-      sources. An example of such an object is one on Globus.
-
-    :param client: The client for interfacing DataONE
-    :param globus_files: List of files that exist externally
-    :param user: The user that is requesting the upload
-    :type client: MemberNodeClient_2_0
-    :type globus_files: list
-    :type: user: girder.models.user
-    :return: A the file pid and the size of the file
-    """
-
-    if len(globus_files) is not 0:
-        file_pid = str(uuid.uuid4())
-
-        """
-        Create the file and save it as a string. The file is created as a
-         dict for ease, but is needed in string format. This file shouldn't
-         get too big, and should have a small memory footprint.
-        """
-        globus_file = json.dumps(create_external_reference_file(globus_files, user))
-
-        meta = generate_system_metadata(file_pid,
-                                        format_id='application/json',
-                                        file_object=globus_file,
-                                        name='globus_references.json')
-        upload_file(client=client,
-                    pid=file_pid,
-                    file_object=globus_file,
-                    system_metadata=meta)
-        return file_pid, len(globus_file)
-
-
 def filter_items(item_ids, user):
     """
     Take a list of item ids and determine whether it:
@@ -246,21 +216,18 @@ def filter_items(item_ids, user):
     return {'dataone': dataone_objects, 'remote': remote_objects, 'local': local_objects}
 
 
-def create_upload_file_paths(item_ids, client, user):
+def create_paths_structure(item_ids, user):
     """
-    Creates a file that lists the path that each item is located at. This is needed
-     to preserve the file structure when round tripping a tale.
+    Creates a file that lists the path that each item is located at.
     :param item_ids: A list of items that are in the tale
-    :param client: The client object that is interfacing the member node
     :type item_ids: list
-    :type client: MemberNodeClient_2_0
-    :return: The pid that describes the file in DataONE and its size
-    :rtype: tuple
+    :return: The dict representing the file structure
+    :rtype: dict
     """
 
     """
     We'll use a dict structure to hold the file contents during creation for
-     convenience. It will eventually be dumped to a string.
+     convenience.
     """
     path_file = dict()
 
@@ -271,20 +238,78 @@ def create_upload_file_paths(item_ids, client, user):
         path = getResourcePath('item', item, force=True)
         path_file[item['name']] = path
 
-    path_file = json.dumps(path_file, default=str)
+    return path_file
 
-    # Generate a pid to identify it in DataONE
+
+def create_tale_info_structure(tale):
+    """
+    Any miscellaneous information about the tale can be added here.
+    :param tale: The tale that is being published
+    :type tale: wholetale.models.Tale
+    :return: A dictionary of tale information
+    :rtype: dict
+    """
+
+    # We'll store the information as a dictionary
+    tale_info = dict()
+    tale_info['version'] = API_VERSION
+    tale_info['identifier'] = str(tale['_id'])
+    tale_info['metadata'] = 'Metadata: science_metadata.xml'
+
+    return tale_info
+
+
+def create_upload_tale_yaml(tale, remote_objects, item_ids, user, client):
+    """
+    The yaml content is represented with Python dicts, and then dumped to
+     the yaml object.
+    :param tale: The tale that is being published
+    :param remote_objects: A lsit of objects that are registered external to WholeTale
+    :param item_ids: A list of all of the ids of the files that are being uploaded
+    :param user: The user performing the actions
+    :param client: The client that interfaces DataONE
+    :type tale: wholetale.models.Tale
+    :type remote_objects: list
+    :type item_ids: list
+    :type user: girder.models.User
+    :type client: MemberNodeClient_2_0
+    :return: The pid and the size of the file
+    :rtype: tuple
+    """
+
+    # Create the dict that has general information about the package
+    tale_info = create_tale_info_structure(tale)
+
+    # Create the dict that holds the file paths
+    file_paths = dict()
+    file_paths['paths'] = create_paths_structure(item_ids, user)
+
+    # Create the dict that tracks externally defined objects, if applicable
+    external_files = dict()
+    if len(remote_objects) > 0:
+        external_files['external files'] = create_external_object_structure(remote_objects, user)
+
+    # Append all of the information together
+    yaml_file = dict(tale_info)
+    yaml_file.update(file_paths)
+
+    if bool(external_files):
+        yaml_file.update(external_files)
+    # Transform the file into yaml from the dict structure
+    yaml_file = yaml.dump(yaml_file, default_flow_style=False)
+
+    # Create a pid for the file
     pid = str(uuid.uuid4())
-    meta = generate_system_metadata(pid,
-                                    format_id='application/json',
-                                    file_object=path_file,
-                                    name='file_paths.json')
-    upload_file(client=client,
-                pid=pid,
-                file_object=path_file,
-                system_metadata=meta)
+    # Create system metadata for the file
+    meta = generate_system_metadata(pid=pid,
+                                    format_id='text/plain',
+                                    file_object=yaml_file,
+                                    name=ExtraFileNames.tale_config)
+    # Upload the file
+    upload_file(client=client, pid=pid, file_object=yaml_file, system_metadata=meta)
 
-    return pid, len(path_file)
+    # Return the pid
+    return pid, len(yaml_file)
 
 
 def create_upload_package(item_ids, tale, user, repository):
@@ -358,38 +383,17 @@ def create_upload_package(item_ids, tale, user, repository):
             logger.debug('Processing local files for DataONE upload')
             local_file_pids.append(create_upload_object_metadata(client, file))
 
-        """
-        We need to keep track of the file structure so that when we re-import tales, we can
-         re-construct the filesystem correctly. Note that this may not be permanent, and is
-         a consequence of not being able to properly represent folders in DataONE. We'll
-         also save the file size so that it can be properly documented in the EML
-        """
-        paths_file_length = int()
-        paths_file_pid, paths_file_length = create_upload_file_paths(item_ids, client, user)
-
-        """
-        If there are any objects that aren't local or referencing DataONE objects, then
-         we'll create a json file that lists the remote url along with an md5 of the file.
-         We need to upload the json file to DataONE, and eventually pass the pid of the file
-         to the resource map (so we save it).
-        """
-        remote_objects = filtered_items['remote']
-        external_file_pid = str()
-        # A dict that can be used to hold information about the external_data file
-        reference_file_length = int()
-        if len(remote_objects) > 0:
-            logger.debug('Processing remote objects.')
-            external_file_pid, reference_file_length = create_upload_remote_file(client,
-                                                                                 remote_objects,
-                                                                                 user)
+        tale_yaml_pid, tale_yaml_length = create_upload_tale_yaml(tale,
+                                                                  filtered_items['remote'],
+                                                                  item_ids,
+                                                                  user,
+                                                                  client)
 
         """
         Create an EML document describing the data, and then upload it. Save the
-         pid for the resource map. Also create a dict for the reference file length
-         and the paths file length.
+         pid for the resource map.
         """
-        file_sizes = {'external_files': reference_file_length,
-                      'file_paths': paths_file_length}
+        file_sizes = {'tale_yaml': tale_yaml_length}
         eml_pid = create_upload_eml(tale,
                                     client,
                                     user,
@@ -400,12 +404,7 @@ def create_upload_package(item_ids, tale, user, repository):
         Once all objects are uploaded, create and upload the resource map. This file describes
          the object relations (ie the package). This should be the last file that is uploaded.
         """
-        upload_objects = filtered_items['dataone'] + local_file_pids + [paths_file_pid]
-
-        # Make sure we don't accidentally add a list with an empty string
-        if external_file_pid != str():
-            upload_objects += [external_file_pid]
-
+        upload_objects = filtered_items['dataone'] + local_file_pids + [tale_yaml_pid]
         create_upload_resmap(str(uuid.uuid4()), eml_pid, upload_objects, client)
     except DataONEException as e:
         logger.warning('DataONE Error: {}'.format(e))

@@ -4,6 +4,7 @@ tornado
 celery[redis]
 requests
 redis
+pyyaml
 dataone.common
 dataone.libclient
 dataone.cli
