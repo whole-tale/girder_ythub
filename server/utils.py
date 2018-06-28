@@ -2,7 +2,9 @@ from girder.utility.model_importer import ModelImporter
 from girder import logger
 from girder.models.item import Item
 from girder.models.folder import Folder
-from girder.constants import AccessType
+from girder.constants import \
+    AccessType, \
+    AssetstoreType
 from girder.api.rest import RestException
 
 
@@ -222,7 +224,7 @@ def create_repository_file(recipe):
     assetstore_id = int()
 
     for store in assetstores:
-        if store['name'] == 'GridFS local':
+        if store['type'] == AssetstoreType.GRIDFS:
             assetstore_id = store['_id']
 
     if assetstore_id == int():
