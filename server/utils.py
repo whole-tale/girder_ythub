@@ -6,11 +6,12 @@ from girder.constants import AccessType
 from girder.api.rest import RestException
 
 
-def getOrCreateRootFolder(name):
+def getOrCreateRootFolder(name, description=str()):
     collection = ModelImporter.model('collection').createCollection(
         name, public=True, reuseExisting=True)
     folder = ModelImporter.model('folder').createFolder(
-        collection, name, parentType='collection', public=True, reuseExisting=True)
+        collection, name, parentType='collection', public=True,
+        reuseExisting=True, description=description)
     return folder
 
 
@@ -58,9 +59,9 @@ def get_file_item(item_id, user):
         return None
     child_files = Item().childFiles(doc)
 
-    if bool(child_files):
-        # We follow a rule of there only being one file per item, so return the 0th element
-        return child_files[0]
+    if bool(child_files.count()):
+        # Return the first item
+        return child_files.next()
 
     logger.warning('Failed to find a file for item {}. Leaving get_file_item'.format(str(item_id)))
     return None
@@ -194,3 +195,64 @@ def get_tale_files(tale, user):
     for item in artifact_items:
         files.append(get_file_item(item['_id'], user))
     return files
+
+
+def create_repository_file(recipe):
+    """
+    Creates a file that holds the recipe repository. Instead of
+     doing the collection,folder,item,file creation in the celery worker,
+     we'll do it here. We let the worker know which file to use by sending it
+     the file id returned from this function
+
+    :param recipe: The recipe whose repository is being saved
+    :type recipe: wholetale.models.recipe
+    :return: The file id or None
+    :rtype: str, NoneType
+    """
+
+    # Name for the folder & collection that will hold the repositories
+    folder_name = 'repository_bank'
+    folder_description = "Holds items that represent archived repositories"
+
+    """
+    Get all of the assetstores and retrieve GridFS. The reason we're using this
+     assetstore is that we don't want this folder in the user's home directory.
+    """
+    assetstores = ModelImporter.model('assetstore').list()
+    assetstore_id = int()
+
+    for store in assetstores:
+        if store['name'] == 'GridFS local':
+            assetstore_id = store['_id']
+
+    if assetstore_id == int():
+        logger.warning('Failed to get assetstore')
+        return None
+
+    # Get the assetstore from its id
+    try:
+        store = ModelImporter.model('assetstore').load(assetstore_id)
+    except Exception as e:
+        logger.debug('Error loading assetstore: {}'.format(e))
+        return None
+
+    admin_user = ModelImporter.model('user').getAdmins()[0]
+
+    parent_folder = getOrCreateRootFolder(folder_name, folder_description)
+
+    item_name = 'Repository: {}'.format(recipe['name'])
+    item_description = "Item that holds the repository used in recipe {}".format(recipe['_id'])
+    repo_item = ModelImporter.model('item').createItem(name=item_name,
+                                                       creator=admin_user,
+                                                       folder=parent_folder,
+                                                       description=item_description,
+                                                       reuseExisting=True)
+
+    repo_file = ModelImporter.model('file').createFile(creator=admin_user,
+                                                       item=repo_item,
+                                                       name=str(recipe['_id']),
+                                                       size=0,
+                                                       assetstore=store,
+                                                       mimeType='application/tar+gzip',
+                                                       reuseExisting=True)
+    return str(repo_file['_id'])

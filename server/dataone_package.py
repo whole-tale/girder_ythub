@@ -56,7 +56,7 @@ def create_minimum_eml(tale,
     :param user: The user that hit the endpoint
     :param item_ids: A list of the item ids of the objects that are going to be packaged
     :param eml_pid: The PID for the eml document. Assume that this is the package doi
-    :param file_sizes: When we upload files that are not in the girder systems (ie not
+    :param file_sizes: When we upload files that are not in the girder system (ie not
      files or items) we need to manually pass their size in. Use this dict to do that.
     :type tale: wholetale.models.tale
     :type user: girder.models.user

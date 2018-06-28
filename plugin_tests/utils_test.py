@@ -8,6 +8,7 @@ from girder.models.item import Item
 from girder.models.folder import Folder
 from girder.models.file import File
 from girder.models.user import User
+from girder.models.assetstore import Assetstore
 from d1_client.mnclient_2_0 import MemberNodeClient_2_0
 from d1_common.types import dataoneTypes
 
@@ -69,7 +70,6 @@ class TestDataONEUtils(base.TestCase):
                                                  url='http://dev.null',
                                                  creator=self.user)
 
-
     def test_check_pid(self):
         # Test that the pid gets converted to a string if its a number
         from server.dataone_upload import check_pid
@@ -121,3 +121,30 @@ class TestDataONEUtils(base.TestCase):
         # Check that if the url isn't DataONE, we get None back
         result = get_dataone_url(self.item_3['_id'], self.user)
         self.assertEqual(result, None)
+
+    def test_getOrCreateRootFolder(self):
+        from server.utils import getOrCreateRootFolder
+        folder_name = 'folder_name'
+        folder_desc = 'folder_description'
+        folder = getOrCreateRootFolder(folder_name, folder_desc)
+
+        self.assertEqual(folder['name'], folder_name)
+        self.assertEqual(folder['description'], folder_desc)
+
+    def test_create_repository_file(self):
+        from server.utils import create_repository_file
+
+        recipe = {'_id': '123456789', 'name': 'test_recipe'}
+
+        # Check that we get `None` back when the assetstore isn't found
+        self.assertIsNone(create_repository_file(recipe))
+
+        # Create the assetstore
+        Assetstore().createGridFsAssetstore('GridFS local', db='db_name')
+        file_id =create_repository_file(recipe)
+        print(file_id)
+        admin_user = User().getAdmins()[0]
+        file = File().load(file_id, user=admin_user)
+
+        self.assertEqual(str(file['_id']), file_id)
+

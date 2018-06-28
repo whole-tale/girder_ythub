@@ -10,7 +10,8 @@ from girder.plugins.jobs.models.job import Job
 from girder.plugins.worker import getCeleryApp
 from ..constants import ImageStatus
 from ..schema.misc import containerConfigSchema, tagsSchema
-
+from ..utils import \
+    create_repository_file
 
 imageModel = {
     "description": "Object representing a WT Image.",
@@ -282,10 +283,14 @@ class Image(Resource):
         url = '{}/archive/{}.tar.gz'.format(recipe['url'], recipe['commitId'])
         jobTitle = 'Building image %s' % image['fullName']
         jobModel = Job()
+
+        # Create a filesystem structure to save the repository to
+        repo_file_id = create_repository_file(recipe)
         # Create a job to be handled by the worker plugin
         job = jobModel.createJob(
             title=jobTitle, type='build_image', handler='worker_handler',
-            user=user, public=False, args=(str(image['_id']), image['fullName'], url), kwargs={},
+            user=user, public=False, args=(str(image['_id']), image['fullName'],
+                                           url, repo_file_id), kwargs={},
             otherFields={
                 'celeryTaskName': 'gwvolman.tasks.build_image'
             })
