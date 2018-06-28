@@ -290,7 +290,7 @@ class Image(Resource):
         job = jobModel.createJob(
             title=jobTitle, type='build_image', handler='worker_handler',
             user=user, public=False, args=(str(image['_id']), image['fullName'],
-                                           url, repo_file_id), kwargs={},
+                                           url), kwargs={'file_id': repo_file_id},
             otherFields={
                 'celeryTaskName': 'gwvolman.tasks.build_image'
             })

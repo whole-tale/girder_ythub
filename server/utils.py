@@ -220,22 +220,9 @@ def create_repository_file(recipe):
     Get all of the assetstores and retrieve GridFS. The reason we're using this
      assetstore is that we don't want this folder in the user's home directory.
     """
-    assetstores = ModelImporter.model('assetstore').list()
-    assetstore_id = int()
-
-    for store in assetstores:
-        if store['type'] == AssetstoreType.GRIDFS:
-            assetstore_id = store['_id']
-
-    if assetstore_id == int():
-        logger.warning('Failed to get assetstore')
-        return None
-
-    # Get the assetstore from its id
-    try:
-        store = ModelImporter.model('assetstore').load(assetstore_id)
-    except Exception as e:
-        logger.debug('Error loading assetstore: {}'.format(e))
+    store = ModelImporter.model('assetstore').findOne({'type': AssetstoreType.GRIDFS})
+    if store is None:
+        logger.warning('No GridFS assetstore found')
         return None
 
     admin_user = ModelImporter.model('user').getAdmins()[0]
