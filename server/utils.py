@@ -7,6 +7,8 @@ from girder.constants import \
     AssetstoreType
 from girder.api.rest import RestException
 
+from .constants import DataONELocations
+
 
 def getOrCreateRootFolder(name, description=str()):
     collection = ModelImporter.model('collection').createCollection(
@@ -245,3 +247,21 @@ def create_repository_file(recipe):
                                                        mimeType='application/tar+gzip',
                                                        reuseExisting=True)
     return str(repo_file['_id'])
+
+
+def get_dataone_package_url(repository, pid):
+    """
+    Given a repository url and a pid, construct a url that should
+     be the package's landing page.
+
+    :param repository: The repository that the package is on
+    :param pid: The package pid
+    :return: The package landing page
+    """
+    logger.debug(repository)
+    logger.debug(DataONELocations.dev_mn)
+
+    if repository in DataONELocations.prod_cn:
+        return str('https://search.dataone.org/#view/'+pid)
+    elif repository in DataONELocations.dev_mn:
+        return str('https://dev.nceas.ucsb.edu/#view/'+pid)

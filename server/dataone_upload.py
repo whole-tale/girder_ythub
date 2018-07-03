@@ -20,7 +20,8 @@ from .utils import \
     check_pid, \
     get_file_item, \
     get_remote_url, \
-    is_dataone_url
+    is_dataone_url, \
+    get_dataone_package_url
 from .constants import \
     API_VERSION, \
     ExtraFileNames
@@ -349,7 +350,7 @@ def create_upload_package(item_ids, tale, user, repository):
     :type tale: girder.models.tale
     :type user: girder.models.user
     :type repository: str
-    :return: None
+    :return: The pid of the package's resource map
     """
 
     # create_client can throw DataONEException
@@ -360,7 +361,7 @@ def create_upload_package(item_ids, tale, user, repository):
          The auth portion is incomplete, and requires you to paste your token in <TOKEN>.
         """
         client = create_client(repository, {"headers": {
-            "Authorization": "Bearer <TOKEN>"}})
+            "Authorization": "Bearer eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJodHRwOlwvXC9vcmNpZC5vcmdcLzAwMDAtMDAwMi0xNzU2LTIxMjgiLCJmdWxsTmFtZSI6IlRob21hcyBUaGVsZW4iLCJpc3N1ZWRBdCI6IjIwMTgtMDctMDNUMTc6MjU6MzIuNTYzKzAwOjAwIiwiY29uc3VtZXJLZXkiOiJ0aGVjb25zdW1lcmtleSIsImV4cCI6MTUzMDcwMzUzMiwidXNlcklkIjoiaHR0cDpcL1wvb3JjaWQub3JnXC8wMDAwLTAwMDItMTc1Ni0yMTI4IiwidHRsIjo2NDgwMCwiaWF0IjoxNTMwNjM4NzMyfQ.dqlqvlGO6R_wj7D2_iQJVK3aHW779Ku9QfZ_8FAFb-ski36ogxQZFCGDNOp0utzHtqGA8KoW6XVcgAmenwJLtMNNkv8DsvfOZCUODHCdITom10mF75vKRQmpeU2CJfLqePnK-_GTq68nVON4Pmpp2PUVY6rJUNvJH52CP8AVq0SzHeVALnErz_NQEV7DBAHlr53QWWU1hDvHnFC27guG3EmsnP2pf5YrMJYckLeHMbFVIWYKZ62QgO0YYcl0fTV5Fk4Sah6bnMuBPPUpZenYP914r4nYDRLXGUOKV6ekZULA-0sFs9JAwJFjxTLOneNi8DfEMd2s-iuDIXkbIcsyTA"}})
 
         """
         If the client was successfully created, sort all of the items by their type:
@@ -405,7 +406,10 @@ def create_upload_package(item_ids, tale, user, repository):
          the object relations (ie the package). This should be the last file that is uploaded.
         """
         upload_objects = filtered_items['dataone'] + local_file_pids + [tale_yaml_pid]
-        create_upload_resmap(str(uuid.uuid4()), eml_pid, upload_objects, client)
+        resmap_pid = str(uuid.uuid4())
+        create_upload_resmap(resmap_pid, eml_pid, upload_objects, client)
+        return get_dataone_package_url(repository, resmap_pid)
+
     except DataONEException as e:
         logger.warning('DataONE Error: {}'.format(e))
         raise RestException('Error uploading file to DataONE. {0}'.format(str(e)))

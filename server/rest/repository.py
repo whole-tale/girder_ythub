@@ -210,7 +210,7 @@ class Repository(Resource):
         .notes('This endpoint takes a list of items, a tale, and a user-which are used to '
                'upload the items and tale artifacts to DataONE. During this '
                'process, any required metadata such as the EML document, system metadata, and '
-               'RDF document are generated.'
+               'RDF document are generated. The landing page for the package is returned as a string'
                'The itemId parameter should be passed in as a JSON array. For example,'
                '[{"itemIds": ["1234", "5678"]}]')
         .jsonParam(name='itemIds',
@@ -231,7 +231,8 @@ class Repository(Resource):
                                             user=user,
                                             level=AccessType.READ)
 
-        create_upload_package(item_ids=itemIds[0]['itemIds'],
-                              tale=tale,
-                              user=user,
-                              repository=repository)
+        package_url = create_upload_package(item_ids=itemIds[0]['itemIds'],
+                                            tale=tale,
+                                            user=user,
+                                            repository=repository)
+        return package_url

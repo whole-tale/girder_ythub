@@ -148,3 +148,16 @@ class TestDataONEUtils(base.TestCase):
 
         self.assertEqual(str(file['_id']), file_id)
 
+    def test_get_dataone_package_url(self):
+        from server.utils import get_dataone_package_url
+        from server.constants import DataONELocations
+
+        pid = '12345'
+
+        # Test that we get the right url when using dev
+        url = get_dataone_package_url(DataONELocations.dev_mn, pid)
+        self.assertEqual(url, 'https://dev.nceas.ucsb.edu/#view/'+pid)
+
+        # Test that we get the right url when using prod
+        url = get_dataone_package_url(DataONELocations.prod_cn, pid)
+        self.assertEqual(url, 'https://search.dataone.org/#view/'+pid)
