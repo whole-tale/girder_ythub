@@ -196,7 +196,7 @@ def create_minimum_eml(tale,
         description = "Configuration file that has information that will be useful " \
                       "for re-creating the computational environment."
         name = ExtraFileNames.tale_config
-        object_format = 'text/plain'
+        object_format = 'application/x-yaml'
         add_object_record(name, description, file_sizes.get('external_files'), object_format)
 
     """

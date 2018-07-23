@@ -258,9 +258,6 @@ def get_dataone_package_url(repository, pid):
     :param pid: The package pid
     :return: The package landing page
     """
-    logger.debug(repository)
-    logger.debug(DataONELocations.dev_mn)
-
     if repository in DataONELocations.prod_cn:
         return str('https://search.dataone.org/#view/'+pid)
     elif repository in DataONELocations.dev_mn:

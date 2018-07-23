@@ -10,7 +10,6 @@ from girder.constants import TokenScope, AccessType
 from girder.api.docs import addModel
 from girder.api.rest import Resource, RestException
 from girder.utility.model_importer import ModelImporter
-
 from ..dataone_register import \
     D1_lookup, \
     get_package_list
@@ -211,10 +210,8 @@ class Repository(Resource):
                'upload the items and tale artifacts to DataONE. During this '
                'process, any required metadata such as the EML document, system metadata, and '
                'RDF document are generated. The landing page for the package is returned as a '
-               'string The itemId parameter should be passed in as a JSON array. For example,'
-               '[{"itemIds": ["1234", "5678"]}]')
+               'string  The itemId parameter should look like [\'item1\', \'item2\', \'item3\']')
         .jsonParam(name='itemIds',
-                   paramType='query',
                    required=True,
                    description='The files that are going to be uploaded to DataONE')
         .param('taleId',
@@ -231,7 +228,7 @@ class Repository(Resource):
                                             user=user,
                                             level=AccessType.READ)
 
-        package_url = create_upload_package(item_ids=itemIds[0]['itemIds'],
+        package_url = create_upload_package(item_ids=itemIds,
                                             tale=tale,
                                             user=user,
                                             repository=repository)
