@@ -1,4 +1,3 @@
-
 import httmock
 import json
 import os
@@ -260,7 +259,7 @@ class RecipeTestCase(base.TestCase):
             user=self.user)
         self.assertStatusOk(resp)
         self.assertEqual(resp.json['public'], True)
-    
+
     def tearDown(self):
         self.model('user').remove(self.user)
         self.model('user').remove(self.admin)

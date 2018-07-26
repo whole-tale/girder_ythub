@@ -58,7 +58,8 @@ class TaleTestCase(base.TestCase):
         )
         self.assertStatus(resp, 400)
         self.assertEqual(resp.json, {
-            'message': ("Invalid JSON object for parameter tale: 'folderId' "
+            'message': ("Invalid JSON object for parameter tale: "
+                        "'involatileData' "
                         "is a required property"),
             'type': 'rest'
         })
@@ -87,18 +88,41 @@ class TaleTestCase(base.TestCase):
         resp = self.request(
             path='/tale', method='POST', user=self.user,
             type='application/json',
-            body=json.dumps(
-                {'imageId': str(self.image['_id']),
-                 'folderId': publicFolder['_id']})
+            body=json.dumps({
+                'imageId': str(self.image['_id']),
+                'involatileData': [
+                    {'type': 'folder', 'id': publicFolder['_id']}
+                ]
+            })
         )
         self.assertStatusOk(resp)
         tale = resp.json
+
+        # Check that workspace was created
+
+        # Check that data folder was created
+        from girder.plugins.wholetale.constants import DATADIRS_NAME
+        from girder.utility.path import getResourcePath
+        from girder.models.folder import Folder
+        sc = {
+            '_id': tale['_id'],
+            'cname': DATADIRS_NAME,
+            'fname': DATADIRS_NAME
+        }
+        self.assertEqual(
+            getResourcePath(
+                'folder',
+                Folder().load(tale['folderId'], user=self.user),
+                user=self.admin),
+            '/collection/{cname}/{fname}/{_id}'.format(**sc)
+        )
 
         resp = self.request(
             path='/tale/{_id}'.format(**tale), method='PUT',
             type='application/json',
             user=self.user, body=json.dumps({
                 'folderId': tale['folderId'],
+                'involatileData': tale['involatileData'],
                 'imageId': tale['imageId'],
                 'title': 'new name',
                 'description': 'new description',
@@ -114,8 +138,12 @@ class TaleTestCase(base.TestCase):
         resp = self.request(
             path='/tale', method='POST', user=self.user,
             type='application/json',
-            body=json.dumps({'imageId': str(self.image['_id']),
-                             'folderId': privateFolder['_id']})
+            body=json.dumps({
+                'imageId': str(self.image['_id']),
+                'involatileData': [
+                    {'type': 'folder', 'id': privateFolder['_id']}
+                ]
+            })
         )
         self.assertStatusOk(resp)
         new_tale = resp.json
@@ -123,16 +151,20 @@ class TaleTestCase(base.TestCase):
         resp = self.request(
             path='/tale', method='POST', user=self.admin,
             type='application/json',
-            body=json.dumps(
-                {'imageId': str(self.image['_id']),
-                 'folderId': adminPublicFolder['_id'],
-                 'public': False})
+            body=json.dumps({
+                'imageId': str(self.image['_id']),
+                'involatileData': [
+                    {'type': 'folder', 'id': adminPublicFolder['_id']}
+                ],
+                'public': False
+            })
         )
         self.assertStatusOk(resp)
         # admin_tale = resp.json
 
         resp = self.request(
             path='/tale', method='GET', user=self.admin,
+
             params={}
         )
         self.assertStatusOk(resp)
@@ -146,15 +178,6 @@ class TaleTestCase(base.TestCase):
         self.assertEqual(len(resp.json), 2)
         self.assertEqual(set([_['_id'] for _ in resp.json]),
                          {tale['_id'], new_tale['_id']})
-
-        resp = self.request(
-            path='/tale', method='GET', user=self.user,
-            params={'folderId': publicFolder['_id']}
-        )
-        self.assertStatusOk(resp)
-        self.assertEqual(len(resp.json), 1)
-        self.assertEqual(set([_['_id'] for _ in resp.json]),
-                         {tale['_id']})
 
         resp = self.request(
             path='/tale', method='GET', user=self.user,
@@ -194,8 +217,8 @@ class TaleTestCase(base.TestCase):
             self.assertEqual(resp.json[key], tale[key])
 
         resp = self.request(
-            path='/tale/{_id}/export'.format(**tale), 
-            method='GET', 
+            path='/tale/{_id}/export'.format(**tale),
+            method='GET',
             user=self.user,
             type='application/octet-stream',
             isJson=False)
@@ -221,7 +244,9 @@ class TaleTestCase(base.TestCase):
                 body=json.dumps(
                     {
                         'imageId': str(self.image['_id']),
-                        'folderId': folder['_id'],
+                        'involatileData': [
+                            {'type': 'folder', 'id': folder['_id']}
+                        ],
                         'public': True
                     })
             )
@@ -234,7 +259,9 @@ class TaleTestCase(base.TestCase):
                 body=json.dumps(
                     {
                         'imageId': str(self.image_admin['_id']),
-                        'folderId': folder['_id']
+                        'involatileData': [
+                            {'type': 'folder', 'id': folder['_id']}
+                        ]
                     })
             )
             self.assertStatusOk(resp)

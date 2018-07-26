@@ -4,36 +4,65 @@ import datetime
 
 from bson.objectid import ObjectId
 
-from ..constants import WORKSPACE_NAME
+from ..constants import WORKSPACE_NAME, DATADIRS_NAME
 from ..utils import getOrCreateRootFolder
-from girder.models.model_base import \
-    AccessControlledModel
+from girder.models.model_base import AccessControlledModel
+from girder.models.item import Item
+from girder.models.folder import Folder
+from girder.models.user import User
 from girder.constants import AccessType
+from girder.exceptions import \
+    GirderException, ValidationException
+
+
+# Whenever the Tale object schema is modified (e.g. fields are added or
+# removed) increase `_currentTaleFormat` to retroactively apply those
+# changes to existing Tales.
+_currentTaleFormat = 2
 
 
 class Tale(AccessControlledModel):
 
     def initialize(self):
         self.name = 'tale'
-        self.ensureIndices(
-            ('folderId', 'title', 'imageId',
-             ([('folderId', 1), ('title', 1), ('imageId', 1)], {}))
-        )
+        self.ensureIndices(('imageId', ([('imageId', 1)], {})))
         self.ensureTextIndex({
             'title': 10,
             'description': 1
         })
         self.modifiableFields = {
             'title', 'description', 'public', 'config', 'updated', 'authors',
-            'category', 'icon', 'illustration'
+            'category', 'icon', 'iframe', 'illustration'
         }
         self.exposeFields(
             level=AccessType.READ,
-            fields=({'_id', 'folderId', 'imageId', 'creatorId', 'created'} |
-                    self.modifiableFields))
+            fields=({'_id', 'folderId', 'imageId', 'creatorId', 'created',
+                     'format', 'involatileData'} | self.modifiableFields))
         self.exposeFields(level=AccessType.ADMIN, fields={'published'})
 
     def validate(self, tale):
+        if 'iframe' not in tale:
+            tale['iframe'] = False
+        if tale.get('format', 0) < 2:
+            dataFolder = getOrCreateRootFolder(DATADIRS_NAME)
+            try:
+                origFolder = Folder().load(tale['folderId'], force=True, exc=True)
+            except ValidationException:
+                raise GirderException(
+                    ('Tale ({_id}) references folder ({folderId}) '
+                     'that does not exist').format(**tale))
+            if origFolder.get('creatorId'):
+                creator = User().load(origFolder['creatorId'], force=True)
+            else:
+                creator = None
+            tale['involatileData'] = [
+                {'type': 'folder', 'id': tale.pop('folderId')}
+            ]
+            newFolder = Folder().copyFolder(
+                origFolder, parent=dataFolder, parentType='folder',
+                name=str(tale['_id']), creator=creator, progress=False)
+            tale['folderId'] = newFolder['_id']
+        tale['format'] = _currentTaleFormat
         return tale
 
     def setPublished(self, tale, publish, save=False):
@@ -43,15 +72,15 @@ class Tale(AccessControlledModel):
             tale = self.save(tale)
         return tale
 
-    def list(self, user=None, folder=None, image=None, limit=0, offset=0,
+    def list(self, user=None, data=None, image=None, limit=0, offset=0,
              sort=None, currentUser=None):
         """
         List a page of jobs for a given user.
 
         :param user: The user who created the tale.
         :type user: dict or None
-        :param folder: The folder that's being used by the tale.
-        :type folder: dict or None
+        :param data: The object array that's being used by the tale.
+        :type data: dict or None
         :param image: The Image that's being used by the tale.
         :type image: dict or None
         :param limit: The page limit.
@@ -62,8 +91,8 @@ class Tale(AccessControlledModel):
         cursor_def = {}
         if user is not None:
             cursor_def['creatorId'] = user['_id']
-        if folder is not None:
-            cursor_def['folderId'] = folder['_id']
+        if data is not None:
+            cursor_def['involatileData'] = data
         if image is not None:
             cursor_def['imageId'] = image['_id']
 
@@ -73,7 +102,7 @@ class Tale(AccessControlledModel):
                 limit=limit, offset=offset):
             yield r
 
-    def createTale(self, image, folder, creator=None, save=True, title=None,
+    def createTale(self, image, data, creator=None, save=True, title=None,
                    description=None, public=None, config=None, published=False,
                    authors=None, icon=None, category=None, illustration=None):
         if creator is None:
@@ -82,7 +111,7 @@ class Tale(AccessControlledModel):
             creatorId = creator.get('_id', None)
 
         if title is None:
-            title = '{} with {}'.format(image['fullName'], folder['name'])
+            title = '{} with {}'.format(image['fullName'], DATADIRS_NAME)
         # if illustration is None:
             # Get image from SILS
 
@@ -92,10 +121,12 @@ class Tale(AccessControlledModel):
             'category': category,
             'config': config,
             'creatorId': creatorId,
+            'involatileData': data,
             'description': description,
-            'folderId': ObjectId(folder['_id']),
+            'format': _currentTaleFormat,
             'created': now,
             'icon': icon,
+            'iframe': image['iframe'],
             'imageId': ObjectId(image['_id']),
             'illustration': illustration,
             'title': title,
@@ -114,9 +145,27 @@ class Tale(AccessControlledModel):
         if save:
             tale = self.save(tale)
             self.createWorkspace(tale, creator=creator)
+            parent = self.createDataMountpoint(tale, creator=creator)
+            tale['folderId'] = parent['_id']
+            for obj in data:
+                if obj['type'] == 'folder':
+                    folder = Folder().load(obj['id'], user=creator)
+                    Folder().copyFolder(
+                        folder, parent=parent, parentType='folder',
+                        creator=creator, progress=False)
+                elif obj['type'] == 'item':
+                    item = Item().load(obj['id'], user=creator)
+                    Item().copyItem(item, creator, folder=parent)
+            tale = self.save(tale)
         return tale
 
+    def createDataMountpoint(self, tale, creator=None):
+        return self._createAuxFolder(tale, DATADIRS_NAME, creator=creator)
+
     def createWorkspace(self, tale, creator=None):
+        return self._createAuxFolder(tale, WORKSPACE_NAME, creator=creator)
+
+    def _createAuxFolder(self, tale, rootFolderName, creator=None):
         if creator is None:
             creator = self.model('user').load(tale['creatorId'], force=True)
 
@@ -125,16 +174,16 @@ class Tale(AccessControlledModel):
         else:
             public = False
 
-        workspaceFolder = getOrCreateRootFolder(WORKSPACE_NAME)
-        taleWorkspace = self.model('folder').createFolder(
-            workspaceFolder, str(tale['_id']), parentType='folder',
+        rootFolder = getOrCreateRootFolder(rootFolderName)
+        auxFolder = self.model('folder').createFolder(
+            rootFolder, str(tale['_id']), parentType='folder',
             public=public, reuseExisting=True)
         self.setUserAccess(
-            taleWorkspace, user=creator, level=AccessType.ADMIN,
+            auxFolder, user=creator, level=AccessType.ADMIN,
             save=True)
-        taleWorkspace = self.model('folder').setMetadata(
-            taleWorkspace, {'taleId': str(tale['_id'])})
-        return taleWorkspace
+        auxFolder = self.model('folder').setMetadata(
+            auxFolder, {'taleId': str(tale['_id'])})
+        return auxFolder
 
     def updateTale(self, tale):
         """

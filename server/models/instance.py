@@ -6,12 +6,15 @@ import time
 import ssl
 
 from ..constants import API_VERSION, InstanceStatus
+from ..schema.misc import containerInfoSchema
 from girder import logger
-from girder.constants import AccessType, SortDir
-from girder.models.model_base import \
-    AccessControlledModel, ValidationException
-from girder.plugins.worker import getCeleryApp, getWorkerApiUrl
 from girder.api.rest import getApiUrl
+from girder.constants import AccessType, SortDir
+from girder.exceptions import ValidationException
+from girder.models.model_base import AccessControlledModel
+from girder.plugins.worker import getCeleryApp, getWorkerApiUrl
+from girder.plugins.jobs.constants import JobStatus
+from gwvolman.tasks import create_volume, launch_container
 from six.moves import urllib
 
 from tornado.httpclient import HTTPRequest, HTTPError, HTTPClient
@@ -35,10 +38,11 @@ def _wait_for_server(url, timeout=30, wait_time=0.5):
         except HTTPError as http_error:
             code = http_error.code
             logger.info(
-                'Booting server at [%s], getting HTTP status [%s]',
-                url, code)
+                'Booting server at [%s], getting HTTP status [%s]', url, code)
             time.sleep(wait_time)
         except ssl.SSLError:
+            logger.info(
+                'Booting server at [%s], getting SSLError', url)
             time.sleep(wait_time)
         else:
             break
@@ -57,7 +61,7 @@ class Instance(AccessControlledModel):
 
         self.exposeFields(
             level=AccessType.READ,
-            fields={'_id', 'created', 'creatorId', 'name', 'taleId'})
+            fields={'_id', 'created', 'creatorId', 'iframe', 'name', 'taleId'})
         self.exposeFields(
             level=AccessType.WRITE,
             fields={'containerInfo', 'lastActivity', 'status', 'url'})
@@ -108,13 +112,16 @@ class Instance(AccessControlledModel):
         )
         instanceTask.get(timeout=TASK_TIMEOUT)
 
-        queue = 'celery@{}'.format(instance['containerInfo']['nodeId'])
-        if queue in active_queues:
-            volumeTask = app.send_task(
-                'gwvolman.tasks.remove_volume', args=[payload],
-                queue=instance['containerInfo']['nodeId']
-            )
-            volumeTask.get(timeout=TASK_TIMEOUT)
+        try:
+            queue = 'celery@{}'.format(instance['containerInfo']['nodeId'])
+            if queue in active_queues:
+                volumeTask = app.send_task(
+                    'gwvolman.tasks.remove_volume', args=[payload],
+                    queue=instance['containerInfo']['nodeId']
+                )
+                volumeTask.get(timeout=TASK_TIMEOUT)
+        except KeyError:
+            pass
 
         # TODO: handle error
         self.remove(instance)
@@ -130,50 +137,71 @@ class Instance(AccessControlledModel):
         if not name:
             name = tale.get('title', '')
 
-        workspaceFolder = self.model('tale', 'wholetale').createWorkspace(tale)
-
         now = datetime.datetime.utcnow()
-        payload = {
-            'girder_token': str(token['_id']),
-            'apiUrl': getWorkerApiUrl(),
-            'taleId': str(tale['_id']),
-            'workspaceId': str(workspaceFolder['_id']),
-            'api_version': API_VERSION
-        }
-
-        volumeTask = getCeleryApp().send_task(
-            'gwvolman.tasks.create_volume', args=[payload]
-        )
-        volume = volumeTask.get(timeout=TASK_TIMEOUT)
-        payload.update(volume)
-
-        serviceTask = getCeleryApp().send_task(
-            'gwvolman.tasks.launch_container', args=[payload],
-            queue='manager'
-        )
-        service = serviceTask.get(timeout=TASK_TIMEOUT)
-        service.update(volume)
-
-        netloc = urllib.parse.urlsplit(getApiUrl()).netloc
-        domain = '{}.{}'.format(
-            service['name'], netloc.split(':')[0].split('.', 1)[1])
-        url = 'http://{}/{}'.format(domain, service.get('urlPath', ''))
-
-        _wait_for_server(url)
-
         instance = {
-            'taleId': tale['_id'],
             'created': now,
             'creatorId': user['_id'],
+            'iframe': tale.get('iframe', False),
             'lastActivity': now,
-            'containerInfo': service,
             'name': name,
-            'status': InstanceStatus.RUNNING,   # be optimistic for now
-            'url': url
+            'status': InstanceStatus.LAUNCHING,
+            'taleId': tale['_id']
         }
 
         self.setUserAccess(instance, user=user, level=AccessType.ADMIN)
         if save:
             instance = self.save(instance)
 
+        workspaceFolder = self.model('tale', 'wholetale').createWorkspace(tale)
+        payload = {
+            'girder_token': str(token['_id']),
+            'apiUrl': getWorkerApiUrl(),
+            'taleId': str(tale['_id']),
+            'workspaceId': str(workspaceFolder['_id']),
+            'api_version': API_VERSION,
+            'instanceId': str(instance['_id'])
+        }
+
+        # Create single job
+        volumeTask = create_volume.signature(args=[payload])
+        serviceTask = launch_container.signature(queue='manager')
+        (volumeTask | serviceTask).apply_async()
         return instance
+
+    def updateInstance(self, instance):
+        """
+        Updates an instance.
+
+        :param image: The instance document to update.
+        :type image: dict
+        :returns: The instance document that was edited.
+        """
+        instance['updated'] = datetime.datetime.utcnow()
+        return self.save(instance)
+
+
+def finalizeInstance(event):
+    job = event.info['job']
+    if job['title'] == 'Spawn Instance' and job.get('status') is not None:
+        status = int(job['status'])
+        instance = Instance().load(
+            job['args'][0]['instanceId'], force=True)
+        if status == JobStatus.SUCCESS:
+            service = getCeleryApp().AsyncResult(job['celeryTaskId']).get()
+            netloc = urllib.parse.urlsplit(getApiUrl()).netloc
+            domain = '{}.{}'.format(
+                service['name'], netloc.split(':')[0].split('.', 1)[1])
+            url = 'https://{}/{}'.format(domain, service.get('urlPath', ''))
+            valid_keys = set(containerInfoSchema['properties'].keys())
+            containerInfo = {key: service.get(key, '') for key in valid_keys}
+            _wait_for_server(url)
+            instance.update({
+                'url': url,
+                'status': InstanceStatus.RUNNING,
+                'containerInfo': containerInfo
+            })
+        elif status == JobStatus.ERROR:
+            instance['status'] = InstanceStatus.ERROR
+        elif status in (JobStatus.QUEUED, JobStatus.RUNNING):
+            instance['status'] = InstanceStatus.LAUNCHING
+        Instance().updateInstance(instance)

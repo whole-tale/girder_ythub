@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from .misc import containerConfigSchema
+from .misc import containerConfigSchema, dataResourceSchema
 
 taleModel = {
     "definitions": {
@@ -9,7 +9,7 @@ taleModel = {
     },
     "description": "Object representing a Tale.",
     "required": [
-        "folderId",
+        "involatileData",
         "imageId"
     ],
     "properties": {
@@ -31,7 +31,16 @@ taleModel = {
         },
         "folderId": {
             "type": "string",
-            "description": "ID of a data folder used by the Tale"
+            "description": "ID of a folder containing copy of tale['data']"
+        },
+        "involatileData": {
+            "type": "array",
+            "items": dataResourceSchema,
+            "description": "Resources used to create Tale's data folder"
+        },
+        "format": {
+            "type": "integer",
+            "description": "Tale format specification"
         },
         "public": {
             "type": "boolean",
@@ -74,6 +83,10 @@ taleModel = {
         "illustration": {
             "type": "string",
             "description": "A URL to an image depicturing the content of the Tale"
+        },
+        "iframe": {
+            "type": "boolean",
+            "description": "If 'true', the tale can be embedded in an iframe"
         },
         "icon": {
             "type": "string",

@@ -7,6 +7,7 @@ from girder import events
 API_VERSION = '2.0'
 CATALOG_NAME = 'WholeTale Catalog'
 WORKSPACE_NAME = 'WholeTale Workspaces'
+DATADIRS_NAME = 'WholeTale Data Mountpoints'
 
 
 class HarvesterType:
@@ -24,8 +25,9 @@ class PluginSettings:
 
 # Constants representing the setting keys for this plugin
 class InstanceStatus(object):
-    RUNNING = 0
-    ERROR = 1
+    LAUNCHING = 0
+    RUNNING = 1
+    ERROR = 2
 
     @staticmethod
     def isValid(status):
@@ -34,7 +36,8 @@ class InstanceStatus(object):
         if event.defaultPrevented and len(event.responses):
             return event.responses[-1]
 
-        return status in (InstanceStatus.RUNNING, InstanceStatus.ERROR)
+        return status in (InstanceStatus.RUNNING, InstanceStatus.ERROR,
+                          InstanceStatus.LAUNCHING)
 
 
 class ImageStatus(object):

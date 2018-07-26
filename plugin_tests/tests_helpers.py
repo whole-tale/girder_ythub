@@ -1,3 +1,4 @@
+
 import httmock
 import re
 import os
@@ -7,6 +8,7 @@ GOOD_COMMIT = 'b45f9a57'
 GOOD_CHILD = '4b35fe6'
 XPRA_REPO = 'whole-tale/xpra-base'
 XPRA_COMMIT = 'fad88f5'
+
 
 @httmock.urlmatch(scheme='https', netloc='^api\.github\.com$',
                   path='^/repos/([\w\-]+)/([\w\-]+)$', method='GET')

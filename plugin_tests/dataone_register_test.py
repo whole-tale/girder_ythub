@@ -5,8 +5,8 @@ from tests import base
 from girder.api.rest import RestException
 from girder.constants import ROOT_DIR
 
-'''Tests for the methods in dataone_register.py. Some of these tests use live requests, while others use
-mocked JSON responses/data structures. '''
+'''Tests for the methods in dataone_register.py. Some of these tests use live requests,
+while others use mocked JSON responses/data structures.'''
 
 
 def setUpModule():
@@ -63,21 +63,26 @@ class TestDataONERegister(base.TestCase):
         from server.constants import DataONELocations
 
         # Test the case where no data object could be located
-        with pytest.raises(RestException) as error:
+        with pytest.raises(RestException):
             bad_url = 'localhost_01'
             find_resource_pid(bad_url, DataONELocations.prod_cn)
 
     def test_get_package_files_metadata(self):
-        ''' Test that the metadata in a package is getting added to the list of files'''
+        """Test that the metadata in a package is getting added to the list of files"""
         from server.dataone_register import get_package_files
 
-        full_meta_data = [{'identifier': 'urn:uuid:f438a8d5-7965-4ca2-aad6-88f694e5afe5', 'fileName': 'iso19139.xml',
-        'formatId': 'http://www.isotc211.org/2005/gmd', 'formatType': 'METADATA', 'size': 14735,
-        'title': 'Collaborative Research: A Synthesis of Existing and New Observations of Air-Snowpack Exchanges to'
-                           ' Assess the Arctic',
-        'documents': ['urn:uuid:f438a8d5-7965-4ca2-aad6-88f694e5afe5',
-                      'resource_map_urn:uuid:23acf3bd-27c7-4736-a6ef-c141698d66b8',
-                      'resource_map_urn:uuid:1570fb91-69e8-4c1d-9b9a-292edb5820af']}]
+        full_meta_data = [{
+            'identifier': 'urn:uuid:f438a8d5-7965-4ca2-aad6-88f694e5afe5',
+            'fileName': 'iso19139.xml', 'formatId': 'http://www.isotc211.org/2005/gmd',
+            'formatType': 'METADATA', 'size': 14735,
+            'title': ('Collaborative Research: A Synthesis of Existing and '
+                      'New Observations of Air-Snowpack Exchanges to Assess the Arctic'),
+            'documents': [
+                'urn:uuid:f438a8d5-7965-4ca2-aad6-88f694e5afe5',
+                'resource_map_urn:uuid:23acf3bd-27c7-4736-a6ef-c141698d66b8',
+                'resource_map_urn:uuid:1570fb91-69e8-4c1d-9b9a-292edb5820af'
+            ]
+        }]
 
         data = []
 
@@ -96,24 +101,29 @@ class TestDataONERegister(base.TestCase):
         from server.constants import DataONELocations
 
         data = [{'identifier': 'urn:uuid:4eb73500-fa9b-46c2-a517-94c1a8b4afbb',
-                            'fileName': 'HumanFootprint.ipynb', 'formatId': 'text/plain',
-                            'formatType': 'DATA', 'size': 104524},
-                           {'identifier': 'urn:uuid:06544a24-aae8-4b80-be4b-bb03711d9fd0',
-                            'fileName': 'hfp_regions.csv', 'formatId': 'text/csv',
-                            'formatType': 'DATA', 'size': 1757}]
+                 'fileName': 'HumanFootprint.ipynb', 'formatId': 'text/plain',
+                 'formatType': 'DATA', 'size': 104524},
+                {'identifier': 'urn:uuid:06544a24-aae8-4b80-be4b-bb03711d9fd0',
+                 'fileName': 'hfp_regions.csv', 'formatId': 'text/csv',
+                 'formatType': 'DATA', 'size': 1757}]
 
-        meta_data = [{'identifier': 'urn:uuid:15403304-6eb8-4ede-8a56-332a3e92bef8',
-                                  'fileName': 'HumanFootprint_SASAP.xml',
-                                  'formatId': 'eml://ecoinformatics.org/eml-2.1.1',
-                                  'formatType': 'METADATA', 'size': 18648,
-                                  'title': 'Global terrestrial Human Footprint maps for Alaska, 1993 and 2009,'
-                                    'with SASAP regional subsetting',
-                                  'documents': ['urn:uuid:15403304-6eb8-4ede-8a56-332a3e92bef8',
-                                                'urn:uuid:4eb73500-fa9b-46c2-a517-94c1a8b4afbb',
-                                                'urn:uuid:06544a24-aae8-4b80-be4b-bb03711d9fd0']}]
+        meta_data = [{
+            'identifier': 'urn:uuid:15403304-6eb8-4ede-8a56-332a3e92bef8',
+            'fileName': 'HumanFootprint_SASAP.xml',
+            'formatId': 'eml://ecoinformatics.org/eml-2.1.1',
+            'formatType': 'METADATA', 'size': 18648,
+            'title': 'Global terrestrial Human Footprint maps for Alaska, 1993 and 2009,'
+                     'with SASAP regional subsetting',
+            'documents': ['urn:uuid:15403304-6eb8-4ede-8a56-332a3e92bef8',
+                          'urn:uuid:4eb73500-fa9b-46c2-a517-94c1a8b4afbb',
+                          'urn:uuid:06544a24-aae8-4b80-be4b-bb03711d9fd0']
+        }]
 
-        expected_result = {'HumanFootprint.ipynb': {'size': 104524}, 'hfp_regions.csv': {'size': 1757},
-                       'HumanFootprint_SASAP.xml': {'size': 18648}}
+        expected_result = {
+            'HumanFootprint.ipynb': {'size': 104524},
+            'hfp_regions.csv': {'size': 1757},
+            'HumanFootprint_SASAP.xml': {'size': 18648}
+        }
 
         fileList = get_package_files(data, meta_data, meta_data)
 
@@ -123,8 +133,8 @@ class TestDataONERegister(base.TestCase):
         """Test that we get an exception when no map was found."""
         from server.dataone_register import check_multiple_maps
 
-        with pytest.raises(RestException) as error:
-            metadata =set()
+        with pytest.raises(RestException):
+            metadata = set()
             check_multiple_maps(metadata)
 
     def test_get_package_list_nested(self):

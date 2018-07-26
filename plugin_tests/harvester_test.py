@@ -41,11 +41,11 @@ D1_QUERY = {
 }
 
 D1_MAP_URL = (
-        'https://cn.dataone.org/cn/v2/query/solr/'
-        '?q=resourceMap:%22resource_map_urn%3A'
-        'uuid%3Ac878ae53-06cf-40c9-a830-7f6f564133f9%22&'
-        'fl=identifier,formatType,title,size,formatId,'
-        'fileName,documents&rows=1000&start=0&wt=json'
+    'https://cn.dataone.org/cn/v2/query/solr/'
+    '?q=resourceMap:%22resource_map_urn%3A'
+    'uuid%3Ac878ae53-06cf-40c9-a830-7f6f564133f9%22&'
+    'fl=identifier,formatType,title,size,formatId,'
+    'fileName,documents&rows=1000&start=0&wt=json'
 )
 
 D1_MAP = {
@@ -329,4 +329,3 @@ class DataONEHarversterTestCase(base.TestCase):
         self.model('user').remove(self.user)
         self.model('user').remove(self.admin)
         self.patcher.stop()
-

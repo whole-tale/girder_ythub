@@ -83,8 +83,8 @@ addModel('dataset', datasetModel, resources='dataset')
 
 def _itemOrFolderToDataset(obj):
     ds = {key: obj[key] for key in obj.keys() & datasetModelKeys}
-    ds['provider'] = obj['meta']['provider']
-    ds['identifier'] = obj['meta']['identifier']
+    ds['provider'] = obj['meta'].get('provider', 'unknown')
+    ds['identifier'] = obj['meta'].get('identifier', 'unknown')
     ds['modelType'] = obj['_modelType']
     return ds
 

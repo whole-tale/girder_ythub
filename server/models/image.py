@@ -31,18 +31,20 @@ class Image(AccessControlledModel):
         self.exposeFields(
             level=AccessType.READ,
             fields={'_id', 'config', 'created', 'creatorId', 'description',
-                    'digest', 'fullName', 'icon',  'name', 'recipeId',
+                    'digest', 'fullName', 'icon', 'iframe', 'name', 'recipeId',
                     'status', 'updated', 'name', 'parentId', 'public', 'tags'}
         )
 
     def validate(self, image):
         if image is None:
             raise ValidationException('Bogus validation')
+        if 'iframe' not in image:
+            image['iframe'] = False
         return image
 
     def createImage(self, recipe, fullName, name=None, tags=None,
                     creator=None, save=True, parent=None, description=None,
-                    public=None, config=None, icon=None):
+                    public=None, config=None, icon=None, iframe=None):
 
         # TODO: check for existing image based on fullName
 
@@ -65,6 +67,9 @@ class Image(AccessControlledModel):
             if 'latest' not in tags:
                 tags.append('latest')
 
+        if iframe is None or not isinstance(iframe, bool):
+            iframe = False
+
         now = datetime.datetime.utcnow()
         image = {
             'config': config,
@@ -74,6 +79,7 @@ class Image(AccessControlledModel):
             'fullName': fullName,
             'digest': None,
             'icon': icon or _DEFAULT_ICON,
+            'iframe': iframe,
             'name': name,
             'parentId': parentId,
             'public': public,

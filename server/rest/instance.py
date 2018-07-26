@@ -30,6 +30,7 @@ instanceModel = {
         },
         'created': '2017-04-07T17:04:04.777000+00:00',
         'creatorId': '57c099af86ed1d0001733722',
+        'iframe': True,
         'lastActivity': '2017-04-07T17:04:04.777000+00:00',
         'name': 'test',
         'status': 0,
@@ -45,6 +46,10 @@ instanceModel = {
         },
         'created': {'type': 'string', 'format': 'date'},
         'creatorId': {'type': 'string'},
+        'iframe': {
+            'type': 'boolean',
+            'description': 'If "true", instance can be embedded in an iframe'
+        },
         'lastActivity': {'type': 'string', 'format': 'date'},
         'name': {'type': 'string'},
         'status': {'type': 'integer', 'format': 'int32',
@@ -121,6 +126,7 @@ class Instance(Resource):
             instance, self.getCurrentToken())
 
     @access.user
+    @filtermodel(model='instance', plugin='wholetale')
     @autoDescribeRoute(
         Description('Create a new instance')
         .notes('Instantiate a tale.')
@@ -151,14 +157,15 @@ class Instance(Resource):
             userDataFolder = path_util.lookUpPath(
                 '/user/%s/Data' % user['login'], user)
             folder = userDataFolder['document']
+            data = [{'type': 'folder', 'id': folder['_id']}]
             try:
                 # Check if it already exists
-                tale = next(taleModel.list(user=None, folder=folder, image=image,
+                tale = next(taleModel.list(user=None, data=data, image=image,
                                            currentUser=user))
             except StopIteration:
                 title = 'Testing %s' % image['fullName']
                 tale = taleModel.createTale(
-                    image, folder, creator=user, save=True,
+                    image, data, creator=user, save=True,
                     title=title, description=None, public=False)
 
         instanceModel = self.model('instance', 'wholetale')

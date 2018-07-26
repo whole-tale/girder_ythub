@@ -6,12 +6,13 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 import six
 
-from girder import events
+from girder import events, logprint
 from girder.api import access
 from girder.api.describe import Description, describeRoute, autoDescribeRoute
 from girder.api.rest import \
     boundHandler, loadmodel, RestException
 from girder.constants import AccessType, TokenScope, CoreEventHandler
+from girder.exceptions import GirderException
 from girder.models.model_base import ValidationException
 from girder.utility import assetstore_utilities, setting_utilities
 from girder.utility.model_importer import ModelImporter
@@ -25,6 +26,7 @@ from .rest.harvester import listImportedData
 from .rest.tale import Tale
 from .rest.instance import Instance
 from .rest.wholetale import wholeTale
+from .models.instance import finalizeInstance
 
 
 @setting_utilities.validator(PluginSettings.HUB_PRIV_KEY)
@@ -258,11 +260,26 @@ def load(info):
     info['apiRoot'].wholetale = wholeTale()
     info['apiRoot'].instance = Instance()
     info['apiRoot'].tale = Tale()
+
+    from girder.plugins.wholetale.models.tale import Tale as TaleModel
+    from girder.plugins.wholetale.models.tale import _currentTaleFormat
+    q = {
+        '$or': [
+            {'format': {'$exists': False}},
+            {'format': {'$lt': _currentTaleFormat}}
+        ]}
+    for obj in TaleModel().find(q):
+        try:
+            TaleModel().save(obj, validate=True)
+        except GirderException as exc:
+            logprint(exc)
+
     info['apiRoot'].recipe = Recipe()
     info['apiRoot'].dataset = Dataset()
     image = Image()
     info['apiRoot'].image = image
     events.bind('jobs.job.update.after', 'wholetale', image.updateImageStatus)
+    events.bind('jobs.job.update.after', 'wholetale', finalizeInstance)
     events.unbind('model.user.save.created', CoreEventHandler.USER_DEFAULT_FOLDERS)
     events.bind('model.user.save.created', 'wholetale', addDefaultFolders)
     info['apiRoot'].repository = Repository()
