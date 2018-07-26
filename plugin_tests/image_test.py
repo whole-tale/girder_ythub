@@ -97,12 +97,7 @@ class ImageTestCase(base.TestCase):
             file_id = create_repository_file(str(self.recipe['_id']))
             self.assertEqual(sendTaskCalls[0][1], (
                 'gwvolman.tasks.build_image',
-<<<<<<< HEAD
-                (image['_id'], image['fullName'], mock_repo_url), {'file_id': file_id})
-=======
-                (image['_id'], self.recipe['url'], self.recipe['commitId']), {})
->>>>>>> master
-            )
+                (image['_id'], image['fullName'], mock_repo_url), {'file_id': file_id}))
 
             job = resp.json
             imageId = job['args'][0]
