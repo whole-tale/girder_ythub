@@ -303,8 +303,8 @@ class Image(Resource):
         )
         job = jobModel.createJob(
             title=jobTitle, type='build_image', handler='worker_handler',
-            user=user, public=False, args=args, kwargs={'file_id':
-             repo_file_id}, otherFields={
+            user=user, public=False, args=args, kwargs={
+                'file_id': repo_file_id}, otherFields={
                 'celeryTaskName': 'gwvolman.tasks.build_image'
             })
         jobModel.scheduleJob(job)

@@ -313,7 +313,7 @@ def create_upload_tale_yaml(tale, remote_objects, item_ids, user, client):
     return pid, len(yaml_file)
 
 
-def create_upload_package(item_ids, tale, user, repository):
+def create_upload_package(item_ids, tale, user, repository, jwt):
     """
     Uploads local or remote files to a DataONE repository.
      There are four cases that need to be handled.
@@ -361,7 +361,7 @@ def create_upload_package(item_ids, tale, user, repository):
          The auth portion is incomplete, and requires you to paste your token in <TOKEN>.
         """
         client = create_client(repository, {"headers": {
-            "Authorization": "Bearer <TOKEN>"}})
+            "Authorization": "Bearer "+jwt}})
 
         """
         If the client was successfully created, sort all of the items by their type:

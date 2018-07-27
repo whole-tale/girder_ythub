@@ -220,8 +220,11 @@ class Repository(Resource):
         .param('repository',
                description='The url for the member node endpoint.',
                required=True)
+        .param('jwt',
+               description='The user\'s DataONE jwt.',
+               required=True)
     )
-    def createPackage(self, itemIds, taleId, repository):
+    def createPackage(self, itemIds, taleId, repository, jwt):
         user = ModelImporter.model('user').getAdmins()[0]
         tale = self.model('tale',
                           'wholetale').load(taleId,
@@ -231,5 +234,6 @@ class Repository(Resource):
         package_url = create_upload_package(item_ids=itemIds,
                                             tale=tale,
                                             user=user,
-                                            repository=repository)
+                                            repository=repository,
+                                            jwt=jwt)
         return package_url
