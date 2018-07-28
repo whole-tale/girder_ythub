@@ -11,10 +11,10 @@ from girder.api.rest import Resource, filtermodel, RestException,\
 
 from girder.constants import AccessType, SortDir, TokenScope
 from girder.utility import ziputil
-from ..schema.tale import taleModel
+from ..schema.tale import taleModel as taleSchema
 
 
-addModel('tale', taleModel, resources='tale')
+addModel('tale', taleSchema, resources='tale')
 
 
 class Tale(Resource):
@@ -84,7 +84,7 @@ class Tale(Resource):
         Description('Update an existing tale.')
         .modelParam('id', model='tale', plugin='wholetale',
                     level=AccessType.WRITE, destName='taleObj')
-        .jsonParam('tale', 'Updated tale', paramType='body', schema=taleModel,
+        .jsonParam('tale', 'Updated tale', paramType='body', schema=taleSchema,
                    dataType='tale')
         .responseClass('tale')
         .errorResponse('ID was invalid.')
@@ -115,7 +115,7 @@ class Tale(Resource):
     @access.user
     @autoDescribeRoute(
         Description('Create a new tale.')
-        .jsonParam('tale', 'A new tale', paramType='body', schema=taleModel,
+        .jsonParam('tale', 'A new tale', paramType='body', schema=taleSchema,
                    dataType='tale')
         .responseClass('tale')
         .errorResponse('You are not authorized to create tales.', 403)
