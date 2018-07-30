@@ -24,6 +24,7 @@ jobs:
             git clone https://github.com/whole-tale/girder /tmp/girder
             set -o pipefail; cd /tmp/girder ; python3 -m pip install -r requirements-dev.txt | cat
             cp /tmp/girder/CMakeLists.txt /girder/
+            cp /tmp/girder/.coveragerc /girder/
             cp -r /tmp/girder/tests /girder/
       - run:
           name: Running Tests
@@ -42,7 +43,7 @@ jobs:
           command: pip install codecov
       - run:
           name: Collect coverage reports
-          command: cp /girder/.coverage .
+          command: coverage combine /girder/build/test/coverage/python_temp/
       - run:
           name: Uploading Coverage Results
           command: codecov
