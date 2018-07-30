@@ -93,15 +93,25 @@ class Tale(Resource):
         .errorResponse('Admin access was denied for the tale.', 403)
     )
     def updateTale(self, taleObj, tale, params):
+        is_public = tale.pop('public')
+
         for keyword in self._model.modifiableFields:
             try:
                 taleObj[keyword] = tale.pop(keyword)
             except KeyError:
                 pass
-        self._model.setPublic(taleObj, taleObj['public'])
+        taleObj = self._model.updateTale(taleObj)
+
+        was_public = taleObj.get('public', False)
+        if was_public != is_public:
+            access = self._model.getFullAccessList(taleObj)
+            user = self.getCurrentUser()
+            taleObj = self._model.setAccessList(
+                taleObj, access, save=True, user=user, setPublic=is_public)
+
         # if taleObj['published']:
         #     self._model.setPublished(taleObj, True)
-        return self._model.updateTale(taleObj)
+        return taleObj
 
     @access.user
     @autoDescribeRoute(
