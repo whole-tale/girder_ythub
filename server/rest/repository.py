@@ -210,7 +210,9 @@ class Repository(Resource):
                'upload the items and tale artifacts to DataONE. During this '
                'process, any required metadata such as the EML document, system metadata, and '
                'RDF document are generated. The landing page for the package is returned as a '
-               'string  The itemId parameter should look like [\'item1\', \'item2\', \'item3\']')
+               'string  The itemId parameter should look like [\'item1\', \'item2\', \'item3\']'
+               'The JWT is obtained via the \'token\' endpoint on the Data ONE coordinating'
+               'node.')
         .jsonParam(name='itemIds',
                    required=True,
                    description='The files that are going to be uploaded to DataONE')

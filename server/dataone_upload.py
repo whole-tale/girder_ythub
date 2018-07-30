@@ -346,10 +346,12 @@ def create_upload_package(item_ids, tale, user, repository, jwt):
     :param tale: The tale that is being packaged
     :param user: The user that is requesting the upload
     :param repository: The DataONE member node
+    :param jwt: The user's JWT from DataONE
     :type item_ids: list
     :type tale: girder.models.tale
     :type user: girder.models.user
     :type repository: str
+    :type jwt: str
     :return: The pid of the package's resource map
     """
 
