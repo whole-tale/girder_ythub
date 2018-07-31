@@ -17,7 +17,7 @@ from girder.models.model_base import ValidationException
 from girder.utility import assetstore_utilities, setting_utilities
 from girder.utility.model_importer import ModelImporter
 
-from .constants import PluginSettings
+from .constants import PluginSettings, SettingDefault
 from .rest.dataset import Dataset
 from .rest.recipe import Recipe
 from .rest.image import Image
@@ -91,6 +91,11 @@ def validateInstanceCap(doc):
     except ValueError:
         raise ValidationException(
             'Instance Cap needs to be an integer.', 'value')
+
+
+@setting_utilities.default(PluginSettings.INSTANCE_CAP)
+def defaultInstanceCap():
+    return SettingDefault.defaults[PluginSettings.INSTANCE_CAP]
 
 
 @access.public(scope=TokenScope.DATA_READ)

@@ -24,6 +24,12 @@ class PluginSettings:
     INSTANCE_CAP = 'wholetale.instance_cap'
 
 
+class SettingDefault:
+    defaults = {
+        PluginSettings.INSTANCE_CAP: 2
+    }
+
+
 # Constants representing the setting keys for this plugin
 class InstanceStatus(object):
     LAUNCHING = 0
