@@ -23,57 +23,74 @@ var ConfigView = View.extend({
             }, {
                 key: 'wholetale.pub_key',
                 value: this.$('#wholetale_pub_key').val()
+            }, {
+                key: 'wholetale.instance_cap',
+                value: this.$('#wholetale_instance_cap').val()
             }]);
         },
         'click .g-generate-key': function (event) {
             event.preventDefault();
             restRequest({
                type: 'POST',
-               path: 'wholetale/genkey',
+               url: 'wholetale/genkey',
                data: {}
             }).done(_.bind(function (resp) {
+               this.settings['wholetale.priv_key'] = resp['wholetale.priv_key'];
+               this.settings['wholetale.pub_key'] = resp['wholetale.pub_key'];
                this.$('#wholetale_priv_key').val(resp['wholetale.priv_key']);
                this.$('#wholetale_pub_key').val(resp['wholetale.pub_key']);
             }, this));
         }
     },
     initialize: function () {
+        this.breadcrumb = new PluginConfigBreadcrumbWidget({
+                pluginName: 'WholeTale',
+                parentView: this
+        });
+
+        var keys = [
+            'wholetale.tmpnb_url',
+            'wholetale.priv_key',
+            'wholetale.pub_key',
+            'wholetale.instance_cap'
+        ];
+
         restRequest({
+            url: 'system/setting',
             type: 'GET',
-            path: 'system/setting',
             data: {
-                list: JSON.stringify([
-                    'wholetale.tmpnb_url',
-                    'wholetale.priv_key',
-                    'wholetale.pub_key'
-                ])
+                list: JSON.stringify(keys),
+                default: 'none'
             }
         }).done(_.bind(function (resp) {
-            this.render();
-            this.$('#wholetale_tmpnb').val(resp['wholetale.tmpnb_url']);
-            this.$('#wholetale_priv_key').val(resp['wholetale.priv_key']);
-            this.$('#wholetale_pub_key').val(resp['wholetale.pub_key']);
+            this.settings = resp;
+            restRequest({
+                url: 'system/setting',
+                type: 'GET',
+                data: {
+                    list: JSON.stringify(keys),
+                    default: 'default'
+                }
+            }).done(_.bind(function (resp) {
+                this.defaults = resp;
+                this.render();
+            }, this));
         }, this));
     },
 
     render: function () {
-        this.$el.html(ConfigViewTemplate());
-
-        if (!this.breadcrumb) {
-            this.breadcrumb = new PluginConfigBreadcrumbWidget({
-                pluginName: 'WholeTale',
-                el: this.$('.g-config-breadcrumb-container'),
-                parentView: this
-            }).render();
-        }
-
+        this.$el.html(ConfigViewTemplate({
+            settings: this.settings,
+            defaults: this.defaults
+        }));
+        this.breadcrumb.setElement(this.$('.g-config-breadcrumb-container')).render();
         return this;
     },
 
     _saveSettings: function (settings) {
         restRequest({
             type: 'PUT',
-            path: 'system/setting',
+            url: 'system/setting',
             data: {
                 list: JSON.stringify(settings)
             },
@@ -85,9 +102,8 @@ var ConfigView = View.extend({
                 type: 'success',
                 timeout: 4000
             });
-        }, this)).error(_.bind(function (resp) {
-            this.$('#g-wholetale-error-message').text(
-                resp.responseJSON.message);
+        }, this)).fail(_.bind(function (err) {
+            this.$('#g-wholetale-error-message').html(err.responseJSON.message);
         }, this));
     }
 });
