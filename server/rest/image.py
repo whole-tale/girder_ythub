@@ -11,7 +11,6 @@ from girder.plugins.worker import getCeleryApp
 from ..constants import ImageStatus
 from ..schema.misc import containerConfigSchema, tagsSchema
 
-
 imageModel = {
     "description": "Object representing a WT Image.",
     "required": [
@@ -291,6 +290,7 @@ class Image(Resource):
             image['recipeId'], user=user, level=AccessType.READ, exc=True)
         jobTitle = 'Building image %s' % image['fullName']
         jobModel = Job()
+
         # Create a job to be handled by the worker plugin
         args = (
             str(image['_id']),
