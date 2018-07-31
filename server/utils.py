@@ -1,3 +1,5 @@
+import re
+
 from girder.utility.model_importer import ModelImporter
 from girder import logger
 from girder.models.item import Item
@@ -262,3 +264,14 @@ def get_dataone_package_url(repository, pid):
         return str('https://search.dataone.org/#view/'+pid)
     elif repository in DataONELocations.dev_mn:
         return str('https://dev.nceas.ucsb.edu/#view/'+pid)
+
+
+def strip_html(string):
+    """
+    Removes HTML from a string
+    :param string: The string with HTML
+    :type string: str
+    :return: The string without HTML
+    :rtype: str
+    """
+    return re.sub('<[^<]+?>', '', string)
