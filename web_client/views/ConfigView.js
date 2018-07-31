@@ -31,21 +31,21 @@ var ConfigView = View.extend({
         'click .g-generate-key': function (event) {
             event.preventDefault();
             restRequest({
-               type: 'POST',
-               url: 'wholetale/genkey',
-               data: {}
+                type: 'POST',
+                url: 'wholetale/genkey',
+                data: {}
             }).done(_.bind(function (resp) {
-               this.settings['wholetale.priv_key'] = resp['wholetale.priv_key'];
-               this.settings['wholetale.pub_key'] = resp['wholetale.pub_key'];
-               this.$('#wholetale_priv_key').val(resp['wholetale.priv_key']);
-               this.$('#wholetale_pub_key').val(resp['wholetale.pub_key']);
+                this.settings['wholetale.priv_key'] = resp['wholetale.priv_key'];
+                this.settings['wholetale.pub_key'] = resp['wholetale.pub_key'];
+                this.$('#wholetale_priv_key').val(resp['wholetale.priv_key']);
+                this.$('#wholetale_pub_key').val(resp['wholetale.pub_key']);
             }, this));
         }
     },
     initialize: function () {
         this.breadcrumb = new PluginConfigBreadcrumbWidget({
-                pluginName: 'WholeTale',
-                parentView: this
+            pluginName: 'WholeTale',
+            parentView: this
         });
 
         var keys = [
