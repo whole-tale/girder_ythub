@@ -81,7 +81,7 @@ class TestDataONEUpload(base.TestCase):
         user = {'lastName': 'testLastName', 'firstName': 'testFirstName'}
         eml_pid ='123456789'
 
-        eml = create_minimum_eml(tale, user, [], eml_pid, {})
+        eml = create_minimum_eml(tale, user, [], eml_pid, {}, 1)
 
         root = ET.fromstring(eml)
 
@@ -100,7 +100,7 @@ class TestDataONEUpload(base.TestCase):
         user = {'lastName': 'testLastName', 'firstName': 'testFirstName'}
         eml_pid ='123456789'
 
-        eml = create_minimum_eml(tale, user, [], eml_pid, {})
+        eml = create_minimum_eml(tale, user, [], eml_pid, {}, 1)
 
         root = ET.fromstring(eml)
         abstract = root.findall('abstract')

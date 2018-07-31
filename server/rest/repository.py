@@ -225,8 +225,15 @@ class Repository(Resource):
         .param('jwt',
                description='The user\'s DataONE jwt.',
                required=True)
+        .param('licenseId',
+               description='The ID of the license that the package is under.'
+                           '0: CC0'
+                           '1: CCBY3'
+                           '2: CCBY4',
+               required=True)
+
     )
-    def createPackage(self, itemIds, taleId, repository, jwt):
+    def createPackage(self, itemIds, taleId, repository, jwt, licenseId):
         user = ModelImporter.model('user').getAdmins()[0]
         tale = self.model('tale',
                           'wholetale').load(taleId,
@@ -237,5 +244,6 @@ class Repository(Resource):
                                             tale=tale,
                                             user=user,
                                             repository=repository,
-                                            jwt=jwt)
+                                            jwt=jwt,
+                                            license_id=int(licenseId))
         return package_url

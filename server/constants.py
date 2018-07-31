@@ -3,7 +3,6 @@
 
 from girder import events
 
-
 API_VERSION = '2.0'
 CATALOG_NAME = 'WholeTale Catalog'
 WORKSPACE_NAME = 'WholeTale Workspaces'
@@ -79,3 +78,74 @@ class ExtraFileNames:
     """
     # Name for the tale config file
     tale_config = 'tale.yml'
+
+
+class Licence:
+    """
+    Class that interfaces the available licences.
+    """
+
+    class LicenseIds:
+        """
+        Key the licenses off the integers, starting at 0
+        """
+        CC0 = 0
+        CCBY3 = 1
+        CCBY4 = 2
+
+    class LicenseText:
+        """
+        Text for each license type.
+        """
+        CC0 = 'This work is dedicated to the public domain under the Creative ' \
+              'Commons Universal 1.0 Public Domain Dedication. To view a copy' \
+              ' of this dedication, visit ' \
+              'https://creativecommons.org/publicdomain/zero/1.0/.'
+
+        CCBY3 = 'This work is dedicated to the public domain under the Creative Commons ' \
+                'license CC-BY 3.0. To view a copy of this dedication, ' \
+                'visit https://creativecommons.org/licenses/by/3.0/us/legalcode.'
+
+        CCBY4 = 'This information is released to the public domain under the' \
+                ' Creative Commons license CC-BY 4.0 ' \
+                '(see: https://creativecommons.org/licenses/by/4.0/). It may be ' \
+                'distributed, remixed, and built upon. You must give appropriate' \
+                ' credit, provide a reasonable manner, but not in any way that' \
+                ' suggests the licensor endorses you or your use. The consumer ' \
+                'of these data ("Data User" herein) should realize that ' \
+                'these data may be actively used by others for ongoing ' \
+                'research and that coordination may be necessary to prevent ' \
+                'duplicate publication. The Data User is urged to ' \
+                'contact the authors of these data if any questions ' \
+                'about methodology or results occur. Where ' \
+                'appropriate, the Data User is encouraged to consider ' \
+                'collaboration or co-authorship with the authors. The Data ' \
+                'User should realize that misinterpretation of data may occur if ' \
+                'used out of context of the original study. While substantial ' \
+                'efforts are made to ensure the accuracy of data and ' \
+                'associated documentation, complete accuracy of data sets ' \
+                'cannot be guaranteed. All data are made available "as is."' \
+                ' The Data User should be aware, however, that data ' \
+                'are updated periodically and it is the responsibility ' \
+                'of the Data User to check for new versions of the data. ' \
+                'The data authors and the repository where these data ' \
+                'were obtained shall not be liable for damages ' \
+                'resulting from any use or misinterpretation ' \
+                'of the data. Thank you.'
+
+    @staticmethod
+    def text_from_id(id):
+        """
+        Given an ID, return the license text
+        :param id: The ID of the license
+        :type id: str
+        :return: The text of the corresponding license
+        :rtype: str
+        """
+        id = int(id)
+        if id == 0:
+            return Licence.LicenseText.CC0
+        if id == 1:
+            return Licence.LicenseText.CCBY3
+        elif id == 2:
+            return Licence.LicenseText.CCBY4

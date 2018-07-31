@@ -48,7 +48,13 @@ class TestDataONEUpload(base.TestCase):
         tale = {'title': 'test_title', 'description': 'Test tale description'}
         user = {'lastName': 'testLastName', 'firstName': 'testFirstName'}
 
-        self.assertRaises(ValidationException, create_upload_eml, tale, client, user, [], dict())
+        self.assertRaises(ValidationException, create_upload_eml,
+                          tale,
+                          client,
+                          user,
+                          [],
+                          1,
+                          dict())
 
     def test_create_upload_resmap(self):
         # Test for create_upload_eml that will generate metadata and attempt to upload it.

@@ -68,7 +68,7 @@ def upload_file(client, pid, file_object, system_metadata):
         raise ValidationException('Error uploading file to DataONE. {0}'.format(str(e)))
 
 
-def create_upload_eml(tale, client, user, item_ids, file_sizes=dict()):
+def create_upload_eml(tale, client, user, item_ids, license_id, file_sizes=dict()):
     """
     Creates the EML metadata document along with an additional metadata document
     and uploads them both to DataONE. A pid is created for the EML document, and is
@@ -78,6 +78,7 @@ def create_upload_eml(tale, client, user, item_ids, file_sizes=dict()):
     :param client: The client to DataONE
     :param user: The user that is requesting this action
     :param item_ids: The ids of the items that have been uploaded to DataONE
+    :param license_id: The ID of the license
     :param file_sizes: We need to sometimes account for non-data files
      (like tale.yml) .The size needs to be in the EML record so pass them
       in here. The size should be described in bytes
@@ -85,6 +86,7 @@ def create_upload_eml(tale, client, user, item_ids, file_sizes=dict()):
     :type client: MemberNodeClient_2_0
     :type user: girder.models.user
     :type item_ids: list
+    :type license_id: int
     :type file_sizes: dict
     :return: pid of the EML document
     :rtype: str
@@ -96,7 +98,8 @@ def create_upload_eml(tale, client, user, item_ids, file_sizes=dict()):
                                  user,
                                  item_ids,
                                  eml_pid,
-                                 file_sizes)
+                                 file_sizes,
+                                 license_id)
 
     # Create the metadata describing the EML document
     meta = generate_system_metadata(pid=eml_pid,
@@ -313,9 +316,16 @@ def create_upload_tale_yaml(tale, remote_objects, item_ids, user, client):
     return pid, len(yaml_file)
 
 
-def create_upload_package(item_ids, tale, user, repository, jwt):
+def create_upload_package(item_ids,
+                          tale,
+                          user,
+                          repository,
+                          jwt,
+                          license_id):
     """
-    Uploads local or remote files to a DataONE repository.
+    Uploads local or remote files to a DataONE repository. It is responsible for
+     delegating all of the tasks that make the package a "package". For example
+      it controls metadata creation, yaml file creation, and object uploads.
      There are four cases that need to be handled.
         1. The file  was uploaded directly to Whole Tale and physically exists in Girder.
            In this case, a metadata document needs to be generated for each local file. This
@@ -347,11 +357,13 @@ def create_upload_package(item_ids, tale, user, repository, jwt):
     :param user: The user that is requesting the upload
     :param repository: The DataONE member node
     :param jwt: The user's JWT from DataONE
+    :param license_id: The ID of the license (see `ExtraFileNames` in constants)
     :type item_ids: list
     :type tale: girder.models.tale
     :type user: girder.models.user
     :type repository: str
     :type jwt: str
+    :type license_id: int
     :return: The pid of the package's resource map
     """
 
@@ -391,7 +403,7 @@ def create_upload_package(item_ids, tale, user, repository, jwt):
                                                                   item_ids,
                                                                   user,
                                                                   client)
-
+        logger.info(license_id)
         """
         Create an EML document describing the data, and then upload it. Save the
          pid for the resource map.
@@ -401,6 +413,7 @@ def create_upload_package(item_ids, tale, user, repository, jwt):
                                     client,
                                     user,
                                     item_ids,
+                                    license_id,
                                     file_sizes)
 
         """

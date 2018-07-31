@@ -34,3 +34,10 @@ class TestDataONEUtils(base.TestCase):
         self.assertEqual(DataONELocations.prod_cn, 'https://cn.dataone.org/cn/v2')
         self.assertEqual(DataONELocations.dev_mn, 'https://dev.nceas.ucsb.edu/knb/d1/mn/v2')
         self.assertEqual(DataONELocations.dev_cn, 'https://cn-stage-2.test.dataone.org/cn/v2')
+
+    def test_text_from_id(self):
+        from server.constants import Licence
+
+        self.assertEqual(Licence.text_from_id(str(0)), Licence.LicenseText.CC0)
+        self.assertEqual(Licence.text_from_id(str(1)), Licence.LicenseText.CCBY3)
+        self.assertEqual(Licence.text_from_id(str(2)), Licence.LicenseText.CCBY4)
