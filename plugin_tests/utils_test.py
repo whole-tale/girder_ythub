@@ -161,3 +161,10 @@ class TestDataONEUtils(base.TestCase):
         # Test that we get the right url when using prod
         url = get_dataone_package_url(DataONELocations.prod_cn, pid)
         self.assertEqual(url, 'https://search.dataone.org/#view/'+pid)
+
+    def test_strip_html(self):
+        from server.utils import strip_html
+
+        str_no_html = 'test description'
+        messy_str = '<p>'+str_no_html+'</p>'
+        self.assertEqual(strip_html(messy_str), str_no_html)
