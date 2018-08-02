@@ -45,6 +45,10 @@ class Tale(AccessControlledModel):
     def validate(self, tale):
         if 'iframe' not in tale:
             tale['iframe'] = False
+
+        if '_id' not in tale:
+            return tale
+
         if tale.get('format', 0) < 2:
             data_folder = getOrCreateRootFolder(DATADIRS_NAME)
             try:

@@ -9,14 +9,16 @@ from girder.models.item import Item
 
 
 SCRIPTDIRS_NAME = None
+DATADIRS_NAME = None
 
 
 def setUpModule():
     base.enabledPlugins.append('wholetale')
     base.startServer()
 
-    global SCRIPTDIRS_NAME
-    from girder.plugins.wholetale.constants import SCRIPTDIRS_NAME
+    global SCRIPTDIRS_NAME, DATADIRS_NAME
+    from girder.plugins.wholetale.constants import \
+        SCRIPTDIRS_NAME, DATADIRS_NAME
 
 
 def tearDownModule():
@@ -448,6 +450,55 @@ class TaleTestCase(base.TestCase):
             path='/tale/{_id}'.format(**tale), method='DELETE',
             user=self.admin)
         self.assertStatusOk(resp)
+
+    def testTaleValidation(self):
+        resp = self.request(
+            path='/resource/lookup', method='GET', user=self.user,
+            params={'path': '/user/{login}/Home'.format(**self.user)})
+        home_dir = resp.json
+        resp = self.request(
+            path='/folder', method='POST', user=self.user, params={
+                'name': 'validate_my_narrative', 'parentId': home_dir['_id']
+            })
+        sub_home_dir = resp.json
+        Item().createItem('notebook.ipynb', self.user, sub_home_dir)
+
+        resp = self.request(
+            path='/resource/lookup', method='GET', user=self.user,
+            params={'path': '/user/{login}/Data'.format(**self.user)})
+        data_dir = resp.json
+        resp = self.request(
+            path='/folder', method='POST', user=self.user, params={
+                'name': 'my_fake_data', 'parentId': data_dir['_id']
+            })
+        sub_data_dir = resp.json
+        Item().createItem('data.dat', self.user, sub_data_dir)
+
+        # Mock old format
+        tale = {
+            "config": None,
+            "creatorId": self.user['_id'],
+            "description": "Fake Tale",
+            "folderId": data_dir['_id'],
+            "imageId": "5873dcdbaec030000144d233",
+            "public": True,
+            "published": False,
+            "title": "Fake Unvalidated Tale"
+        }
+        tale = self.model('tale', 'wholetale').save(tale)  # get's id
+        tale = self.model('tale', 'wholetale').save(tale)  # migrate to new format
+
+        path = os.path.join(
+            '/collection', DATADIRS_NAME, DATADIRS_NAME, str(tale['_id']))
+        resp = self.request(
+            path='/resource/lookup', method='GET', user=self.user,
+            params={'path': path})
+        self.assertStatusOk(resp)
+        new_data_dir = resp.json
+        self.assertEqual(str(tale['folderId']), str(new_data_dir['_id']))
+        self.assertEqual(tale['involatileData'],
+                         [{'id': str(data_dir['_id']), 'type': 'folder'}])
+        self.model('tale', 'wholetale').remove(tale)
 
     def tearDown(self):
         self.model('user').remove(self.user)
