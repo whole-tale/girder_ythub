@@ -18,7 +18,10 @@ from .utils import \
     get_file_format, \
     get_tale_description, \
     get_file_item
-from .constants import ExtraFileNames
+
+from .constants import \
+    ExtraFileNames, \
+    license_text
 
 from d1_common.types import dataoneTypes
 from d1_common import const as d1_const
@@ -48,9 +51,11 @@ def create_minimum_eml(tale,
                        user,
                        item_ids,
                        eml_pid,
-                       file_sizes):
+                       file_sizes,
+                       license_id):
     """
-    Creates a bare minimum EML record for a package.
+    Creates a bare minimum EML record for a package. Note that the
+    ordering of the xml elements matters.
 
     :param tale: The tale that is being packaged.
     :param user: The user that hit the endpoint
@@ -58,65 +63,16 @@ def create_minimum_eml(tale,
     :param eml_pid: The PID for the eml document. Assume that this is the package doi
     :param file_sizes: When we upload files that are not in the girder system (ie not
      files or items) we need to manually pass their size in. Use this dict to do that.
+    :param license_id: The ID of the license
     :type tale: wholetale.models.tale
     :type user: girder.models.user
     :type item_ids: list
     :type eml_pid: str
     :type file_sizes: dict
+    :type licenseId: int
     :return: The EML as as string of bytes
     :rtype: bytes
     """
-
-    """
-    Check that we're able to assign a first, last, and email to the record.
-    If we aren't throw an exception and let the user know. We'll also check that
-    the user has an ORCID ID set.
-    """
-    lastName = user.get('lastName', None)
-    firstName = user.get('firstName', None)
-    email = user.get('email', None)
-
-    if any((None for x in [lastName, firstName, email])):
-        raise RestException('Unable to find your name or email address. Please ensure '
-                            'you have authenticated with DataONE.')
-
-    # Create the namespace
-    ns = ET.Element('eml:eml')
-    ns.set('xmlns:eml', "eml://ecoinformatics.org/eml-2.1.1")
-    ns.set('xsi:schemaLocation', "eml://ecoinformatics.org/eml-2.1.1 eml.xsd")
-    ns.set('xmlns:stmml', "http://www.xml-cml.org/schema/stmml-1.1")
-    ns.set('xmlns:xsi', "http://www.w3.org/2001/XMLSchema-instance")
-    ns.set('scope', "system")
-    ns.set('system', "knb")
-    ns.set('packageId', eml_pid)
-
-    """
-    Create a `dataset` field, and assign the title to
-     the name of the Tale. The DataONE Quality Engine
-     prefers to have titles with at least 7 words.
-    """
-    dataset = ET.SubElement(ns, 'dataset')
-    ET.SubElement(dataset, 'title').text = str(tale.get('title', ''))
-
-    """
-    Create a `creator` section, using the information in the
-     `model.user` object to provide values.
-    """
-    creator = ET.SubElement(dataset, 'creator')
-    individual_name = ET.SubElement(creator, 'individualName')
-    ET.SubElement(individual_name, 'givenName').text = firstName
-    ET.SubElement(individual_name, 'surName').text = lastName
-
-    # Create a `description` field, but only if the Tale has a description.
-    description = get_tale_description(tale)
-    if description is not str():
-        abstract = ET.SubElement(dataset, 'abstract')
-        ET.SubElement(abstract, 'para').text = description
-
-    contact = ET.SubElement(dataset, 'contact')
-    ind_name = ET.SubElement(contact, 'individualName')
-    ET.SubElement(ind_name, 'givenName').text = firstName
-    ET.SubElement(ind_name, 'surName').text = lastName
 
     def create_entity(name, description):
         """
@@ -167,6 +123,20 @@ def create_minimum_eml(tale,
         externally_defined = ET.SubElement(data_format, 'externallyDefinedFormat')
         ET.SubElement(externally_defined, 'formatName').text = object_format
 
+    def create_intellectual_rights(dataset_element, license_id):
+        """
+        :param dataset_element: The xml element that defines the `dataset`
+        :param license_id: The ID of the license
+        :type dataset_element: xml.etree.ElementTree.Element
+        :type license_id: int
+        :return: None
+        """
+        intellectual_rights = ET.SubElement(dataset_element, 'intellectualRights')
+        section = ET.SubElement(intellectual_rights, 'section')
+        para = ET.SubElement(section, 'para')
+        ET.SubElement(para, 'literalLayout').text = \
+            license_text.get(license_id, '')
+
     def add_object_record(name, description, size, object_format):
         """
         Add a section to the EML that describes an object.
@@ -183,6 +153,60 @@ def create_minimum_eml(tale,
         create_format(object_format, physical_section)
         ET.SubElement(entity_section, 'entityType').text = 'dataTable'
 
+    """
+    Check that we're able to assign a first, last, and email to the record.
+    If we aren't throw an exception and let the user know. We'll also check that
+    the user has an ORCID ID set.
+    """
+    lastName = user.get('lastName', None)
+    firstName = user.get('firstName', None)
+    email = user.get('email', None)
+
+    if any((None for x in [lastName, firstName, email])):
+        raise RestException('Unable to find your name or email address. Please ensure '
+                            'you have authenticated with DataONE.')
+
+    # Create the namespace
+    ns = ET.Element('eml:eml')
+    ns.set('xmlns:eml', "eml://ecoinformatics.org/eml-2.1.1")
+    ns.set('xsi:schemaLocation', "eml://ecoinformatics.org/eml-2.1.1 eml.xsd")
+    ns.set('xmlns:stmml', "http://www.xml-cml.org/schema/stmml-1.1")
+    ns.set('xmlns:xsi', "http://www.w3.org/2001/XMLSchema-instance")
+    ns.set('scope', "system")
+    ns.set('system', "knb")
+    ns.set('packageId', eml_pid)
+
+    """
+    Create a `dataset` field, and assign the title to
+     the name of the Tale. The DataONE Quality Engine
+     prefers to have titles with at least 7 words.
+    """
+    dataset = ET.SubElement(ns, 'dataset')
+    ET.SubElement(dataset, 'title').text = str(tale.get('title', ''))
+
+    """
+    Create a `creator` section, using the information in the
+     `model.user` object to provide values.
+    """
+    creator = ET.SubElement(dataset, 'creator')
+    individual_name = ET.SubElement(creator, 'individualName')
+    ET.SubElement(individual_name, 'givenName').text = firstName
+    ET.SubElement(individual_name, 'surName').text = lastName
+
+    # Create a `description` field, but only if the Tale has a description.
+    description = get_tale_description(tale)
+    if description is not str():
+        abstract = ET.SubElement(dataset, 'abstract')
+        ET.SubElement(abstract, 'para').text = description
+
+    # Add a section for the license file
+    create_intellectual_rights(dataset, license_id)
+
+    contact = ET.SubElement(dataset, 'contact')
+    ind_name = ET.SubElement(contact, 'individualName')
+    ET.SubElement(ind_name, 'givenName').text = firstName
+    ET.SubElement(ind_name, 'surName').text = lastName
+
     # Add a <otherEntity> block for each object
     for item_id in item_ids:
         item = Item().load(item_id, user=user, level=AccessType.READ)
@@ -192,12 +216,12 @@ def create_minimum_eml(tale,
         add_object_record(item['name'], item['description'], item['size'], object_format)
 
     # Add a section for the tale.yml file
-    if file_sizes.get('tale_yaml') is not int() or None:
+    if not isinstance(file_sizes.get('tale_yaml'), int):
         description = "Configuration file that has information that will be useful " \
                       "for re-creating the computational environment."
         name = ExtraFileNames.tale_config
         object_format = 'application/x-yaml'
-        add_object_record(name, description, file_sizes.get('external_files'), object_format)
+        add_object_record(name, description, file_sizes.get('tale_yaml'), object_format)
 
     """
     Emulate the behavior of ElementTree.tostring in Python 3.6.0

@@ -3,7 +3,6 @@
 
 from girder import events
 
-
 API_VERSION = '2.0'
 CATALOG_NAME = 'WholeTale Catalog'
 WORKSPACE_NAME = 'WholeTale Workspaces'
@@ -86,3 +85,46 @@ class ExtraFileNames:
     """
     # Name for the tale config file
     tale_config = 'tale.yml'
+
+
+"""
+The DataONE packages need to have descriptions in the EML metadata. The
+license_text dictionary holds the descriptions for each license type. If
+you add a license to support, be sure to add the description below.
+0: CC0
+1: CCBY 3
+2: CCBY 4
+"""
+license_text = {0: 'This work is dedicated to the public domain under the Creative '
+                   'Commons Universal 1.0 Public Domain Dedication. To view a copy '
+                   'of this dedication, visit '
+                   'https://creativecommons.org/publicdomain/zero/1.0/.',
+                1: 'This work is dedicated to the public domain under the Creative Commons '
+                   'license CC-BY 3.0. To view a copy of this dedication, '
+                   'visit https://creativecommons.org/licenses/by/3.0/us/legalcode.',
+                2: 'This information is released to the public domain under the '
+                   'Creative Commons license CC-BY 4.0 '
+                   '(see: https://creativecommons.org/licenses/by/4.0/). It may be '
+                   'distributed, remixed, and built upon. You must give appropriate '
+                   'credit, provide a reasonable manner, but not in any way that '
+                   'suggests the licensor endorses you or your use. The consumer '
+                   'of these data ("Data User" herein) should realize that '
+                   'these data may be actively used by others for ongoing '
+                   'research and that coordination may be necessary to prevent '
+                   'duplicate publication. The Data User is urged to '
+                   'contact the authors of these data if any questions '
+                   'about methodology or results occur. Where '
+                   'appropriate, the Data User is encouraged to consider '
+                   'collaboration or co-authorship with the authors. The Data '
+                   'User should realize that misinterpretation of data may occur if '
+                   'used out of context of the original study. While substantial '
+                   'efforts are made to ensure the accuracy of data and '
+                   'associated documentation, complete accuracy of data sets '
+                   'cannot be guaranteed. All data are made available "as is." '
+                   'The Data User should be aware, however, that data '
+                   'are updated periodically and it is the responsibility '
+                   'of the Data User to check for new versions of the data. '
+                   'The data authors and the repository where these data '
+                   'were obtained shall not be liable for damages '
+                   'resulting from any use or misinterpretation '
+                   'of the data. Thank you.'}
