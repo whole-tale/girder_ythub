@@ -1,15 +1,22 @@
-
 import httmock
+import os
 import json
 from tests import base
 from .tests_helpers import \
     GOOD_REPO, GOOD_COMMIT, XPRA_REPO, XPRA_COMMIT, \
     mockOtherRequest, mockCommitRequest, mockReposRequest
+from girder.models.item import Item
+
+
+SCRIPTDIRS_NAME = None
 
 
 def setUpModule():
     base.enabledPlugins.append('wholetale')
     base.startServer()
+
+    global SCRIPTDIRS_NAME
+    from girder.plugins.wholetale.constants import SCRIPTDIRS_NAME
 
 
 def tearDownModule():
@@ -400,6 +407,47 @@ class TaleTestCase(base.TestCase):
             user=self.user)
         self.assertStatusOk(resp)
         self.assertEqual(resp.json['public'], False)
+
+    def testTaleNarrative(self):
+        resp = self.request(
+            path='/resource/lookup', method='GET', user=self.user,
+            params={'path': '/user/{login}/Home'.format(**self.user)})
+        home_dir = resp.json
+        resp = self.request(
+            path='/folder', method='POST', user=self.user, params={
+                'name': 'my_narrative', 'parentId': home_dir['_id']
+            })
+        sub_home_dir = resp.json
+        my_narrative = Item().createItem('notebook.ipynb', self.user, sub_home_dir)
+
+        resp = self.request(
+            path='/tale', method='POST', user=self.user,
+            type='application/json',
+            body=json.dumps({
+                'imageId': str(self.image['_id']),
+                'involatileData': [
+                    {'type': 'folder', 'id': sub_home_dir['_id']}
+                ],
+                'narrative': [str(my_narrative['_id'])]
+            })
+        )
+        self.assertStatusOk(resp)
+        tale = resp.json
+
+        path = os.path.join(
+            '/collection', SCRIPTDIRS_NAME, SCRIPTDIRS_NAME,
+            tale['_id'], 'notebook.ipynb')
+        resp = self.request(
+            path='/resource/lookup', method='GET', user=self.user,
+            params={'path': path})
+        self.assertStatusOk(resp)
+        self.assertEqual(resp.json['name'], my_narrative['name'])
+        self.assertNotEqual(resp.json['_id'], str(my_narrative['_id']))
+
+        resp = self.request(
+            path='/tale/{_id}'.format(**tale), method='DELETE',
+            user=self.admin)
+        self.assertStatusOk(resp)
 
     def tearDown(self):
         self.model('user').remove(self.user)

@@ -31,12 +31,24 @@ taleModel = {
         },
         "folderId": {
             "type": "string",
-            "description": "ID of a folder containing copy of tale['data']"
+            "description": "ID of a folder containing copy of tale['involatileData']"
+        },
+        "narrativeId": {
+            "type": "string",
+            "description": "ID of a folder containing copy of tale['narrative']"
         },
         "involatileData": {
             "type": "array",
             "items": dataResourceSchema,
             "description": "Resources used to create Tale's data folder"
+        },
+        "narrative": {
+            "type": "array",
+            "items": {
+                'type': 'string',
+                'description': "Girder Item id"
+            },
+            "description": "List of Girder Items containing Tale's narrative"
         },
         "format": {
             "type": "integer",
