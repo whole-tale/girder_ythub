@@ -11,10 +11,11 @@ from girder.api.rest import Resource, filtermodel, RestException,\
 
 from girder.constants import AccessType, SortDir, TokenScope
 from girder.utility import ziputil
-from ..schema.tale import taleModel
+from ..schema.tale import taleModel as taleSchema
+from ..models.tale import Tale as taleModel
 
 
-addModel('tale', taleModel, resources='tale')
+addModel('tale', taleSchema, resources='tale')
 
 
 class Tale(Resource):
@@ -22,6 +23,7 @@ class Tale(Resource):
     def __init__(self):
         super(Tale, self).__init__()
         self.resourceName = 'tale'
+        self._model = taleModel()
 
         self.route('GET', (), self.listTales)
         self.route('GET', (':id',), self.getTale)
@@ -59,10 +61,10 @@ class Tale(Resource):
             user = None
 
         if text:
-            return list(self.model('tale', 'wholetale').textSearch(
+            return list(self._model.textSearch(
                 text, user=user, limit=limit, offset=offset, sort=sort))
         else:
-            return list(self.model('tale', 'wholetale').list(
+            return list(self._model.list(
                 user=user, data=None, image=image,
                 currentUser=currentUser,
                 offset=offset, limit=limit, sort=sort))
@@ -84,23 +86,32 @@ class Tale(Resource):
         Description('Update an existing tale.')
         .modelParam('id', model='tale', plugin='wholetale',
                     level=AccessType.WRITE, destName='taleObj')
-        .jsonParam('tale', 'Updated tale', paramType='body', schema=taleModel,
+        .jsonParam('tale', 'Updated tale', paramType='body', schema=taleSchema,
                    dataType='tale')
         .responseClass('tale')
         .errorResponse('ID was invalid.')
         .errorResponse('Admin access was denied for the tale.', 403)
     )
     def updateTale(self, taleObj, tale, params):
-        taleModel = self.model('tale', 'wholetale')
-        for keyword in taleModel.modifiableFields:
+        is_public = tale.pop('public')
+
+        for keyword in self._model.modifiableFields:
             try:
                 taleObj[keyword] = tale.pop(keyword)
             except KeyError:
                 pass
-        taleModel.setPublic(taleObj, taleObj['public'])
+        taleObj = self._model.updateTale(taleObj)
+
+        was_public = taleObj.get('public', False)
+        if was_public != is_public:
+            access = self._model.getFullAccessList(taleObj)
+            user = self.getCurrentUser()
+            taleObj = self._model.setAccessList(
+                taleObj, access, save=True, user=user, setPublic=is_public)
+
         # if taleObj['published']:
-        #     taleModel.setPublished(taleObj, True)
-        return taleModel.updateTale(taleObj)
+        #     self._model.setPublished(taleObj, True)
+        return taleObj
 
     @access.user
     @autoDescribeRoute(
@@ -110,12 +121,12 @@ class Tale(Resource):
         .errorResponse('Admin access was denied for the tale.', 403)
     )
     def deleteTale(self, tale, params):
-        self.model('tale', 'wholetale').remove(tale)
+        self._model.remove(tale)
 
     @access.user
     @autoDescribeRoute(
         Description('Create a new tale.')
-        .jsonParam('tale', 'A new tale', paramType='body', schema=taleModel,
+        .jsonParam('tale', 'A new tale', paramType='body', schema=taleSchema,
                    dataType='tale')
         .responseClass('tale')
         .errorResponse('You are not authorized to create tales.', 403)
@@ -133,7 +144,7 @@ class Tale(Resource):
             image = self.model('image', 'wholetale').load(
                 tale['imageId'], user=user, level=AccessType.READ, exc=True)
             default_author = ' '.join((user['firstName'], user['lastName']))
-            return self.model('tale', 'wholetale').createTale(
+            return self._model.createTale(
                 image, tale['involatileData'], creator=user, save=True,
                 title=tale.get('title'), description=tale.get('description'),
                 public=tale.get('public'), config=tale.get('config'),
@@ -157,7 +168,7 @@ class Tale(Resource):
         .errorResponse('Admin access was denied for the tale.', 403)
     )
     def getTaleAccess(self, tale):
-        return self.model('tale', 'wholetale').getFullAccessList(tale)
+        return self._model.getFullAccessList(tale)
 
     @access.user(scope=TokenScope.DATA_OWN)
     @autoDescribeRoute(
@@ -173,7 +184,7 @@ class Tale(Resource):
     )
     def updateTaleAccess(self, tale, access, publicFlags, public):
         user = self.getCurrentUser()
-        return self.model('tale', 'wholetale').setAccessList(
+        return self._model.setAccessList(
             tale, access, save=True, user=user, setPublic=public, publicFlags=publicFlags)
 
     @access.user

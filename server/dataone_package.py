@@ -22,7 +22,7 @@ from .utils import \
 
 from .constants import \
     ExtraFileNames, \
-    Licence
+    license_text
 
 from d1_common.types import dataoneTypes
 from d1_common import const as d1_const
@@ -135,8 +135,8 @@ def create_minimum_eml(tale,
         intellectual_rights = ET.SubElement(dataset_element, 'intellectualRights')
         section = ET.SubElement(intellectual_rights, 'section')
         para = ET.SubElement(section, 'para')
-        ET.SubElement(para, 'literalLayout').text =\
-            Licence.text_from_id(license_id)
+        ET.SubElement(para, 'literalLayout').text = \
+            license_text.get(license_id, '')
 
     def add_object_record(name, description, size, object_format):
         """
@@ -217,12 +217,11 @@ def create_minimum_eml(tale,
         add_object_record(item['name'], item['description'], item['size'], object_format)
 
     # Add a section for the tale.yml file
-    if file_sizes.get('tale_yaml') != int() or None:
+    if not isinstance(file_sizes.get('tale_yaml'), int):
         description = "Configuration file that has information that will be useful " \
                       "for re-creating the computational environment."
         name = ExtraFileNames.tale_config
         object_format = 'application/x-yaml'
-        logger.info(file_sizes)
         add_object_record(name, description, file_sizes.get('tale_yaml'), object_format)
 
     """

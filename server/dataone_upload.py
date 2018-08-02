@@ -403,7 +403,6 @@ def create_upload_package(item_ids,
                                                                   item_ids,
                                                                   user,
                                                                   client)
-        logger.info(license_id)
         """
         Create an EML document describing the data, and then upload it. Save the
          pid for the resource map.

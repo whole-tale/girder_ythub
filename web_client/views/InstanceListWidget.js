@@ -4,7 +4,6 @@ import PaginateWidget from 'girder/views/widgets/PaginateWidget';
 import View from 'girder/views/View';
 import { defineFlags, formatDate, DATE_SECOND } from 'girder/misc';
 import eventStream from 'girder/utilities/EventStream';
-import { getCurrentUser } from 'girder/auth';
 import { SORT_DESC } from 'girder/constants';
 import { restRequest } from 'girder/rest';
 
@@ -14,7 +13,6 @@ import InstanceStatus from '../InstanceStatus';
 
 import '../stylesheets/instanceListWidget.styl';
 
-
 var InstanceListWidget = View.extend({
     events: {
         'click .g-instance-trigger-link': function (e) {
@@ -22,15 +20,15 @@ var InstanceListWidget = View.extend({
             this.trigger('g:instanceClicked', this.collection.get(cid));
         },
 
-   'click .g-instance-delete-link': function (e) {
-        var url = $(e.currentTarget).attr('instance-id');
+        'click .g-instance-delete-link': function (e) {
+            var url = $(e.currentTarget).attr('instance-id');
             var widget = this;
             var _delParams = {
                 path: 'instance/' + url,
                 type: 'DELETE',
                 error: null
             };
-            restRequest(_delParams).done(function() {
+            restRequest(_delParams).done(function () {
                 widget.trigger('g:changed');
             });
         }
@@ -77,7 +75,7 @@ var InstanceListWidget = View.extend({
                 instances: widget.collection.toArray(),
                 showHeader: widget.showHeader,
                 columns: widget.columns,
-                hubUrl: resp["url"],
+                hubUrl: resp['url'],
                 columnEnum: widget.columnEnum,
                 InstanceStatus: InstanceStatus,
                 formatDate: formatDate,
