@@ -21,7 +21,8 @@ from .utils import \
     get_file_item, \
     get_remote_url, \
     is_dataone_url, \
-    get_dataone_package_url
+    get_dataone_package_url, \
+    extract_orcid_id
 from .constants import \
     API_VERSION, \
     ExtraFileNames
@@ -68,7 +69,13 @@ def upload_file(client, pid, file_object, system_metadata):
         raise ValidationException('Error uploading file to DataONE. {0}'.format(str(e)))
 
 
-def create_upload_eml(tale, client, user, item_ids, license_id, file_sizes=dict()):
+def create_upload_eml(tale,
+                      client,
+                      user,
+                      item_ids,
+                      license_id,
+                      orcid_id,
+                      file_sizes=dict()):
     """
     Creates the EML metadata document along with an additional metadata document
     and uploads them both to DataONE. A pid is created for the EML document, and is
@@ -99,7 +106,8 @@ def create_upload_eml(tale, client, user, item_ids, license_id, file_sizes=dict(
                                  item_ids,
                                  eml_pid,
                                  file_sizes,
-                                 license_id)
+                                 license_id,
+                                 orcid_id,)
 
     # Create the metadata describing the EML document
     meta = generate_system_metadata(pid=eml_pid,
@@ -403,6 +411,8 @@ def create_upload_package(item_ids,
                                                                   item_ids,
                                                                   user,
                                                                   client)
+
+        orcid_id = extract_orcid_id(jwt)
         """
         Create an EML document describing the data, and then upload it. Save the
          pid for the resource map.
@@ -413,6 +423,7 @@ def create_upload_package(item_ids,
                                     user,
                                     item_ids,
                                     license_id,
+                                    orcid_id,
                                     file_sizes)
 
         """

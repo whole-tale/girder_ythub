@@ -52,7 +52,8 @@ def create_minimum_eml(tale,
                        item_ids,
                        eml_pid,
                        file_sizes,
-                       license_id):
+                       license_id,
+                       orcid_id):
     """
     Creates a bare minimum EML record for a package. Note that the
     ordering of the xml elements matters.
@@ -64,12 +65,14 @@ def create_minimum_eml(tale,
     :param file_sizes: When we upload files that are not in the girder system (ie not
      files or items) we need to manually pass their size in. Use this dict to do that.
     :param license_id: The ID of the license
+    :param orcid_id: The user's orcid ID
     :type tale: wholetale.models.tale
     :type user: girder.models.user
     :type item_ids: list
     :type eml_pid: str
     :type file_sizes: dict
     :type licenseId: int
+    :type orcid_id: str
     :return: The EML as as string of bytes
     :rtype: bytes
     """
@@ -192,6 +195,9 @@ def create_minimum_eml(tale,
     individual_name = ET.SubElement(creator, 'individualName')
     ET.SubElement(individual_name, 'givenName').text = firstName
     ET.SubElement(individual_name, 'surName').text = lastName
+    userId = ET.SubElement(creator, 'userId')
+    userId.text = orcid_id
+    userId.set('directory', "https://orcid.org")
 
     # Create a `description` field, but only if the Tale has a description.
     description = get_tale_description(tale)

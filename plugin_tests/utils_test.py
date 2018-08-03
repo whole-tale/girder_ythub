@@ -161,3 +161,24 @@ class TestDataONEUtils(base.TestCase):
         # Test that we get the right url when using prod
         url = get_dataone_package_url(DataONELocations.prod_cn, pid)
         self.assertEqual(url, 'https://search.dataone.org/#view/'+pid)
+
+    def test_extract_orcid_id(self):
+        from server.utils import parse_jwt
+        from server.utils import extract_orcid_id
+
+        jwt = "eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJodHRwOlwvXC9vcmNpZC5vcm" \
+              "dcLzAwMDAtMDAwMi0xNzU2LTIxMjgiLCJmdWxsTmFtZSI6IlRob21hc" \
+              "yBUaGVsZW4iLCJpc3N1ZWRBdCI6IjIwMTgtMDgtMDJUMjI6MDY6MDYu" \
+              "NDAzKzAwOjAwIiwiY29uc3VtZXJLZXkiOiJ0aGVjb25zdW1lcmtleSI" \
+              "sImV4cCI6MTUzMzMxMjM2NiwidXNlcklkIjoiaHR0cDpcL1wvb3JjaW" \
+              "Qub3JnXC8wMDAwLTAwMDItMTc1Ni0yMTI4IiwidHRsIjo2NDgwMCwia" \
+              "WF0IjoxNTMzMjQ3NTY2fQ.cGnBNtWmLghJj_I0nVpn4S0900eHD0siI" \
+              "cYZDW3AHx6B2KDFxnzd9A7l7HDHF3VmtA6te2xkiERQzBUFRqYuKtEE" \
+              "WCtX5r4AdkGgEEgozm9a3d8pl1I7YxYG2snhoay0CEZuMlm1KrA9Hoy" \
+              "0KVeFRsJw6Eyx8BP3Ftozt7GAEDkPJzNnYdRHc1oyybNgefY8tHNX20" \
+              "hEIlsteNkBcQcNuuZRSgUcSCvWajWkrIrDpm1JySPZA5TIjcrSpksTe" \
+              "kbCEA7b2KfMRdjfk7ZRaRa0FGVw5K25mDmXbkJ1ScCLUnDMZIW20ENU" \
+              "L1PCc6TzAG0_FnWqOcpzsl1bNrRNOFkgyg"
+
+        res = extract_orcid_id(jwt)
+        self.assertEqual(res, "http://orcid.org/0000-0002-1756-2128")

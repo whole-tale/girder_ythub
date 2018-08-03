@@ -3,37 +3,15 @@ Code for querying DataONE and verifying query results. Specifically used for
  finding datasets based on the url and for listing package contents. Some of
   these methods are used elsewhere in the WholeTale plugin, specifically in  the harvester.
 """
-
 import re
 import json
-import six.moves.urllib as urllib
 import requests
 
 from girder import logger
 from girder.api.rest import RestException
 from .constants import DataONELocations
-
-
-def esc(value):
-    """
-    Escape a string so it can be used in a Solr query string
-    :param value: The string that will be escaped
-    :type value: str
-    :return: The escaped string
-    :rtype: str
-    """
-    return urllib.parse.quote_plus(value)
-
-
-def unesc(value):
-    """
-    Un-escapes a string so it can used in URLS.
-    :param value: The string that will be un-escaped
-    :type value: str
-    :return: The un-escaped string
-    :rtype: str
-    """
-    return urllib.parse.unquote_plus(value)
+from .utils import \
+    esc
 
 
 def query(q,
