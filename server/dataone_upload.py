@@ -22,7 +22,7 @@ from .utils import \
     get_remote_url, \
     is_dataone_url, \
     get_dataone_package_url, \
-    extract_orcid_id
+    extract_user_id
 from .constants import \
     API_VERSION, \
     ExtraFileNames
@@ -74,7 +74,7 @@ def create_upload_eml(tale,
                       user,
                       item_ids,
                       license_id,
-                      orcid_id,
+                      user_id,
                       file_sizes=dict()):
     """
     Creates the EML metadata document along with an additional metadata document
@@ -107,7 +107,7 @@ def create_upload_eml(tale,
                                  eml_pid,
                                  file_sizes,
                                  license_id,
-                                 orcid_id,)
+                                 user_id,)
 
     # Create the metadata describing the EML document
     meta = generate_system_metadata(pid=eml_pid,
@@ -412,7 +412,7 @@ def create_upload_package(item_ids,
                                                                   user,
                                                                   client)
 
-        orcid_id = extract_orcid_id(jwt)
+        user_id = extract_user_id(jwt)
         """
         Create an EML document describing the data, and then upload it. Save the
          pid for the resource map.
@@ -423,7 +423,7 @@ def create_upload_package(item_ids,
                                     user,
                                     item_ids,
                                     license_id,
-                                    orcid_id,
+                                    user_id,
                                     file_sizes)
 
         """

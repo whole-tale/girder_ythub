@@ -1,5 +1,5 @@
 import re
-import base64
+import jwt
 import six.moves.urllib as urllib
 
 from girder.utility.model_importer import ModelImporter
@@ -268,33 +268,27 @@ def get_dataone_package_url(repository, pid):
         return str('https://dev.nceas.ucsb.edu/#view/'+pid)
 
 
-def parse_jwt(jwt_token):
-    """
-    Takes a jwt token and returns the decoded section of it
-
-    :param jwt_token: The jwt token
-    :type jwt_token: str
-    :return: A dictionary of the jwt information
-    :rtype: dict
-    """
-    base_section = re.search('\.([^\.]+)\.', jwt_token).group(1)
-    if base_section is not None:
-        pad = len(base_section) % 4
-        base_section += "=" * pad
-        return str(base64.b64decode(base_section))
-    return base_section
-
-
-def extract_orcid_id(jwt):
+def extract_user_id(jwt_token):
     """
     Takes a JWT and extracts the orcid id out.
-    :param jwt:
-    :return:
+    :param jwt: The decoded JWT
+    :type jwt: str
+    :return: The ORCID ID
     :rtype: str
     """
-    parsed_jwt = parse_jwt(jwt)
-    orcid_res = re.search('"userId"\s*:\s*"([^"]*)"', parsed_jwt).group(1)
-    return orcid_res.replace("\\", "")
+    jwt_token = jwt.decode(jwt_token, verify=False)
+    return jwt_token['userId']
+
+
+def is_orcid_id(id):
+    """
+    Checks whether a string is a link to an ORCID account
+    :param id: The string that may contain the ORCID account
+    :type id: str
+    :return: True/False if it is or isn't
+    :rtype: bool
+    """
+    return bool(id.find('orcid.org'))
 
 
 def esc(value):
@@ -308,12 +302,27 @@ def esc(value):
     return urllib.parse.quote_plus(value)
 
 
-def strip_html(string):
+def strip_html_tags(string):
     """
-    Removes HTML from a string
+    Removes HTML tags from a string
     :param string: The string with HTML
     :type string: str
     :return: The string without HTML
     :rtype: str
     """
     return re.sub('<[^<]+?>', '', string)
+
+
+def get_directory(user_id):
+    """
+    Returns the directory that should be used in the EML
+
+    :param user_id: The user ID
+    :type user_id: str
+    :return: The directory name
+    :rtype: str
+    """
+    logger.info(type(user_id))
+    if is_orcid_id(user_id):
+        return "https://orcid.org"
+    return "https://cilogon.org"

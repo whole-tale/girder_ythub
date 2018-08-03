@@ -35,7 +35,6 @@ class TestDataONEUpload(base.TestCase):
         # Test for create_upload_eml that will generate metadata and attempt to upload it.
         # Note that the upload should not go thorugh, and we should catch an exception
 
-        from server.dataone_upload import upload_file
         from server.dataone_upload import create_client
         from server.dataone_upload import create_upload_eml
 
@@ -54,6 +53,7 @@ class TestDataONEUpload(base.TestCase):
                           user,
                           [],
                           1,
+                          "https://orcid.org/0-0-0-0-0",
                           dict())
 
     def test_create_upload_resmap(self):
