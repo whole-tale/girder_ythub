@@ -268,6 +268,7 @@ def get_dataone_package_url(repository, pid):
         return str('https://dev.nceas.ucsb.edu/#view/'+pid)
 
 
+
 def parse_jwt(jwt_token):
     """
     Takes a jwt token and returns the decoded section of it
@@ -306,3 +307,14 @@ def esc(value):
     :rtype: str
     """
     return urllib.parse.quote_plus(value)
+
+def strip_html(string):
+    """
+    Removes HTML from a string
+    :param string: The string with HTML
+    :type string: str
+    :return: The string without HTML
+    :rtype: str
+    """
+    return re.sub('<[^<]+?>', '', string)
+

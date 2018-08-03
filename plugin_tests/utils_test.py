@@ -182,3 +182,11 @@ class TestDataONEUtils(base.TestCase):
 
         res = extract_orcid_id(jwt)
         self.assertEqual(res, "http://orcid.org/0000-0002-1756-2128")
+
+    def test_strip_html(self):
+        from server.utils import strip_html
+
+        str_no_html = 'test description'
+        messy_str = '<p>'+str_no_html+'</p>'
+        self.assertEqual(strip_html(messy_str), str_no_html)
+

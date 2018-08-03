@@ -17,7 +17,8 @@ from .utils import \
     check_pid, \
     get_file_format, \
     get_tale_description, \
-    get_file_item
+    get_file_item, \
+    strip_html
 
 from .constants import \
     ExtraFileNames, \
@@ -149,7 +150,7 @@ def create_minimum_eml(tale,
         :param object_format: The format type
         :return: None
         """
-        entity_section = create_entity(name, description)
+        entity_section = create_entity(name, strip_html(description))
         physical_section = create_physical(entity_section,
                                            name,
                                            size)
@@ -203,7 +204,7 @@ def create_minimum_eml(tale,
     description = get_tale_description(tale)
     if description is not str():
         abstract = ET.SubElement(dataset, 'abstract')
-        ET.SubElement(abstract, 'para').text = description
+        ET.SubElement(abstract, 'para').text = strip_html(description)
 
     # Add a section for the license file
     create_intellectual_rights(dataset, license_id)

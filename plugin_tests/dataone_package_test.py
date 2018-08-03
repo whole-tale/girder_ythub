@@ -7,7 +7,7 @@ from d1_client.mnclient_2_0 import MemberNodeClient_2_0
 from d1_common.types import dataoneTypes
 import uuid
 import datetime
-
+import re
 
 def setUpModule():
     base.enabledPlugins.append('wholetale')
