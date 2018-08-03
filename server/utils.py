@@ -277,6 +277,9 @@ def extract_user_id(jwt_token):
     :rtype: str
     """
     jwt_token = jwt.decode(jwt_token, verify=False)
+    user_id = jwt_token['userId']
+    if is_orcid_id(user_id):
+        return make_url_https(user_id)
     return jwt_token['userId']
 
 
@@ -326,3 +329,16 @@ def get_directory(user_id):
     if is_orcid_id(user_id):
         return "https://orcid.org"
     return "https://cilogon.org"
+
+
+def make_url_https(url):
+    """
+    Given an http url, return it as https
+
+    :param url: The http url
+    :type url: str
+    :return: The url as https
+    :rtype: str
+    """
+    res = url.replace("http", "https")
+    return res

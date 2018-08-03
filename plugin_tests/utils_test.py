@@ -181,7 +181,7 @@ class TestDataONEUtils(base.TestCase):
               "L1PCc6TzAG0_FnWqOcpzsl1bNrRNOFkgyg"
 
         res = extract_user_id(jwt)
-        self.assertEqual(res, "http://orcid.org/0000-0002-1756-2128")
+        self.assertEqual(res, "https://orcid.org/0000-0002-1756-2128")
 
     def test_strip_html_tags(self):
         from server.utils import strip_html_tags
@@ -197,3 +197,10 @@ class TestDataONEUtils(base.TestCase):
         input = 'http:\/\/orcid.org\/000-000-000-00'
         res = is_orcid_id(input)
         self.assertTrue(res)
+
+    def test_make_url_https(self):
+        from server.utils import make_url_https
+
+        url = 'http://afakeurlthatisntreal'
+        res = make_url_https(url)
+        self.assertEqual(res, 'https://afakeurlthatisntreal')
