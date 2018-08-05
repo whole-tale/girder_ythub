@@ -340,5 +340,5 @@ def make_url_https(url):
     :return: The url as https
     :rtype: str
     """
-    res = url.replace("http", "https")
-    return res
+    parsed = urllib.parse.urlparse(url)
+    return parsed._replace(scheme="https").geturl()

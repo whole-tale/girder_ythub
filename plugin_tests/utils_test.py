@@ -201,6 +201,14 @@ class TestDataONEUtils(base.TestCase):
     def test_make_url_https(self):
         from server.utils import make_url_https
 
-        url = 'http://afakeurlthatisntreal'
+        url = 'http://afakeurlthatisntreal.net'
         res = make_url_https(url)
-        self.assertEqual(res, 'https://afakeurlthatisntreal')
+        self.assertEqual(res, 'https://afakeurlthatisntreal.net')
+
+        url = 'http://afakeurlthatisntreal.com/http-example'
+        res = make_url_https(url)
+        self.assertEqual(res, 'https://afakeurlthatisntreal.com/http-example')
+
+        url = 'htts://example.com'
+        res = make_url_https(url)
+        self.assertEqual(res, 'https://example.com')
