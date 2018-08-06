@@ -107,7 +107,7 @@ def create_upload_eml(tale,
                                  eml_pid,
                                  file_sizes,
                                  license_id,
-                                 user_id,)
+                                 user_id)
 
     # Create the metadata describing the EML document
     meta = generate_system_metadata(pid=eml_pid,
