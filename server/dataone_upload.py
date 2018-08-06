@@ -1,12 +1,14 @@
 import uuid
 import yaml as yaml
+import os
 
 from girder import logger
 from girder.models.model_base import ValidationException
 from girder.api.rest import RestException
 from girder.models.file import File
 from girder.constants import \
-    AccessType
+    AccessType, \
+    ROOT_DIR
 from girder.utility.model_importer import ModelImporter
 from girder.utility.path import getResourcePath
 
@@ -25,7 +27,8 @@ from .utils import \
     extract_user_id
 from .constants import \
     API_VERSION, \
-    ExtraFileNames
+    ExtraFileNames, \
+    license_files
 
 from d1_client.mnclient_2_0 import MemberNodeClient_2_0
 from d1_common.types.exceptions import DataONEException
@@ -324,6 +327,51 @@ def create_upload_tale_yaml(tale, remote_objects, item_ids, user, client):
     return pid, len(yaml_file)
 
 
+def upload_license_file(client, license_id):
+    """
+    Upload a license file to DataONE.
+
+    :param client: The client that interfaces DataONE
+    :param license_id: The ID of the license (see `ExtraFileNames` in constants)
+    :type client: MemberNodeClient_2_0
+    :type license_id: int
+    :return: The pid and size of the license file
+    """
+
+    # Holds the license text
+    license_text = str()
+
+    # Path to the license file
+    license_path = os.path.join(ROOT_DIR,
+                                'girder',
+                                'plugins',
+                                'wholetale',
+                                'licenses',
+                                license_files[license_id])
+    try:
+        with open(license_path) as f:
+            license_text = f.read()
+    except IOError:
+        logger.warning('Failed to open license file')
+    finally:
+        f.close()
+
+    license_length = os.path.getsize(license_path)
+
+    # Create a pid for the file
+    pid = str(uuid.uuid4())
+    # Create system metadata for the file
+    meta = generate_system_metadata(pid=pid,
+                                    format_id='text/plain',
+                                    file_object=license_text,
+                                    name=ExtraFileNames.license)
+    # Upload the file
+    upload_file(client=client, pid=pid, file_object=license_text, system_metadata=meta)
+
+    # Return the pid and length of the file
+    return pid, license_length
+
+
 def create_upload_package(item_ids,
                           tale,
                           user,
@@ -379,8 +427,8 @@ def create_upload_package(item_ids,
     try:
         """
         Create a client object that is used to interface DataONE. This can interact with a
-         particular member node by specifying `repository`. It also needs an authentication token.
-         The auth portion is incomplete, and requires you to paste your token in <TOKEN>.
+         particular member node by specifying `repository`. The jwt is the jwt token from
+         DataONE.
         """
         client = create_client(repository, {"headers": {
             "Authorization": "Bearer "+jwt}})
@@ -412,25 +460,29 @@ def create_upload_package(item_ids,
                                                                   user,
                                                                   client)
 
-        user_id = extract_user_id(jwt)
+        """
+        Upload the license file
+        """
+        license_pid, license_size = upload_license_file(client, license_id)
+
         """
         Create an EML document describing the data, and then upload it. Save the
          pid for the resource map.
         """
-        file_sizes = {'tale_yaml': tale_yaml_length}
+        file_sizes = {'tale_yaml': tale_yaml_length, 'license': license_size}
         eml_pid = create_upload_eml(tale,
                                     client,
                                     user,
                                     item_ids,
                                     license_id,
-                                    user_id,
+                                    extract_user_id(jwt),
                                     file_sizes)
 
         """
         Once all objects are uploaded, create and upload the resource map. This file describes
          the object relations (ie the package). This should be the last file that is uploaded.
         """
-        upload_objects = filtered_items['dataone'] + local_file_pids + [tale_yaml_pid]
+        upload_objects = filtered_items['dataone'] + local_file_pids + [tale_yaml_pid, license_pid]
         resmap_pid = str(uuid.uuid4())
         create_upload_resmap(resmap_pid, eml_pid, upload_objects, client)
         return get_dataone_package_url(repository, resmap_pid)

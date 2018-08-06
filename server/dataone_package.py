@@ -224,12 +224,18 @@ def create_minimum_eml(tale,
         add_object_record(item['name'], item['description'], item['size'], object_format)
 
     # Add a section for the tale.yml file
-    if not isinstance(file_sizes.get('tale_yaml'), int):
-        description = "Configuration file that has information that will be useful " \
-                      "for re-creating the computational environment."
-        name = ExtraFileNames.tale_config
-        object_format = 'application/x-yaml'
-        add_object_record(name, description, file_sizes.get('tale_yaml'), object_format)
+    file_sizes.get('tale_yaml')
+    description = "Configuration file that has information that will be useful " \
+                  "for re-creating the computational environment."
+    name = ExtraFileNames.tale_config
+    object_format = 'application/x-yaml'
+    add_object_record(name, description, file_sizes.get('tale_yaml'), object_format)
+
+    # Add a section for the license file
+    description = "The package's licensing information."
+    name = ExtraFileNames.license
+    object_format = 'text/plain'
+    add_object_record(name, description, file_sizes.get('license'), object_format)
 
     """
     Emulate the behavior of ElementTree.tostring in Python 3.6.0

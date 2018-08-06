@@ -85,6 +85,13 @@ class ExtraFileNames:
     """
     # Name for the tale config file
     tale_config = 'tale.yml'
+    license = 'license.txt'
+
+
+"""
+A dictionary that maps a license ID to a license file
+"""
+license_files = {0: 'cc0.txt', 1: 'ccby3.txt', 2: 'ccby4.txt'}
 
 
 """
