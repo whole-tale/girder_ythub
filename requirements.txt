@@ -8,3 +8,4 @@ pyyaml
 dataone.common
 dataone.libclient
 dataone.cli
+git+https://github.com/whole-tale/gwvolman#egg=gwvolman
