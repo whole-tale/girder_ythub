@@ -18,7 +18,8 @@ from .utils import \
     get_file_format, \
     get_tale_description, \
     get_file_item, \
-    strip_html
+    strip_html_tags, \
+    get_directory
 
 from .constants import \
     ExtraFileNames, \
@@ -53,7 +54,8 @@ def create_minimum_eml(tale,
                        item_ids,
                        eml_pid,
                        file_sizes,
-                       license_id):
+                       license_id,
+                       user_id):
     """
     Creates a bare minimum EML record for a package. Note that the
     ordering of the xml elements matters.
@@ -65,12 +67,14 @@ def create_minimum_eml(tale,
     :param file_sizes: When we upload files that are not in the girder system (ie not
      files or items) we need to manually pass their size in. Use this dict to do that.
     :param license_id: The ID of the license
+    :param user_id: The user's user id from the JWT
     :type tale: wholetale.models.tale
     :type user: girder.models.user
     :type item_ids: list
     :type eml_pid: str
     :type file_sizes: dict
     :type licenseId: int
+    :type user_id: str
     :return: The EML as as string of bytes
     :rtype: bytes
     """
@@ -147,7 +151,7 @@ def create_minimum_eml(tale,
         :param object_format: The format type
         :return: None
         """
-        entity_section = create_entity(name, strip_html(description))
+        entity_section = create_entity(name, strip_html_tags(description))
         physical_section = create_physical(entity_section,
                                            name,
                                            size)
@@ -157,7 +161,7 @@ def create_minimum_eml(tale,
     """
     Check that we're able to assign a first, last, and email to the record.
     If we aren't throw an exception and let the user know. We'll also check that
-    the user has an ORCID ID set.
+    the user has a userID from their JWT.
     """
     lastName = user.get('lastName', None)
     firstName = user.get('firstName', None)
@@ -193,12 +197,15 @@ def create_minimum_eml(tale,
     individual_name = ET.SubElement(creator, 'individualName')
     ET.SubElement(individual_name, 'givenName').text = firstName
     ET.SubElement(individual_name, 'surName').text = lastName
+    userId = ET.SubElement(creator, 'userId')
+    userId.text = user_id
+    userId.set('directory', get_directory(user_id))
 
     # Create a `description` field, but only if the Tale has a description.
     description = get_tale_description(tale)
     if description is not str():
         abstract = ET.SubElement(dataset, 'abstract')
-        ET.SubElement(abstract, 'para').text = strip_html(description)
+        ET.SubElement(abstract, 'para').text = strip_html_tags(description)
 
     # Add a section for the license file
     create_intellectual_rights(dataset, license_id)

@@ -1,4 +1,6 @@
 import re
+import jwt
+import six.moves.urllib as urllib
 
 from girder.utility.model_importer import ModelImporter
 from girder import logger
@@ -266,12 +268,77 @@ def get_dataone_package_url(repository, pid):
         return str('https://dev.nceas.ucsb.edu/#view/'+pid)
 
 
-def strip_html(string):
+def extract_user_id(jwt_token):
     """
-    Removes HTML from a string
+    Takes a JWT and extracts the orcid id out.
+    :param jwt: The decoded JWT
+    :type jwt: str
+    :return: The ORCID ID
+    :rtype: str
+    """
+    jwt_token = jwt.decode(jwt_token, verify=False)
+    user_id = jwt_token['userId']
+    if is_orcid_id(user_id):
+        return make_url_https(user_id)
+    return jwt_token['userId']
+
+
+def is_orcid_id(id):
+    """
+    Checks whether a string is a link to an ORCID account
+    :param id: The string that may contain the ORCID account
+    :type id: str
+    :return: True/False if it is or isn't
+    :rtype: bool
+    """
+    return bool(id.find('orcid.org'))
+
+
+def esc(value):
+    """
+    Escape a string so it can be used in a Solr query string
+    :param value: The string that will be escaped
+    :type value: str
+    :return: The escaped string
+    :rtype: str
+    """
+    return urllib.parse.quote_plus(value)
+
+
+def strip_html_tags(string):
+    """
+    Removes HTML tags from a string
     :param string: The string with HTML
     :type string: str
     :return: The string without HTML
     :rtype: str
     """
     return re.sub('<[^<]+?>', '', string)
+
+
+def get_directory(user_id):
+    """
+    Returns the directory that should be used in the EML
+
+    :param user_id: The user ID
+    :type user_id: str
+    :return: The directory name
+    :rtype: str
+    """
+    logger.info(type(user_id))
+    if is_orcid_id(user_id):
+        return "https://orcid.org"
+    return "https://cilogon.org"
+
+
+def make_url_https(url):
+    """
+    Given an http url, return it as https
+
+    :param url: The http url
+    :type url: str
+    :return: The url as https
+    :rtype: str
+    """
+    parsed = urllib.parse.urlparse(url)
+    return parsed._replace(scheme="https").geturl()

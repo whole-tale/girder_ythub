@@ -162,9 +162,53 @@ class TestDataONEUtils(base.TestCase):
         url = get_dataone_package_url(DataONELocations.prod_cn, pid)
         self.assertEqual(url, 'https://search.dataone.org/#view/'+pid)
 
-    def test_strip_html(self):
-        from server.utils import strip_html
+    def test_extract_orcid_id(self):
+        from server.utils import extract_user_id
+
+        # Test with a JWT that has an orcid account
+        jwt = "eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJodHRwOlwvXC9vcmNpZC5vcm" \
+              "dcLzAwMDAtMDAwMi0xNzU2LTIxMjgiLCJmdWxsTmFtZSI6IlRob21hc" \
+              "yBUaGVsZW4iLCJpc3N1ZWRBdCI6IjIwMTgtMDgtMDJUMjI6MDY6MDYu" \
+              "NDAzKzAwOjAwIiwiY29uc3VtZXJLZXkiOiJ0aGVjb25zdW1lcmtleSI" \
+              "sImV4cCI6MTUzMzMxMjM2NiwidXNlcklkIjoiaHR0cDpcL1wvb3JjaW" \
+              "Qub3JnXC8wMDAwLTAwMDItMTc1Ni0yMTI4IiwidHRsIjo2NDgwMCwia" \
+              "WF0IjoxNTMzMjQ3NTY2fQ.cGnBNtWmLghJj_I0nVpn4S0900eHD0siI" \
+              "cYZDW3AHx6B2KDFxnzd9A7l7HDHF3VmtA6te2xkiERQzBUFRqYuKtEE" \
+              "WCtX5r4AdkGgEEgozm9a3d8pl1I7YxYG2snhoay0CEZuMlm1KrA9Hoy" \
+              "0KVeFRsJw6Eyx8BP3Ftozt7GAEDkPJzNnYdRHc1oyybNgefY8tHNX20" \
+              "hEIlsteNkBcQcNuuZRSgUcSCvWajWkrIrDpm1JySPZA5TIjcrSpksTe" \
+              "kbCEA7b2KfMRdjfk7ZRaRa0FGVw5K25mDmXbkJ1ScCLUnDMZIW20ENU" \
+              "L1PCc6TzAG0_FnWqOcpzsl1bNrRNOFkgyg"
+
+        res = extract_user_id(jwt)
+        self.assertEqual(res, "https://orcid.org/0000-0002-1756-2128")
+
+    def test_strip_html_tags(self):
+        from server.utils import strip_html_tags
 
         str_no_html = 'test description'
-        messy_str = '<p>'+str_no_html+'</p>'
-        self.assertEqual(strip_html(messy_str), str_no_html)
+        str_with_tags = '<p>'+str_no_html+'</p>'
+        self.assertEqual(strip_html_tags(str_with_tags), str_no_html)
+
+    def test_is_orcid_id(self):
+        from server.utils import is_orcid_id
+
+        # This is what the decoded jwt userid can look like
+        input = 'http:\/\/orcid.org\/000-000-000-00'
+        res = is_orcid_id(input)
+        self.assertTrue(res)
+
+    def test_make_url_https(self):
+        from server.utils import make_url_https
+
+        url = 'http://afakeurlthatisntreal.net'
+        res = make_url_https(url)
+        self.assertEqual(res, 'https://afakeurlthatisntreal.net')
+
+        url = 'http://afakeurlthatisntreal.com/http-example'
+        res = make_url_https(url)
+        self.assertEqual(res, 'https://afakeurlthatisntreal.com/http-example')
+
+        url = 'htts://example.com'
+        res = make_url_https(url)
+        self.assertEqual(res, 'https://example.com')
