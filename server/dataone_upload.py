@@ -497,7 +497,7 @@ def create_upload_package(item_ids,
         Notification().updateProgress(progress,
                                       state = ProgressState.SUCCESS,
                                       message = "Your tale was successfully uploaded to DataONE and can"
-                                                " be viewed at ".format(
+                                                " be viewed at {}".format(
                                           package_url))
 
         return package_url
