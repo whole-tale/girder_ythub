@@ -454,7 +454,7 @@ def create_upload_package(item_ids,
         """
         # List that holds pids that are assigned to any local objects
         local_file_pids = list()
-        Notification().updateProgress(progress, message="Uploading files to DataONE")
+        Notification().updateProgress(progress, message="Publishing Tale to DataONE")
         for file in filtered_items['local']:
             logger.debug('Processing local files for DataONE upload')
             local_file_pids.append(create_upload_object_metadata(client, file))
@@ -470,7 +470,7 @@ def create_upload_package(item_ids,
         """
         license_pid, license_size = upload_license_file(client, license_id)
 
-        Notification().updateProgress(progress, message="Creating package metadata")
+        Notification().updateProgress(progress, message="Creating Tale metadata")
         """
         Create an EML document describing the data, and then upload it. Save the
          pid for the resource map.
@@ -496,8 +496,8 @@ def create_upload_package(item_ids,
 
         Notification().updateProgress(progress,
                                       state=ProgressState.SUCCESS,
-                                      message="Your tale was successfully "
-                                              "uploaded to DataONE and can "
+                                      message="Your Tale was successfully "
+                                              "published to DataONE and can "
                                               "be viewed at {}".format(package_url))
 
         return package_url
@@ -506,6 +506,7 @@ def create_upload_package(item_ids,
         logger.warning('DataONE Error: {}'.format(e))
         Notification().updateProgress(progress,
                                       state=ProgressState.ERROR,
-                                      message="There was a problem creating your package.".format(
+                                      message="There was a problem publishing your Tale."
+                                              " to DataONE. ".format(
                                           str(e)))
         raise RestException('Error uploading file to DataONE. {0}'.format(str(e)))
