@@ -232,10 +232,11 @@ def create_minimum_eml(tale,
     add_object_record(name, description, file_sizes.get('tale_yaml'), object_format)
 
     # Add a section for the license file
-    description = "The package's licensing information."
-    name = ExtraFileNames.license_filename
-    object_format = 'text/plain'
-    add_object_record(name, description, file_sizes.get('license'), object_format)
+    if file_sizes.get('license'):
+        description = "The package's licensing information."
+        name = ExtraFileNames.license_filename
+        object_format = 'text/plain'
+        add_object_record(name, description, file_sizes.get('license'), object_format)
 
     """
     Emulate the behavior of ElementTree.tostring in Python 3.6.0

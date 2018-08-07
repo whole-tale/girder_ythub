@@ -349,14 +349,14 @@ def upload_license_file(client, license_id):
                                 'licenses',
                                 license_files[license_id])
     try:
+        license_length = os.path.getsize(license_path)
         with open(license_path) as f:
             license_text = f.read()
     except IOError:
         logger.warning('Failed to open license file')
+        return None, 0
     finally:
         f.close()
-
-    license_length = os.path.getsize(license_path)
 
     # Create a pid for the file
     pid = str(uuid.uuid4())
@@ -481,8 +481,12 @@ def create_upload_package(item_ids,
         """
         Once all objects are uploaded, create and upload the resource map. This file describes
          the object relations (ie the package). This should be the last file that is uploaded.
+         Also filter out any pids that are None, which would have resulted from an error. This
+         prevents referencing objects that failed to upload.
         """
-        upload_objects = filtered_items['dataone'] + local_file_pids + [tale_yaml_pid, license_pid]
+        upload_objects = filter(None, filtered_items['dataone'] +
+                                local_file_pids +
+                                [tale_yaml_pid, license_pid])
         resmap_pid = str(uuid.uuid4())
         create_upload_resmap(resmap_pid, eml_pid, upload_objects, client)
         return get_dataone_package_url(repository, resmap_pid)
