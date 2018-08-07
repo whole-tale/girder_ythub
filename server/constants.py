@@ -85,7 +85,7 @@ class ExtraFileNames:
     """
     # Name for the tale config file
     tale_config = 'tale.yml'
-    license = 'LICENSE'
+    license_filename = 'LICENSE'
 
 
 """

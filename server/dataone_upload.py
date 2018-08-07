@@ -364,7 +364,7 @@ def upload_license_file(client, license_id):
     meta = generate_system_metadata(pid=pid,
                                     format_id='text/plain',
                                     file_object=license_text,
-                                    name=ExtraFileNames.license)
+                                    name=ExtraFileNames.license_filename)
     # Upload the file
     upload_file(client=client, pid=pid, file_object=license_text, system_metadata=meta)
 

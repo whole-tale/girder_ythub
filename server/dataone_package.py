@@ -233,7 +233,7 @@ def create_minimum_eml(tale,
 
     # Add a section for the license file
     description = "The package's licensing information."
-    name = ExtraFileNames.license
+    name = ExtraFileNames.license_filename
     object_format = 'text/plain'
     add_object_record(name, description, file_sizes.get('license'), object_format)
 
