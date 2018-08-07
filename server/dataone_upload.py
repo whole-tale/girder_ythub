@@ -507,6 +507,5 @@ def create_upload_package(item_ids,
         Notification().updateProgress(progress,
                                       state=ProgressState.ERROR,
                                       message="There was a problem publishing your Tale."
-                                              " to DataONE. ".format(
-                                          str(e)))
+                                              " to DataONE. ".format(str(e)))
         raise RestException('Error uploading file to DataONE. {0}'.format(str(e)))
