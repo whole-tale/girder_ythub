@@ -274,7 +274,7 @@ def create_tale_info_structure(tale):
     return tale_info
 
 
-def create_upload_tale_yaml(tale, remote_objects, item_ids, user, client):
+def create_upload_tale_yaml(tale, remote_objects, item_ids, user, client, prov_info):
     """
     The yaml content is represented with Python dicts, and then dumped to
      the yaml object.
@@ -310,6 +310,9 @@ def create_upload_tale_yaml(tale, remote_objects, item_ids, user, client):
 
     if bool(external_files):
         yaml_file.update(external_files)
+    if prov_info:
+        logger.info(prov_info)
+        yaml_file.update(prov_info)
     # Transform the file into yaml from the dict structure
     yaml_file = yaml.dump(yaml_file, default_flow_style=False)
 
@@ -377,7 +380,8 @@ def create_upload_package(item_ids,
                           user,
                           repository,
                           jwt,
-                          license_id):
+                          license_id,
+                          prov_info):
     """
     Uploads local or remote files to a DataONE repository. It is responsible for
      delegating all of the tasks that make the package a "package". For example
@@ -458,7 +462,8 @@ def create_upload_package(item_ids,
                                                                   filtered_items['remote'],
                                                                   item_ids,
                                                                   user,
-                                                                  client)
+                                                                  client,
+                                                                  prov_info)
 
         """
         Upload the license file

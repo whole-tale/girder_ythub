@@ -3,6 +3,8 @@
 import os
 import re
 import requests
+import ast
+
 from urllib.parse import urlparse
 from girder.api import access
 from girder.api.describe import Description, autoDescribeRoute
@@ -215,7 +217,7 @@ class Repository(Resource):
                'node.')
         .jsonParam(name='itemIds',
                    required=True,
-                   description='The files that are going to be uploaded to DataONE')
+                   description='A list of the files that are going to be uploaded to DataONE')
         .param('taleId',
                description='The ID of the tale that the user wants to publish.',
                required=True)
@@ -229,19 +231,28 @@ class Repository(Resource):
                description='The ID of the license that the package is under. This is the '
                            'SPDX identifier',
                required=True)
+        .param('provInfo',
+               description='A string represntation of a dictionary that can describe additional '
+                           'information about the tale. The contents of this query are placed '
+                           'in the tale.yaml file. An example value is '
+                           '{\'entryPoint\': \'/home/data/main.py\'}',
+               required=False)
 
     )
-    def createPackage(self, itemIds, taleId, repository, jwt, licenseId):
+    def createPackage(self, itemIds, taleId, repository, jwt, licenseId, provInfo=str()):
         user = ModelImporter.model('user').getAdmins()[0]
         tale = self.model('tale',
                           'wholetale').load(taleId,
                                             user=user,
                                             level=AccessType.READ)
 
+        if provInfo:
+            provInfo = ast.literal_eval(provInfo)
         package_url = create_upload_package(item_ids=itemIds,
                                             tale=tale,
                                             user=user,
                                             repository=repository,
                                             jwt=jwt,
-                                            license_id=licenseId)
+                                            license_id=licenseId,
+                                            prov_info=provInfo)
         return package_url
