@@ -226,10 +226,8 @@ class Repository(Resource):
                description='The user\'s DataONE jwt.',
                required=True)
         .param('licenseId',
-               description='The ID of the license that the package is under.'
-                           '0: CC0'
-                           '1: CCBY3'
-                           '2: CCBY4',
+               description='The ID of the license that the package is under. This is the '
+                           'SPDX identifier',
                required=True)
 
     )
@@ -245,5 +243,5 @@ class Repository(Resource):
                                             user=user,
                                             repository=repository,
                                             jwt=jwt,
-                                            license_id=int(licenseId))
+                                            license_id=licenseId)
         return package_url
