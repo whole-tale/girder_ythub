@@ -283,11 +283,14 @@ def create_upload_tale_yaml(tale, remote_objects, item_ids, user, client, prov_i
     :param item_ids: A list of all of the ids of the files that are being uploaded
     :param user: The user performing the actions
     :param client: The client that interfaces DataONE
+    :param prov_info: A dictionary of additional parameters for the file. This information
+    is gathered in the UI and passed through the REST endpoint.
     :type tale: wholetale.models.Tale
     :type remote_objects: list
     :type item_ids: list
     :type user: girder.models.User
     :type client: MemberNodeClient_2_0
+    :type prov_info: dict
     :return: The pid and the size of the file
     :rtype: tuple
     """
