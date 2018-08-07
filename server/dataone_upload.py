@@ -96,7 +96,7 @@ def create_upload_eml(tale,
     :type client: MemberNodeClient_2_0
     :type user: girder.models.user
     :type item_ids: list
-    :type license_id: int
+    :type license_id: str
     :type file_sizes: dict
     :return: pid of the EML document
     :rtype: str
@@ -110,7 +110,7 @@ def create_upload_eml(tale,
                                  eml_pid,
                                  file_sizes,
                                  license_id,
-                                 user_id,)
+                                 user_id)
 
     # Create the metadata describing the EML document
     meta = generate_system_metadata(pid=eml_pid,
@@ -334,7 +334,7 @@ def upload_license_file(client, license_id):
     :param client: The client that interfaces DataONE
     :param license_id: The ID of the license (see `ExtraFileNames` in constants)
     :type client: MemberNodeClient_2_0
-    :type license_id: int
+    :type license_id: str
     :return: The pid and size of the license file
     """
 
@@ -419,7 +419,7 @@ def create_upload_package(item_ids,
     :type user: girder.models.user
     :type repository: str
     :type jwt: str
-    :type license_id: int
+    :type license_id: str
     :return: The pid of the package's resource map
     """
 

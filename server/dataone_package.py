@@ -73,7 +73,7 @@ def create_minimum_eml(tale,
     :type item_ids: list
     :type eml_pid: str
     :type file_sizes: dict
-    :type licenseId: int
+    :type license_id: str
     :type user_id: str
     :return: The EML as as string of bytes
     :rtype: bytes
@@ -133,7 +133,7 @@ def create_minimum_eml(tale,
         :param dataset_element: The xml element that defines the `dataset`
         :param license_id: The ID of the license
         :type dataset_element: xml.etree.ElementTree.Element
-        :type license_id: int
+        :type license_id: str
         :return: None
         """
         intellectual_rights = ET.SubElement(dataset_element, 'intellectualRights')
