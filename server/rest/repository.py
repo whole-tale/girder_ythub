@@ -3,7 +3,6 @@
 import os
 import re
 import requests
-import ast
 
 from urllib.parse import urlparse
 from girder.api import access
@@ -231,12 +230,13 @@ class Repository(Resource):
                description='The ID of the license that the package is under. This is the '
                            'SPDX identifier',
                required=True)
-        .param('provInfo',
-               description='A string represntation of a dictionary that can describe additional '
-                           'information about the tale. The contents of this query are placed '
-                           'in the tale.yaml file. An example value is '
-                           '{\'entryPoint\': \'/home/data/main.py\'}',
-               required=False)
+        .jsonParam('provInfo',
+                   description='A string representation of a dictionary that can describe '
+                               'additional information about the tale. The contents of '
+                               'this query are placed in the tale.yaml file. '
+                               'An example value is '
+                               '{\"entryPoint\": \"/home/data/main.py\"}',
+                   required=False)
 
     )
     def createPackage(self, itemIds, taleId, repository, jwt, licenseId, provInfo=str()):
@@ -246,8 +246,6 @@ class Repository(Resource):
                                             user=user,
                                             level=AccessType.READ)
 
-        if provInfo:
-            provInfo = ast.literal_eval(provInfo)
         package_url = create_upload_package(item_ids=itemIds,
                                             tale=tale,
                                             user=user,
