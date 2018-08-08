@@ -277,7 +277,7 @@ def create_tale_info_structure(tale):
     return tale_info
 
 
-def create_upload_tale_yaml(tale, remote_objects, item_ids, user, client):
+def create_upload_tale_yaml(tale, remote_objects, item_ids, user, client, prov_info):
     """
     The yaml content is represented with Python dicts, and then dumped to
      the yaml object.
@@ -286,11 +286,14 @@ def create_upload_tale_yaml(tale, remote_objects, item_ids, user, client):
     :param item_ids: A list of all of the ids of the files that are being uploaded
     :param user: The user performing the actions
     :param client: The client that interfaces DataONE
+    :param prov_info: A dictionary of additional parameters for the file. This information
+    is gathered in the UI and passed through the REST endpoint.
     :type tale: wholetale.models.Tale
     :type remote_objects: list
     :type item_ids: list
     :type user: girder.models.User
     :type client: MemberNodeClient_2_0
+    :type prov_info: dict
     :return: The pid and the size of the file
     :rtype: tuple
     """
@@ -313,6 +316,9 @@ def create_upload_tale_yaml(tale, remote_objects, item_ids, user, client):
 
     if bool(external_files):
         yaml_file.update(external_files)
+    if prov_info:
+        logger.info(prov_info)
+        yaml_file.update(prov_info)
     # Transform the file into yaml from the dict structure
     yaml_file = yaml.dump(yaml_file, default_flow_style=False)
 
@@ -380,7 +386,8 @@ def create_upload_package(item_ids,
                           user,
                           repository,
                           jwt,
-                          license_id):
+                          license_id,
+                          prov_info):
     """
     Uploads local or remote files to a DataONE repository. It is responsible for
      delegating all of the tasks that make the package a "package". For example
@@ -463,7 +470,8 @@ def create_upload_package(item_ids,
                                                                   filtered_items['remote'],
                                                                   item_ids,
                                                                   user,
-                                                                  client)
+                                                                  client,
+                                                                  prov_info)
 
         """
         Upload the license file
