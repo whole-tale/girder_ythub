@@ -46,6 +46,7 @@ class TestDataONEUpload(base.TestCase):
         object = 'test data'
         tale = {'title': 'test_title', 'description': 'Test tale description'}
         user = {'lastName': 'testLastName', 'firstName': 'testFirstName'}
+        rights_holder = 'https://orcid.org/0000-0000-0000-0000'
 
         self.assertRaises(ValidationException, create_upload_eml,
                           tale,
@@ -53,7 +54,7 @@ class TestDataONEUpload(base.TestCase):
                           user,
                           [],
                           1,
-                          "https://orcid.org/0-0-0-0-0",
+                          rights_holder,
                           dict())
 
     def test_create_upload_resmap(self):
@@ -65,6 +66,7 @@ class TestDataONEUpload(base.TestCase):
         from server.dataone_upload import create_upload_eml
 
         member_node = 'https://dev.nceas.ucsb.edu/knb/d1/mn/'
+        rights_holder = 'https://orcid.org/0000-0000-0000-0000'
         header = {"headers": {
             "Authorization": "Bearer TOKEN"}}
         client = create_client(member_node, header)
@@ -77,4 +79,5 @@ class TestDataONEUpload(base.TestCase):
                           res_pid,
                           eml_pid,
                           obj_pids,
-                          client)
+                          client,
+                          rights_holder)

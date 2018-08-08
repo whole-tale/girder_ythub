@@ -28,6 +28,7 @@ from .utils import \
     is_dataone_url, \
     get_dataone_package_url, \
     extract_user_id
+
 from .constants import \
     API_VERSION, \
     ExtraFileNames, \
@@ -92,6 +93,7 @@ def create_upload_eml(tale,
     :param user: The user that is requesting this action
     :param item_ids: The ids of the items that have been uploaded to DataONE
     :param license_id: The ID of the license
+    :param user_id: The user that owns this resource
     :param file_sizes: We need to sometimes account for non-data files
      (like tale.yml) .The size needs to be in the EML record so pass them
       in here. The size should be described in bytes
@@ -100,6 +102,7 @@ def create_upload_eml(tale,
     :type user: girder.models.user
     :type item_ids: list
     :type license_id: str
+    :type user_id: str
     :type file_sizes: dict
     :return: pid of the EML document
     :rtype: str
@@ -119,14 +122,15 @@ def create_upload_eml(tale,
     meta = generate_system_metadata(pid=eml_pid,
                                     format_id='eml://ecoinformatics.org/eml-2.1.1',
                                     file_object=eml_doc,
-                                    name='science_metadata.xml')
+                                    name='science_metadata.xml',
+                                    rights_holder=user_id)
     # meta is type d1_common.types.generated.dataoneTypes_v2_0.SystemMetadata
     # Upload the EML document with its metadata
     upload_file(client=client, pid=eml_pid, file_object=eml_doc, system_metadata=meta)
     return eml_pid
 
 
-def create_upload_resmap(res_pid, eml_pid, obj_pids, client):
+def create_upload_resmap(res_pid, eml_pid, obj_pids, client, rights_holder):
     """
     Creates a resource map describing a package and uploads it to DataONE. The
     resource map can be thought of as the glue that holds a package together.
@@ -141,10 +145,12 @@ def create_upload_resmap(res_pid, eml_pid, obj_pids, client):
     :param obj_pids: A list of the pids for each object that was uploaded to DataONE;
      A list of pids that the resource map is documenting.
     :param client: The client to the DataONE member node
+    :param rights_holder: The owner of this object
     :type res_pid: str
     :type eml_pid: str
     :type obj_pids: list
     :type client: MemberNodeClient_2_0
+    :type rights_holder: str
     :return: None
     """
 
@@ -153,12 +159,13 @@ def create_upload_resmap(res_pid, eml_pid, obj_pids, client):
     meta = generate_system_metadata(res_pid,
                                     format_id='http://www.openarchives.org/ore/terms',
                                     file_object=res_map,
-                                    name=str())
+                                    name=str(),
+                                    rights_holder=rights_holder)
 
     upload_file(client=client, pid=res_pid, file_object=res_map, system_metadata=meta)
 
 
-def create_upload_object_metadata(client, file_object):
+def create_upload_object_metadata(client, file_object, rights_holder):
     """
     Takes a file from girder and
         1. Creates metadata describing it
@@ -168,8 +175,10 @@ def create_upload_object_metadata(client, file_object):
 
     :param client: The client to the DataONE member node
     :param file_object: The file object that will be uploaded
+    :param rights_holder: The owner of this object
     :type client: MemberNodeClient_2_0
     :type file_object: girder.models.file
+    :type rights_holder: str
     :return: The pid of the object
     :rtype: str
     """
@@ -181,7 +190,8 @@ def create_upload_object_metadata(client, file_object):
                                     format_id=file_object['mimeType'],
                                     file_object=file_object,
                                     name=file_object['name'],
-                                    is_file=True)
+                                    is_file=True,
+                                    rights_holder=rights_holder)
 
     upload_file(client=client,
                 pid=pid,
@@ -277,7 +287,13 @@ def create_tale_info_structure(tale):
     return tale_info
 
 
-def create_upload_tale_yaml(tale, remote_objects, item_ids, user, client, prov_info):
+def create_upload_tale_yaml(tale,
+                            remote_objects,
+                            item_ids,
+                            user,
+                            client,
+                            prov_info,
+                            rights_holder):
     """
     The yaml content is represented with Python dicts, and then dumped to
      the yaml object.
@@ -288,12 +304,14 @@ def create_upload_tale_yaml(tale, remote_objects, item_ids, user, client, prov_i
     :param client: The client that interfaces DataONE
     :param prov_info: A dictionary of additional parameters for the file. This information
     is gathered in the UI and passed through the REST endpoint.
+    :param rights_holder: The owner of this object
     :type tale: wholetale.models.Tale
     :type remote_objects: list
     :type item_ids: list
     :type user: girder.models.User
     :type client: MemberNodeClient_2_0
     :type prov_info: dict
+    :type rights_holder: str
     :return: The pid and the size of the file
     :rtype: tuple
     """
@@ -317,7 +335,6 @@ def create_upload_tale_yaml(tale, remote_objects, item_ids, user, client, prov_i
     if bool(external_files):
         yaml_file.update(external_files)
     if prov_info:
-        logger.info(prov_info)
         yaml_file.update(prov_info)
     # Transform the file into yaml from the dict structure
     yaml_file = yaml.dump(yaml_file, default_flow_style=False)
@@ -328,7 +345,8 @@ def create_upload_tale_yaml(tale, remote_objects, item_ids, user, client, prov_i
     meta = generate_system_metadata(pid=pid,
                                     format_id='text/plain',
                                     file_object=yaml_file,
-                                    name=ExtraFileNames.tale_config)
+                                    name=ExtraFileNames.tale_config,
+                                    rights_holder=rights_holder)
     # Upload the file
     upload_file(client=client, pid=pid, file_object=yaml_file, system_metadata=meta)
 
@@ -336,14 +354,16 @@ def create_upload_tale_yaml(tale, remote_objects, item_ids, user, client, prov_i
     return pid, len(yaml_file)
 
 
-def upload_license_file(client, license_id):
+def upload_license_file(client, license_id, rights_holder):
     """
     Upload a license file to DataONE.
 
     :param client: The client that interfaces DataONE
     :param license_id: The ID of the license (see `ExtraFileNames` in constants)
+    :param rights_holder: The owner of this object
     :type client: MemberNodeClient_2_0
     :type license_id: str
+    :type rights_holder: str
     :return: The pid and size of the license file
     """
 
@@ -373,7 +393,8 @@ def upload_license_file(client, license_id):
     meta = generate_system_metadata(pid=pid,
                                     format_id='text/plain',
                                     file_object=license_text,
-                                    name=ExtraFileNames.license_filename)
+                                    name=ExtraFileNames.license_filename,
+                                    rights_holder=rights_holder)
     # Upload the file
     upload_file(client=client, pid=pid, file_object=license_text, system_metadata=meta)
 
@@ -389,34 +410,33 @@ def create_upload_package(item_ids,
                           license_id,
                           prov_info):
     """
-    Uploads local or remote files to a DataONE repository. It is responsible for
-     delegating all of the tasks that make the package a "package". For example
-      it controls metadata creation, yaml file creation, and object uploads.
+    Responsible for delegating all of the tasks to take a user's Tale and create a package on
+    DataONE.
+
      There are four cases that need to be handled.
-        1. The file  was uploaded directly to Whole Tale and physically exists in Girder.
+        1. The file  was uploaded directly to Whole Tale and is not a linkFile.
            In this case, a metadata document needs to be generated for each local file. This
-           involves hashing the file, and extracting information about it such as the name,
-           description, etc. The file and associated metadata record are uploaded to DataONE
-           as a pair.
+           involves hashing the file and extracting information about it such as the name,
+           description, etc. The file and associated metadata are uploaded to DataONE
+           as a pair, and then referenced in the resource map.
 
         2. The file was registered from DataONE, and the file record in Whole Tale points to
            its location in DataONE. Since the file is in DataONE, the file can be referenced in
            the resource map, which avoids uploading redundant data. In this case, the only files
            that are created and uploaded are
-              1. A pair of an EML record with its metadata
+              1. An EML record with its metadata
               2. A resource map describing the package contents
 
         3. The file was registered from an external source, such as Globus. More generally,
            this is the case where the file record has a link to a file on an external resource
            other than DataONE. To handle this, the file needs to be brought onto the Whole Tale
            filesystem. Once on the local system, metadata is generated for the file and the pair
-           are uploaded to DataONE. Once uploaded, the file is removed from
+           are uploaded to DataONE.
 
         4. A combination of 1, 2, or 3.
 
-    To handle the different cases, the item_ids are sorted into a dict that provides easy access.
-    For each file that gets uploaded to DataONE, a pid is created for it. These are saved so that
-    we can reference them in the resource map, which is the last object that is uploaded.
+    To handle the different cases, the item_ids are sorted into a dict that serves as a way to
+    organize them.
 
     :param item_ids: A list of items that contain the files that will be uploaded to DataONE
     :param tale: The tale that is being packaged
@@ -433,8 +453,11 @@ def create_upload_package(item_ids,
     :return: The pid of the package's resource map
     """
 
-    # create_client can throw DataONEException
+    # Create a progress notification that can updated to let the user know
+    # the state
     progress = Notification().initProgress(user, "Creating DataONE Package")
+
+    # create_client can throw DataONEException
     try:
         """
         Create a client object that is used to interface DataONE. This can interact with a
@@ -444,11 +467,12 @@ def create_upload_package(item_ids,
         client = create_client(repository, {"headers": {
             "Authorization": "Bearer "+jwt}})
 
+        user_id = extract_user_id(jwt)
+
         """
         If the client was successfully created, sort all of the items by their type:
-          a. Locally on the machine (bytes of the file are on disk)
-          b. Pointing to DataONE (The `models.file` has a `linkUrl` that points to an object on
-             DataONE).
+          a. Not linked to an external repository
+          b. Pointing to DataONE
           c. Pointing to remote file not on DataONE (eg Globus)
         """
         filtered_items = filter_items(item_ids, user)
@@ -464,19 +488,20 @@ def create_upload_package(item_ids,
         Notification().updateProgress(progress, message="Publishing Tale to DataONE")
         for file in filtered_items['local']:
             logger.debug('Processing local files for DataONE upload')
-            local_file_pids.append(create_upload_object_metadata(client, file))
+            local_file_pids.append(create_upload_object_metadata(client, file, user_id))
 
         tale_yaml_pid, tale_yaml_length = create_upload_tale_yaml(tale,
                                                                   filtered_items['remote'],
                                                                   item_ids,
                                                                   user,
                                                                   client,
-                                                                  prov_info)
+                                                                  prov_info,
+                                                                  user_id)
 
         """
         Upload the license file
         """
-        license_pid, license_size = upload_license_file(client, license_id)
+        license_pid, license_size = upload_license_file(client, license_id, user_id)
 
         Notification().updateProgress(progress, message="Creating Tale metadata")
         """
@@ -502,7 +527,11 @@ def create_upload_package(item_ids,
                                 local_file_pids +
                                 [tale_yaml_pid, license_pid])
         resmap_pid = str(uuid.uuid4())
-        create_upload_resmap(resmap_pid, eml_pid, upload_objects, client)
+        create_upload_resmap(resmap_pid,
+                             eml_pid,
+                             upload_objects,
+                             client,
+                             user_id)
 
         package_url = get_dataone_package_url(repository, resmap_pid)
 
@@ -515,9 +544,9 @@ def create_upload_package(item_ids,
         return package_url
 
     except DataONEException as e:
-        logger.warning('DataONE Error: {}'.format(e))
+        logger.warning('Error publishing DataONE package: {}'.format(e))
         Notification().updateProgress(progress,
                                       state=ProgressState.ERROR,
                                       message="There was a problem publishing your Tale."
                                               " to DataONE. ".format(str(e)))
-        raise RestException('Error uploading file to DataONE. {0}'.format(str(e)))
+        raise RestException('Error uploading file to DataONE. {}'.format(str(e)))

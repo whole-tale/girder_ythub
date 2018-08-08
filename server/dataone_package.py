@@ -149,6 +149,10 @@ def create_minimum_eml(tale,
         :param description: The object's description
         :param size: The size of the object
         :param object_format: The format type
+        :type name: str
+        :type description: str
+        :type size: str
+        :type object_format: str
         :return: None
         """
         entity_section = create_entity(name, strip_html_tags(description))
@@ -157,6 +161,37 @@ def create_minimum_eml(tale,
                                            size)
         create_format(object_format, physical_section)
         ET.SubElement(entity_section, 'entityType').text = 'dataTable'
+
+    def set_user_name(root, firstName, lastName):
+        """
+        Creates a section in the EML that describes a user's name.
+        :param root: The parent XML element
+        :param firstName: The user's first name
+        :param lastName: The user's last name
+        :type root: xml.etree.ElementTree.Element
+        :type firstName: str
+        :type lastName: str
+        :return: None
+        """
+        individual_name = ET.SubElement(root, 'individualName')
+        ET.SubElement(individual_name, 'givenName').text = firstName
+        ET.SubElement(individual_name, 'surName').text = lastName
+
+    def set_user_contact(root, user_id, email):
+        """
+        Creates a section that describes the contact and owner
+        :param root: The parent XML element
+        :param user_id: The user's ID
+        :param email: The user's email
+        :type root: xml.etree.ElementTree.Element
+        :type user_id: str
+        :type email: str
+        :return: None
+        """
+        ET.SubElement(root, 'electronicMailAddress').text = email
+        userId = ET.SubElement(root, 'userId')
+        userId.text = user_id
+        userId.set('directory', get_directory(user_id))
 
     """
     Check that we're able to assign a first, last, and email to the record.
@@ -194,12 +229,8 @@ def create_minimum_eml(tale,
      `model.user` object to provide values.
     """
     creator = ET.SubElement(dataset, 'creator')
-    individual_name = ET.SubElement(creator, 'individualName')
-    ET.SubElement(individual_name, 'givenName').text = firstName
-    ET.SubElement(individual_name, 'surName').text = lastName
-    userId = ET.SubElement(creator, 'userId')
-    userId.text = user_id
-    userId.set('directory', get_directory(user_id))
+    set_user_name(creator, firstName, lastName)
+    set_user_contact(creator, user_id, email)
 
     # Create a `description` field, but only if the Tale has a description.
     description = get_tale_description(tale)
@@ -210,10 +241,10 @@ def create_minimum_eml(tale,
     # Add a section for the license file
     create_intellectual_rights(dataset, license_id)
 
+    # Add a section for the contact
     contact = ET.SubElement(dataset, 'contact')
-    ind_name = ET.SubElement(contact, 'individualName')
-    ET.SubElement(ind_name, 'givenName').text = firstName
-    ET.SubElement(ind_name, 'surName').text = lastName
+    set_user_name(contact, firstName, lastName)
+    set_user_contact(contact, user_id, email)
 
     # Add a <otherEntity> block for each object
     for item_id in item_ids:
@@ -354,7 +385,12 @@ def create_external_object_structure(external_files, user):
     return reference_file
 
 
-def generate_system_metadata(pid, format_id, file_object, name, is_file=False):
+def generate_system_metadata(pid,
+                             format_id,
+                             file_object,
+                             name,
+                             rights_holder,
+                             is_file=False):
     """
     Generates a metadata document describing the file_object.
 
@@ -362,11 +398,13 @@ def generate_system_metadata(pid, format_id, file_object, name, is_file=False):
     :param format_id: The format of the object (e.g text/csv)
     :param file_object: The object that is being described
     :param name: The name of the object being described
+    :param rights_holder: The owner of this object
     :param is_file: A bool set to true if file_object is a girder file
     :type pid: str
     :type format_id: str
     :type file_object: unicode or girder.models.file
     :type name: str
+    :type rights_holder: str
     :type is_file: Bool
     :return: The metadata describing file_object
     :rtype: d1_common.types.generated.dataoneTypes_v2_0.SystemMetadata
@@ -374,13 +412,13 @@ def generate_system_metadata(pid, format_id, file_object, name, is_file=False):
 
     md5 = hashlib.md5()
     if is_file:
+        # If it's a local file, get the md5 of it
         md5 = get_file_md5(file_object)
         size = file_object['size']
     else:
         # Check that the file_object is unicode, attempt to convert it if it's a str
         if not isinstance(file_object, bytes):
             if isinstance(file_object, str):
-                logger.debug('file_object detected to be a string. Attempting conversion')
                 file_object = file_object.encode("utf-8")
         md5.update(file_object)
         size = len(file_object)
@@ -390,11 +428,12 @@ def generate_system_metadata(pid, format_id, file_object, name, is_file=False):
                                  format_id,
                                  size,
                                  md5,
-                                 name)
+                                 name,
+                                 rights_holder)
     return sys_meta
 
 
-def populate_sys_meta(pid, format_id, size, md5, name):
+def populate_sys_meta(pid, format_id, size, md5, name, rights_holder):
     """
     Fills out the system metadata object with the needed properties
 
@@ -403,11 +442,13 @@ def populate_sys_meta(pid, format_id, size, md5, name):
     :param size: The size of the document that is being described
     :param md5: The md5 hash of the document being described
     :param name: The name of the file
+    :param rights_holder: The owner of this object
     :type pid: str
     :type format_id: str
     :type size: int
     :type md5: str
     :type name: str
+    :type rights_holder: str
     :return: The populated system metadata document
     """
 
@@ -416,7 +457,7 @@ def populate_sys_meta(pid, format_id, size, md5, name):
     sys_meta.identifier = pid
     sys_meta.formatId = format_id
     sys_meta.size = size
-    sys_meta.rightsHolder = 'http://orcid.org/0000-0000-0000-0000'
+    sys_meta.rightsHolder = rights_holder
 
     sys_meta.checksum = dataoneTypes.checksum(str(md5))
     sys_meta.checksum.algorithm = 'MD5'
