@@ -270,7 +270,8 @@ def get_dataone_package_url(repository, pid):
 
 def extract_user_id(jwt_token):
     """
-    Takes a JWT and extracts the orcid id out.
+    Takes a JWT and extracts the 'userId` field. This is used
+    as the package's owner and contact.
     :param jwt: The decoded JWT
     :type jwt: str
     :return: The ORCID ID
@@ -280,7 +281,7 @@ def extract_user_id(jwt_token):
     user_id = jwt_token['userId']
     if is_orcid_id(user_id):
         return make_url_https(user_id)
-    return jwt_token['userId']
+    return user_id
 
 
 def is_orcid_id(id):

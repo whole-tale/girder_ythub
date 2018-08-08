@@ -13,7 +13,6 @@ def setUpModule():
     base.enabledPlugins.append('wholetale')
     base.startServer()
 
-
 def tearDownModule():
     base.stopServer()
 
@@ -34,15 +33,18 @@ class TestDataONEUpload(base.TestCase):
         size=256
         md5='12345'
         name = 'Test Object'
+        rights_holder = 'https://orcid.org/0000-0000-0000-0000'
 
         sys_meta = populate_sys_meta(pid,
                                      format_id,
                                      size,
                                      md5,
-                                     name)
+                                     name,
+                                     rights_holder)
         self.assertEqual(sys_meta.checksum.algorithm, 'MD5')
         self.assertEqual(sys_meta.formatId, format_id)
         self.assertEqual(sys_meta.size, size)
+        self.assertEqual(sys_meta.rightsHolder.value(), rights_holder)
 
     def test_generate_system_metadata(self):
         # Test that the generate_system_metadata is giving the right state
@@ -53,14 +55,17 @@ class TestDataONEUpload(base.TestCase):
         format_id = 'text/csv'
         file_object='12345'
         name = 'Test Object'
+        rights_holder = 'https://orcid.org/0000-0000-0000-0000'
 
         metadata = generate_system_metadata(pid,
                                             format_id,
                                             file_object,
-                                            name)
+                                            name,
+                                            rights_holder)
         self.assertEqual(metadata.size, len(file_object))
         self.assertEqual (metadata.formatId, format_id)
         self.assertEqual (metadata.checksum.algorithm, 'MD5')
+        self.assertEqual(metadata.rightsHolder.value(), rights_holder)
 
     def test_create_resource_map(self):
 
@@ -78,18 +83,47 @@ class TestDataONEUpload(base.TestCase):
         import xml.etree.cElementTree as ET
 
         tale = {'title': 'A tale test title', 'description': 'The tale description'}
-        user = {'lastName': 'testLastName', 'firstName': 'testFirstName'}
+        user = {'lastName': 'testLastName',
+                'firstName': 'testFirstName',
+                'email': 'test@test.com'}
         eml_pid ='123456789'
+        file_sizes = {'tale_yaml': 123, 'license': 456}
 
-        eml = create_minimum_eml(tale, user, [], eml_pid, {}, 1, "http://myorcid")
-
+        eml = create_minimum_eml(tale,
+                                 user,
+                                 [],
+                                 eml_pid,
+                                 file_sizes,
+                                 'CC-BY-3.0',
+                                 "http://myorcid")
         root = ET.fromstring(eml)
 
         expected_root = {'packageId': '123456789',
-                        'scope': 'system',
-                        'system': 'knb',
-                        '{http://www.w3.org/2001/XMLSchema-instance}schemaLocation': 'eml://ecoinformatics.org/eml-2.1.1 eml.xsd'}
+                         'scope': 'system',
+                         'system': 'knb',
+                         '{http://www.w3.org/2001/XMLSchema-instance}schemaLocation':
+                             'eml://ecoinformatics.org/eml-2.1.1 eml.xsd'}
         self.assertDictEqual(root.attrib, expected_root)
+
+        dataset = root.find('dataset')
+        dataset_title = dataset.find('title')
+        self.assertEqual(dataset_title.text, tale['title'])
+
+        creator = dataset.find('creator')
+
+        individualName = creator.find('individualName')
+        last_name = individualName.find('surName')
+        first_name = individualName.find('givenName')
+        email = creator.find('electronicMailAddress')
+
+        self.assertEqual(last_name.text, user['lastName'])
+        self.assertEqual(first_name.text, user['firstName'])
+        self.assertEqual(email.text, user['email'])
+
+        abstract = dataset.find('abstract')
+        abstract_para  = abstract.find('para')
+        self.assertEqual(abstract_para.text, tale['description'])
+
 
     def test_create_minimum_eml_no_abstract(self):
 
