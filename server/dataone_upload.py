@@ -384,8 +384,6 @@ def upload_license_file(client, license_id, rights_holder):
     except IOError:
         logger.warning('Failed to open license file')
         return None, 0
-    finally:
-        f.close()
 
     # Create a pid for the file
     pid = str(uuid.uuid4())
@@ -464,6 +462,7 @@ def create_upload_package(item_ids,
          particular member node by specifying `repository`. The jwt is the jwt token from
          DataONE.
         """
+        logger.debug('Creating the DataONE client')
         client = create_client(repository, {"headers": {
             "Authorization": "Bearer "+jwt}})
 
@@ -483,9 +482,11 @@ def create_upload_package(item_ids,
          return a pid that describes the object (not the metadata object). We'll save
          this pid so that we can pass it to the resource map.
         """
+
+        Notification().updateProgress(progress, message="Publishing Tale to DataONE")
+
         # List that holds pids that are assigned to any local objects
         local_file_pids = list()
-        Notification().updateProgress(progress, message="Publishing Tale to DataONE")
         for file in filtered_items['local']:
             logger.debug('Processing local files for DataONE upload')
             local_file_pids.append(create_upload_object_metadata(client, file, user_id))
