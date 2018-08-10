@@ -212,3 +212,35 @@ class TestDataONEUtils(base.TestCase):
         url = 'htts://example.com'
         res = make_url_https(url)
         self.assertEqual(res, 'https://example.com')
+
+    def test_is_in_network(self):
+        from server.utils import is_in_network
+
+        network1 = 'https://dev.nceas.ucsb.edu/knb/d1/mn/v2'
+        network2 = 'https://knb.ecoinformatics.org/knb/d1/mn'
+        url1 = 'https://cn-stage-2.test.dataone.org/cn/v2/resolve/knb.109062.1'
+        url2 = 'https://cn.dataone.org/cn/v2/resolve/0258e4ad-d54d-469b-8a92-355069f6889b'
+
+        res = is_in_network(url1, network1)
+        self.assertTrue(res)
+
+        res = is_in_network(url1, network2)
+        self.assertFalse(res)
+
+        res = is_in_network(url2, network1)
+        self.assertFalse(res)
+
+        res = is_in_network(url2, network2)
+        self.assertTrue(res)
+
+    def test_is_dev_url(self):
+        from server.utils import is_dev_url
+
+        url1 = 'https://cn.dataone.org/cn/v2/resolve/0258e4ad-d54d-469b-8a92-355069f6889b'
+        self.assertFalse(is_dev_url(url1))
+
+        url2 = 'https://cn-stage-2.test.dataone.org/cn/v2/resolve/knb.109062.1'
+        self.assertTrue(is_dev_url(url2))
+
+
+

@@ -148,6 +148,58 @@ def is_dataone_url(url):
         return False
 
 
+def is_dev_url(url):
+    """
+    Determines whether the object at the URL is on the NCEAS
+    Development network
+    :param url: URL to the object
+    :type url: str
+    :return: True of False, depending on whether it's on the dev network
+    :rtype: bool
+    """
+    parsed_url = urllib.parse.urlparse(url).netloc
+    parsed_dev_mn = urllib.parse.urlparse(DataONELocations.dev_mn).netloc
+
+    if parsed_url == parsed_dev_mn:
+        return True
+    return False
+
+
+def is_in_network(url, network):
+    """
+    Checks to see if the url shares the same netlocation as network
+    :param url: The URL to a data object
+    :param network: The url of the member node being checke
+    :return: True or False
+    """
+    parsed_url = urllib.parse.urlparse(url).netloc
+    parsed_network = urllib.parse.urlparse(network).netloc
+    base_dev_mn = urllib.parse.urlparse(DataONELocations.dev_mn).netloc
+
+    if parsed_network == base_dev_mn:
+        # Then we're in NCEAS Development
+        # The resolve address is through the membernode in this case
+
+        if parsed_url == base_dev_mn:
+            # Then the object is in network
+            return True
+        else:
+            # Then the object is outside network
+            return False
+
+    else:
+        # Otherwise we're on DataONE
+
+        base_dev_cn = urllib.parse.urlparse(DataONELocations.prod_cn).netloc
+
+        if parsed_url == base_dev_cn:
+            # Then the object is in network
+            return True
+        else:
+            # Then the object is outside network
+            return False
+
+
 def check_pid(pid):
     """
     Check that a pid is of type str. Pids are generated as uuid4, and this

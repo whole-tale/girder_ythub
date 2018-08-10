@@ -4,7 +4,7 @@ import tempfile
 import xml.etree.cElementTree as ET
 from urllib.request import urlopen
 from shutil import copyfileobj
-
+import uuid
 
 from girder import logger
 from girder.models.file import File
@@ -12,6 +12,7 @@ from girder.models.item import Item
 from girder.api.rest import RestException
 from girder.constants import \
     AccessType
+from girder.models.model_base import ValidationException
 
 from .utils import \
     check_pid, \
@@ -49,13 +50,138 @@ def create_resource_map(resmap_pid, eml_pid, file_pids):
     return res_map.serialize()
 
 
+def create_entity(root, name, description):
+    """
+    Create an otherEntity section
+    :param root: The parent element
+    :param name: The name of the object
+    :param description: The description of the object
+    :type root: xml.etree.ElementTree.Element
+    :type name: str
+    :type description: str
+    :return: An entity section
+    :rtype: xml.etree.ElementTree.Element
+    """
+    entity = ET.SubElement(root, 'otherEntity')
+    ET.SubElement(entity, 'entityName').text = name
+    if description:
+        ET.SubElement(entity, 'entityDescription').text = description
+    return entity
+
+
+def create_physical(other_entity_section, name, size):
+    """
+    Creates a `physical` section.
+    :param other_entity_section: The super-section
+    :param name: The name of the object
+    :param size: The size in bytes of the object
+    :type other_entity_section: xml.etree.ElementTree.Element
+    :type name: str
+    :type size: str
+    :return: The physical section
+    :rtype: xml.etree.ElementTree.Element
+    """
+    physical = ET.SubElement(other_entity_section, 'physical')
+    ET.SubElement(physical, 'objectName').text = name
+    size_element = ET.SubElement(physical, 'size')
+    size_element.text = str(size)
+    size_element.set('unit', 'bytes')
+    return physical
+
+
+def create_format(object_format, physical_section):
+    """
+    Creates a `dataFormat` field in the EML to describe the format
+     of the object
+    :param object_format: The format of the object
+    :param physical_section: The etree element defining a `physical` EML section
+    :type object_format: str
+    :type physical_section: xml.etree.ElementTree.Element
+    :return: None
+    """
+    data_format = ET.SubElement(physical_section, 'dataFormat')
+    externally_defined = ET.SubElement(data_format, 'externallyDefinedFormat')
+    ET.SubElement(externally_defined, 'formatName').text = object_format
+
+
+def create_intellectual_rights(dataset_element, license_id):
+    """
+    :param dataset_element: The xml element that defines the `dataset`
+    :param license_id: The ID of the license
+    :type dataset_element: xml.etree.ElementTree.Element
+    :type license_id: str
+    :return: None
+    """
+    intellectual_rights = ET.SubElement(dataset_element, 'intellectualRights')
+    section = ET.SubElement(intellectual_rights, 'section')
+    para = ET.SubElement(section, 'para')
+    ET.SubElement(para, 'literalLayout').text = \
+        license_text.get(license_id, '')
+
+
+def add_object_record(root, name, description, size, object_format):
+    """
+    Add a section to the EML that describes an object.
+    :param name: The name of the object
+    :param description: The object's description
+    :param size: The size of the object
+    :param object_format: The format type
+    :type name: str
+    :type description: str
+    :type size: str
+    :type object_format: str
+    :return: None
+    """
+    entity_section = create_entity(root, name, strip_html_tags(description))
+    physical_section = create_physical(entity_section,
+                                       name,
+                                       size)
+    create_format(object_format, physical_section)
+    ET.SubElement(entity_section, 'entityType').text = 'dataTable'
+
+
+def set_user_name(root, firstName, lastName):
+    """
+    Creates a section in the EML that describes a user's name.
+    :param root: The parent XML element
+    :param firstName: The user's first name
+    :param lastName: The user's last name
+    :type root: xml.etree.ElementTree.Element
+    :type firstName: str
+    :type lastName: str
+    :return: None
+    """
+    individual_name = ET.SubElement(root, 'individualName')
+    ET.SubElement(individual_name, 'givenName').text = firstName
+    ET.SubElement(individual_name, 'surName').text = lastName
+
+
+def set_user_contact(root, user_id, email):
+    """
+    Creates a section that describes the contact and owner
+    :param root: The parent XML element
+    :param user_id: The user's ID
+    :param email: The user's email
+    :type root: xml.etree.ElementTree.Element
+    :type user_id: str
+    :type email: str
+    :return: None
+    """
+    ET.SubElement(root, 'electronicMailAddress').text = email
+    userId = ET.SubElement(root, 'userId')
+    userId.text = user_id
+    userId.set('directory', get_directory(user_id))
+
+
 def create_minimum_eml(tale,
                        user,
                        item_ids,
                        eml_pid,
                        file_sizes,
                        license_id,
-                       user_id):
+                       user_id,
+                       new_dataone_objects,
+                       repository_pid):
     """
     Creates a bare minimum EML record for a package. Note that the
     ordering of the xml elements matters.
@@ -68,6 +194,8 @@ def create_minimum_eml(tale,
      files or items) we need to manually pass their size in. Use this dict to do that.
     :param license_id: The ID of the license
     :param user_id: The user's user id from the JWT
+    :param new_dataone_objects: Objects that were uploaded to DataONE that don't have
+    girder items/files
     :type tale: wholetale.models.tale
     :type user: girder.models.user
     :type item_ids: list
@@ -75,123 +203,12 @@ def create_minimum_eml(tale,
     :type file_sizes: dict
     :type license_id: str
     :type user_id: str
+    :type: new_dataone_objects: dict
     :return: The EML as as string of bytes
     :rtype: bytes
     """
 
-    def create_entity(name, description):
-        """
-        Create an otherEntity section
-        :param name: The name of the object
-        :param description: The description of the object
-        :type name: str
-        :type description: str
-        :return: An entity section
-        :rtype: xml.etree.ElementTree.Element
-        """
-        entity = ET.SubElement(dataset, 'otherEntity')
-        ET.SubElement(entity, 'entityName').text = name
-        if description:
-            ET.SubElement(entity, 'entityDescription').text = description
-        return entity
-
-    def create_physical(other_entity_section, name, size):
-        """
-        Creates a `physical` section.
-        :param other_entity_section: The super-section
-        :param name: The name of the object
-        :param size: The size in bytes of the object
-        :type other_entity_section: xml.etree.ElementTree.Element
-        :type name: str
-        :type size: str
-        :return: The physical section
-        :rtype: xml.etree.ElementTree.Element
-        """
-        physical = ET.SubElement(other_entity_section, 'physical')
-        ET.SubElement(physical, 'objectName').text = name
-        size_element = ET.SubElement(physical, 'size')
-        size_element.text = str(size)
-        size_element.set('unit', 'bytes')
-        return physical
-
-    def create_format(object_format, physical_section):
-        """
-        Creates a `dataFormat` field in the EML to describe the format
-         of the object
-        :param object_format: The format of the object
-        :param physical_section: The etree element defining a `physical` EML section
-        :type object_format: str
-        :type physical_section: xml.etree.ElementTree.Element
-        :return: None
-        """
-        data_format = ET.SubElement(physical_section, 'dataFormat')
-        externally_defined = ET.SubElement(data_format, 'externallyDefinedFormat')
-        ET.SubElement(externally_defined, 'formatName').text = object_format
-
-    def create_intellectual_rights(dataset_element, license_id):
-        """
-        :param dataset_element: The xml element that defines the `dataset`
-        :param license_id: The ID of the license
-        :type dataset_element: xml.etree.ElementTree.Element
-        :type license_id: str
-        :return: None
-        """
-        intellectual_rights = ET.SubElement(dataset_element, 'intellectualRights')
-        section = ET.SubElement(intellectual_rights, 'section')
-        para = ET.SubElement(section, 'para')
-        ET.SubElement(para, 'literalLayout').text = \
-            license_text.get(license_id, '')
-
-    def add_object_record(name, description, size, object_format):
-        """
-        Add a section to the EML that describes an object.
-        :param name: The name of the object
-        :param description: The object's description
-        :param size: The size of the object
-        :param object_format: The format type
-        :type name: str
-        :type description: str
-        :type size: str
-        :type object_format: str
-        :return: None
-        """
-        entity_section = create_entity(name, strip_html_tags(description))
-        physical_section = create_physical(entity_section,
-                                           name,
-                                           size)
-        create_format(object_format, physical_section)
-        ET.SubElement(entity_section, 'entityType').text = 'dataTable'
-
-    def set_user_name(root, firstName, lastName):
-        """
-        Creates a section in the EML that describes a user's name.
-        :param root: The parent XML element
-        :param firstName: The user's first name
-        :param lastName: The user's last name
-        :type root: xml.etree.ElementTree.Element
-        :type firstName: str
-        :type lastName: str
-        :return: None
-        """
-        individual_name = ET.SubElement(root, 'individualName')
-        ET.SubElement(individual_name, 'givenName').text = firstName
-        ET.SubElement(individual_name, 'surName').text = lastName
-
-    def set_user_contact(root, user_id, email):
-        """
-        Creates a section that describes the contact and owner
-        :param root: The parent XML element
-        :param user_id: The user's ID
-        :param email: The user's email
-        :type root: xml.etree.ElementTree.Element
-        :type user_id: str
-        :type email: str
-        :return: None
-        """
-        ET.SubElement(root, 'electronicMailAddress').text = email
-        userId = ET.SubElement(root, 'userId')
-        userId.text = user_id
-        userId.set('directory', get_directory(user_id))
+    logger.info("Numnber of new dataone entries in EML: {}".format(str(len(new_dataone_objects))))
 
     """
     Check that we're able to assign a first, last, and email to the record.
@@ -250,24 +267,59 @@ def create_minimum_eml(tale,
     for item_id in item_ids:
         item = Item().load(item_id, user=user, level=AccessType.READ)
         object_format = get_file_format(item_id, user)
-
+        logger.info('Adding existing file {}'.format(item['name']))
         # Create the record for the object
-        add_object_record(item['name'], item['description'], item['size'], object_format)
+        add_object_record(dataset,
+                          item['name'],
+                          item['description'],
+                          item['size'],
+                          object_format)
+
+    for new_dataone_object in new_dataone_objects:
+        # Create the record for the object
+        logger.info('Adding copy EML record {}'.format(new_dataone_object))
+        add_object_record(dataset,
+                          new_dataone_object['name'],
+                          new_dataone_object['description'],
+                          new_dataone_object['size'],
+                          new_dataone_object['mimeType'])
 
     # Add a section for the tale.yml file
+    logger.info('Adding tale.yaml to EML')
     file_sizes.get('tale_yaml')
     description = "Configuration file that has information that will be useful " \
                   "for re-creating the computational environment."
     name = ExtraFileNames.tale_config
     object_format = 'application/x-yaml'
-    add_object_record(name, description, file_sizes.get('tale_yaml'), object_format)
+    add_object_record(dataset,
+                      name,
+                      description,
+                      file_sizes.get('tale_yaml'),
+                      object_format)
 
     # Add a section for the license file
     if file_sizes.get('license'):
+        logger.info('Adding LICENSE to EML')
         description = "The package's licensing information."
         name = ExtraFileNames.license_filename
         object_format = 'text/plain'
-        add_object_record(name, description, file_sizes.get('license'), object_format)
+        add_object_record(dataset,
+                          name,
+                          description,
+                          file_sizes.get('license'),
+                          object_format)
+
+    # Add a section for the repository file
+    if file_sizes.get('repository'):
+        logger.info('Adding repository.tar.gz to EML')
+        description = "The repository that contains the base Tale environment."
+        name = ExtraFileNames.repository_name
+        object_format = 'application/tar+gzip'
+        add_object_record(dataset,
+                          name,
+                          description,
+                          file_sizes.get('repository'),
+                          object_format)
 
     """
     Emulate the behavior of ElementTree.tostring in Python 3.6.0
@@ -420,9 +472,10 @@ def generate_system_metadata(pid,
         if not isinstance(file_object, bytes):
             if isinstance(file_object, str):
                 file_object = file_object.encode("utf-8")
+        logger.info('Updating MD5')
         md5.update(file_object)
         size = len(file_object)
-
+    logger.info("Populating System Metadata")
     md5 = md5.hexdigest()
     sys_meta = populate_sys_meta(pid,
                                  format_id,
@@ -453,16 +506,18 @@ def populate_sys_meta(pid, format_id, size, md5, name, rights_holder):
     """
 
     pid = check_pid(pid)
+    logger.info("Creating Sysmeta Object")
     sys_meta = dataoneTypes.systemMetadata()
     sys_meta.identifier = pid
     sys_meta.formatId = format_id
     sys_meta.size = size
     sys_meta.rightsHolder = rights_holder
-
+    logger.info("2")
     sys_meta.checksum = dataoneTypes.checksum(str(md5))
     sys_meta.checksum.algorithm = 'MD5'
     sys_meta.accessPolicy = generate_public_access_policy()
     sys_meta.fileName = name
+    logger.info("Returning sys_meta")
     return sys_meta
 
 
@@ -482,3 +537,83 @@ def generate_public_access_policy():
     access_rule.permission.append(permission)
     access_policy.append(access_rule)
     return access_policy
+
+
+def transfer_prod_to_dev(filtered_items, user, user_id, client):
+    """
+
+    :param filtered_items:
+    :param user:
+    :param user_id:
+    :param client:
+    :return:
+    """
+
+    new_objects = list()
+    logger.info(len(filtered_items))
+    for itemId in filtered_items:
+        logger.info("Processing Item: {}".format(str(itemId)))
+        try:
+            """
+            Get the underlying file object from the supplied item id.
+            We'll need the `linkUrl` field to determine where it is pointing to.
+            """
+            file = get_file_item(itemId, user)
+            if file is not None:
+                url = file.get('linkUrl')
+                if url is not None:
+                    """
+                    Create a temporary file object which will eventually hold the contents
+                    of the remote object.
+                    """
+                    data = str()
+                    with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+                        src = urlopen(url)
+                        try:
+                            # Copy the response into the temporary file
+                            copyfileobj(src, temp_file)
+                            logger.info('Copied file, size: {}'.format(temp_file.tell()))
+
+                        except Exception as e:
+                            error_msg = 'Error Copying File: {}'.format(e)
+                            logger.info(error_msg)
+                            raise RestException(error_msg)
+
+                        temp_file.seek(0)
+
+                        pid = str(uuid.uuid4())
+                        logger.info(file['name'])
+                        logger.info('Generating System Metadata')
+
+                        meta = generate_system_metadata(pid=pid,
+                                                        format_id=file['mimeType'],
+                                                        file_object=temp_file.read(),
+                                                        name=file['name'],
+                                                        rights_holder=user_id)
+                        # Upload the file to the development server
+
+                        item = Item().load(itemId, level=AccessType.READ, user=user)
+                        new_object = dict()
+                        new_object['pid'] = pid
+                        new_object['name'] = file['name']
+                        new_object['description'] = item['description']
+                        new_object['size'] = file['size']
+                        new_object['mimeType'] = file['mimeType']
+                        new_objects.append(new_object)
+                        try:
+                            temp_file.seek(0)
+                            logger.info('Uploading data to DataONE')
+                            client.create(pid, temp_file.read(), meta)
+                            logger.info("Finished uploading data to DataONE")
+
+                        except Exception as e:
+                            logger.info("Failure {}".format(e))
+                            raise ValidationException('Error uploading file to DataONE.'
+                                                      ' {0}'.format(str(e)))
+
+        except Exception as e:
+            logger.info('Error transfering file from DataONE to NCEAS {}'.format(str(e)))
+            raise RestException('Failed to process file located at {}. {}'.format(url, e))
+
+    logger.info('Finished uploading objects to dev {}'.format(new_objects))
+    return new_objects

@@ -10,7 +10,7 @@ from girder.api.describe import Description, autoDescribeRoute
 from girder.constants import TokenScope, AccessType
 from girder.api.docs import addModel
 from girder.api.rest import Resource, RestException
-from girder.utility.model_importer import ModelImporter
+
 from ..dataone_register import \
     D1_lookup, \
     get_package_list
@@ -240,7 +240,7 @@ class Repository(Resource):
 
     )
     def createPackage(self, itemIds, taleId, repository, jwt, licenseId, provInfo=str()):
-        user = ModelImporter.model('user').getAdmins()[0]
+        user = self.getCurrentUser()
         tale = self.model('tale',
                           'wholetale').load(taleId,
                                             user=user,
