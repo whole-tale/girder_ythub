@@ -566,8 +566,7 @@ def transfer_prod_to_dev(filtered_items, user, user_id, client):
                     Create a temporary file object which will eventually hold the contents
                     of the remote object.
                     """
-                    data = str()
-                    with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+                    with tempfile.NamedTemporaryFile() as temp_file:
                         src = urlopen(url)
                         try:
                             # Copy the response into the temporary file

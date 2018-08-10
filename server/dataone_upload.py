@@ -460,7 +460,7 @@ def create_upload_repository(tale, client, user, rights_holder):
 
         logger.info('Creating Named File {}'.format(download_url))
 
-        with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+        with tempfile.NamedTemporaryFile() as temp_file:
             src = urlopen(download_url)
             try:
                 # Copy the response into the temporary file
