@@ -399,6 +399,7 @@ def create_external_object_structure(external_files, user):
         Get the underlying file object from the supplied item id.
         We'll need the `linkUrl` field to determine where it is pointing to.
         """
+        logger.debug('Creating reference for remote files')
         file = get_file_item(item, user)
         if file is not None:
             url = file.get('linkUrl', None)

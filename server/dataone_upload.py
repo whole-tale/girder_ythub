@@ -246,7 +246,6 @@ def filter_items(item_ids, user, member_node):
         logger.debug('Processing item {}'.format(str(item_id)))
         # Check if it points do a dataone objbect
         url = get_remote_url(item_id, user)
-        logger.debug('Found URL {}'.format(url))
         if url is not None:
             logger.debug('URL {}'.format(url))
             if is_dataone_url(url) or is_dev_url(url):
@@ -255,7 +254,7 @@ def filter_items(item_ids, user, member_node):
                     logger.debug('File is in network')
                     pid = find_initial_pid(url)
                     dataone_objects_in.append(pid)
-                    logger.debug('Found PID {}'.format(str(pid)))
+                    logger.debug('File is in network')
                     continue
                 else:
                     # File is out of network. Need to download and upload it
@@ -266,11 +265,13 @@ def filter_items(item_ids, user, member_node):
             If there is a url, and it's not pointing to a DataONE resource, then assume
             it's pointing to an external object
             """
+            logger.debug('Adding remote object')
             remote_objects.append(item_id)
             continue
 
         # If the file wasn't linked to a remote location, then it must exist locally. This
         # is a list of girder.models.File objects
+        logger.debug('Adding local object')
         local_objects.append(get_file_item(item_id, user))
 
     return {'dataone_in': dataone_objects_in,
@@ -294,6 +295,8 @@ def create_paths_structure(item_ids, user):
     """
     path_file = dict()
 
+    logger.debug('Recording the file paths for the items in the '
+                 'Tale.')
     for item_id in item_ids:
         item = ModelImporter.model('item').load(item_id,
                                                 level=AccessType.READ,
@@ -314,6 +317,7 @@ def create_tale_info_structure(tale):
     """
 
     # We'll store the information as a dictionary
+    logger.debug('Creating tale information structure for package')
     tale_info = dict()
     tale_info['version'] = API_VERSION
     tale_info['identifier'] = str(tale['_id'])
@@ -351,16 +355,19 @@ def create_upload_tale_yaml(tale,
     :rtype: tuple
     """
 
+    logger.debug('Creating the tale yaml file')
     # Create the dict that has general information about the package
     tale_info = create_tale_info_structure(tale)
 
     # Create the dict that holds the file paths
     file_paths = dict()
+    logger.debug(('creating paths structure'))
     file_paths['paths'] = create_paths_structure(item_ids, user)
 
     # Create the dict that tracks externally defined objects, if applicable
     external_files = dict()
     if len(remote_objects) > 0:
+        logger.debug('Found remote object, creating structure for them')
         external_files['external files'] = create_external_object_structure(remote_objects, user)
 
     # Append all of the information together
@@ -609,7 +616,6 @@ def publish(item_ids,
         logger.debug('Processing local files for DataONE upload')
         local_file_pids.append(create_upload_object_metadata(client, file, user_id))
 
-    logger.debug('Processing Tale YAML file')
     tale_yaml_pid, tale_yaml_length = create_upload_tale_yaml(tale,
                                                               filtered_items['remote'],
                                                               item_ids,
