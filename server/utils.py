@@ -7,8 +7,7 @@ from girder import logger
 from girder.models.item import Item
 from girder.models.folder import Folder
 from girder.constants import \
-    AccessType, \
-    AssetstoreType
+    AccessType
 from girder.api.rest import RestException
 
 from .constants import DataONELocations
@@ -158,7 +157,7 @@ def is_dev_url(url):
     :rtype: bool
     """
     parsed_url = urllib.parse.urlparse(url).netloc
-    parsed_dev_mn = urllib.parse.urlparse(DataONELocations.dev_mn).netloc
+    parsed_dev_mn = urllib.parse.urlparse(DataONELocations.dev_cn).netloc
 
     if parsed_url == parsed_dev_mn:
         return True
@@ -175,12 +174,12 @@ def is_in_network(url, network):
     parsed_url = urllib.parse.urlparse(url).netloc
     parsed_network = urllib.parse.urlparse(network).netloc
     base_dev_mn = urllib.parse.urlparse(DataONELocations.dev_mn).netloc
+    base_dev_cn = urllib.parse.urlparse(DataONELocations.dev_cn).netloc
 
     if parsed_network == base_dev_mn:
         # Then we're in NCEAS Development
         # The resolve address is through the membernode in this case
-
-        if parsed_url == base_dev_mn:
+        if parsed_url == base_dev_cn:
             # Then the object is in network
             return True
         else:
@@ -257,54 +256,6 @@ def get_tale_files(tale, user):
     return files
 
 
-def create_repository_file(recipe):
-    """
-    Creates a file that holds the recipe repository. Instead of
-     doing the collection,folder,item,file creation in the celery worker,
-     we'll do it here. We let the worker know which file to use by sending it
-     the file id returned from this function
-
-    :param recipe: The recipe whose repository is being saved
-    :type recipe: wholetale.models.recipe
-    :return: The file id or None
-    :rtype: str, NoneType
-    """
-
-    # Name for the folder & collection that will hold the repositories
-    folder_name = 'repository_bank'
-    folder_description = "Holds items that represent archived repositories"
-
-    """
-    Get all of the assetstores and retrieve GridFS. The reason we're using this
-     assetstore is that we don't want this folder in the user's home directory.
-    """
-    store = ModelImporter.model('assetstore').findOne({'type': AssetstoreType.GRIDFS})
-    if store is None:
-        logger.warning('No GridFS assetstore found')
-        return None
-
-    admin_user = ModelImporter.model('user').getAdmins()[0]
-
-    parent_folder = getOrCreateRootFolder(folder_name, folder_description)
-
-    item_name = 'Repository: {}'.format(recipe['name'])
-    item_description = "Item that holds the repository used in recipe {}".format(recipe['_id'])
-    repo_item = ModelImporter.model('item').createItem(name=item_name,
-                                                       creator=admin_user,
-                                                       folder=parent_folder,
-                                                       description=item_description,
-                                                       reuseExisting=True)
-
-    repo_file = ModelImporter.model('file').createFile(creator=admin_user,
-                                                       item=repo_item,
-                                                       name=str(recipe['_id']),
-                                                       size=0,
-                                                       assetstore=store,
-                                                       mimeType='application/tar+gzip',
-                                                       reuseExisting=True)
-    return str(repo_file['_id'])
-
-
 def get_dataone_package_url(repository, pid):
     """
     Given a repository url and a pid, construct a url that should
@@ -327,12 +278,13 @@ def extract_user_id(jwt_token):
     :param jwt: The decoded JWT
     :type jwt: str
     :return: The ORCID ID
-    :rtype: str
+    :rtype: str, None if failure
     """
     jwt_token = jwt.decode(jwt_token, verify=False)
-    user_id = jwt_token['userId']
-    if is_orcid_id(user_id):
-        return make_url_https(user_id)
+    user_id = jwt_token.get('userId', None)
+    if user_id is not None:
+        if is_orcid_id(user_id):
+            return make_url_https(user_id)
     return user_id
 
 
@@ -378,7 +330,6 @@ def get_directory(user_id):
     :return: The directory name
     :rtype: str
     """
-    logger.info(type(user_id))
     if is_orcid_id(user_id):
         return "https://orcid.org"
     return "https://cilogon.org"

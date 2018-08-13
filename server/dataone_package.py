@@ -5,6 +5,7 @@ import xml.etree.cElementTree as ET
 from urllib.request import urlopen
 from shutil import copyfileobj
 import uuid
+import requests
 
 from girder import logger
 from girder.models.file import File
@@ -12,7 +13,6 @@ from girder.models.item import Item
 from girder.api.rest import RestException
 from girder.constants import \
     AccessType
-from girder.models.model_base import ValidationException
 
 from .utils import \
     check_pid, \
@@ -24,7 +24,8 @@ from .utils import \
 
 from .constants import \
     ExtraFileNames, \
-    license_text
+    license_text, \
+    file_descriptions
 
 from d1_common.types import dataoneTypes
 from d1_common import const as d1_const
@@ -180,8 +181,7 @@ def create_minimum_eml(tale,
                        file_sizes,
                        license_id,
                        user_id,
-                       new_dataone_objects,
-                       repository_pid):
+                       new_dataone_objects=list()):
     """
     Creates a bare minimum EML record for a package. Note that the
     ordering of the xml elements matters.
@@ -203,12 +203,10 @@ def create_minimum_eml(tale,
     :type file_sizes: dict
     :type license_id: str
     :type user_id: str
-    :type: new_dataone_objects: dict
+    :type: new_dataone_objects: list
     :return: The EML as as string of bytes
     :rtype: bytes
     """
-
-    logger.info("Numnber of new dataone entries in EML: {}".format(str(len(new_dataone_objects))))
 
     """
     Check that we're able to assign a first, last, and email to the record.
@@ -287,8 +285,7 @@ def create_minimum_eml(tale,
     # Add a section for the tale.yml file
     logger.info('Adding tale.yaml to EML')
     file_sizes.get('tale_yaml')
-    description = "Configuration file that has information that will be useful " \
-                  "for re-creating the computational environment."
+    description = file_descriptions[ExtraFileNames.tale_config]
     name = ExtraFileNames.tale_config
     object_format = 'application/x-yaml'
     add_object_record(dataset,
@@ -300,7 +297,7 @@ def create_minimum_eml(tale,
     # Add a section for the license file
     if file_sizes.get('license'):
         logger.info('Adding LICENSE to EML')
-        description = "The package's licensing information."
+        description = file_descriptions[ExtraFileNames.license_filename]
         name = ExtraFileNames.license_filename
         object_format = 'text/plain'
         add_object_record(dataset,
@@ -312,8 +309,8 @@ def create_minimum_eml(tale,
     # Add a section for the repository file
     if file_sizes.get('repository'):
         logger.info('Adding repository.tar.gz to EML')
-        description = "The repository that contains the base Tale environment."
-        name = ExtraFileNames.repository_name
+        description = file_descriptions[ExtraFileNames.environment_file]
+        name = ExtraFileNames.environment_file
         object_format = 'application/tar+gzip'
         add_object_record(dataset,
                           name,
@@ -396,29 +393,30 @@ def create_external_object_structure(external_files, user):
     """
 
     reference_file = dict()
-    try:
-        for item in external_files:
-            """
-            Get the underlying file object from the supplied item id.
-            We'll need the `linkUrl` field to determine where it is pointing to.
-            """
-            file = get_file_item(item, user)
-            if file is not None:
-                url = file.get('linkUrl')
-                if url is not None:
-                    """
-                    Create a temporary file object which will eventually hold the contents
-                    of the remote object.
-                    """
-                    temp_file = tempfile.NamedTemporaryFile()
-                    src = urlopen(url)
+
+    for item in external_files:
+        """
+        Get the underlying file object from the supplied item id.
+        We'll need the `linkUrl` field to determine where it is pointing to.
+        """
+        file = get_file_item(item, user)
+        if file is not None:
+            url = file.get('linkUrl', None)
+            if url is not None:
+                """
+                Create a temporary file object which will eventually hold the contents
+                of the remote object.
+                """
+                with tempfile.NamedTemporaryFile() as temp_file:
                     try:
+                        src = urlopen(url)
                         # Copy the response into the temporary file
                         copyfileobj(src, temp_file)
-                    except Exception as e:
-                        error_msg = 'Error Copying File: {}'.format(e)
-                        logger.warning(error_msg)
-                        raise RestException(error_msg)
+
+                    except requests.exceptions.HTTPError:
+                        # if we fail to download the file, exit
+                        raise RestException('There was a problem downloading an external file, {}'
+                                            'located at {}.'.format(file['name'], url))
 
                     # Get the md5 of the file
                     md5 = compute_md5(temp_file)
@@ -426,14 +424,12 @@ def create_external_object_structure(external_files, user):
 
                     """
                     Create dictionary entries for the file. We key off of the file name,
-                     and store the url and md5 with it.
+                    and store the url and md5 with it.
                     """
                     url_entry = {'url': url}
                     md5_entry = {'md5': digest}
                     reference_file[file['name']] = url_entry, md5_entry
-    except Exception as e:
-        logger.warning('Error while processing file from Globus. {}'.format(e))
-        raise RestException('Failed to process file located at {}. {}'.format(url, e))
+
     return reference_file
 
 
@@ -472,11 +468,10 @@ def generate_system_metadata(pid,
         if not isinstance(file_object, bytes):
             if isinstance(file_object, str):
                 file_object = file_object.encode("utf-8")
-        logger.info('Updating MD5')
         md5.update(file_object)
         size = len(file_object)
-    logger.info("Populating System Metadata")
     md5 = md5.hexdigest()
+
     sys_meta = populate_sys_meta(pid,
                                  format_id,
                                  size,
@@ -506,18 +501,15 @@ def populate_sys_meta(pid, format_id, size, md5, name, rights_holder):
     """
 
     pid = check_pid(pid)
-    logger.info("Creating Sysmeta Object")
     sys_meta = dataoneTypes.systemMetadata()
     sys_meta.identifier = pid
     sys_meta.formatId = format_id
     sys_meta.size = size
     sys_meta.rightsHolder = rights_holder
-    logger.info("2")
     sys_meta.checksum = dataoneTypes.checksum(str(md5))
     sys_meta.checksum.algorithm = 'MD5'
     sys_meta.accessPolicy = generate_public_access_policy()
     sys_meta.fileName = name
-    logger.info("Returning sys_meta")
     return sys_meta
 
 
@@ -539,80 +531,119 @@ def generate_public_access_policy():
     return access_policy
 
 
-def transfer_prod_to_dev(filtered_items, user, user_id, client):
+def transfer_prod_to_dev(items,
+                         user,
+                         user_id,
+                         client,
+                         previous_failure=False):
     """
-
-    :param filtered_items:
-    :param user:
-    :param user_id:
-    :param client:
+    Takes an object on DataONE and transfers it to the node that client is
+    interfacing with. If it fails, the failed items are sent back through
+    the function as the `items` param.
+    :param items: A list of linkFile items that are going to be transferred
+    :param user: The user doing the transfer
+    :param user_id: The user's userId from their jwt
+    :param client: The dataone client interfacing the network
+    :param previous_failure: Set if this function has failed in recursion
+    :type : list
+    :type : girder.models.user
+    :type : str
+    :type : MemberNodeClient_2_0
+    :type previous_failure: bool
     :return:
     """
 
     new_objects = list()
-    logger.info(len(filtered_items))
-    for itemId in filtered_items:
-        logger.info("Processing Item: {}".format(str(itemId)))
-        try:
+    failed_items = list()
+    for itemId in items:
+        """
+        Get the underlying file object from the supplied item id.
+        We'll need the `linkUrl` field to determine where it is pointing to.
+        """
+        file = get_file_item(itemId, user)
+        if file is None:
+            # We'll want to exit if we fail to load one of the user's files
+            raise RestException('Failed to locate file {}'.format(itemId))
+
+        url = file.get('linkUrl')
+        if url is not None:
             """
-            Get the underlying file object from the supplied item id.
-            We'll need the `linkUrl` field to determine where it is pointing to.
+            Create a temporary file object which will eventually hold the contents
+            of the remote object.
             """
-            file = get_file_item(itemId, user)
-            if file is not None:
-                url = file.get('linkUrl')
-                if url is not None:
+            with tempfile.NamedTemporaryFile(mode='rb+') as temp_file:
+                try:
+                    src = requests.get(url)
+                    src.raise_for_status()
+                    temp_file.write(src.content)
+                except requests.exceptions.HTTPError:
+                    # if we fail to download the file, exit
+                    raise RestException('Failed to download file {}, located at {}'
+                                        .format(file['name'], url))
+
+                # Create a pid for the new file
+                pid = str(uuid.uuid4())
+                """
+                The file going to be read while creating the metadata, so
+                skip to the beginning.
+                """
+                temp_file.seek(0)
+                meta = generate_system_metadata(pid=pid,
+                                                format_id=file['mimeType'],
+                                                file_object=temp_file.read(),
+                                                name=file['name'],
+                                                rights_holder=user_id)
+
+                """
+                  Create a new object that holds properties about the file so that they can be
+                  used in the EML,
+                  """
+                new_object = dict()
+                new_object['pid'] = pid
+                new_object['name'] = file['name']
+                new_object['size'] = file['size']
+                new_object['mimeType'] = file['mimeType']
+
+                item = Item().load(itemId, level=AccessType.READ, user=user)
+                if item is None:
                     """
-                    Create a temporary file object which will eventually hold the contents
-                    of the remote object.
+                    If the item failed to load, we'll be unable to get the file's
+                    description. This doesn't warrant stopping publication, but the
+                    user should know.
                     """
-                    with tempfile.NamedTemporaryFile() as temp_file:
-                        src = urlopen(url)
-                        try:
-                            # Copy the response into the temporary file
-                            copyfileobj(src, temp_file)
-                            logger.info('Copied file, size: {}'.format(temp_file.tell()))
+                    logger.warning('Failed to load item {} during upload to DataONE'.format(itemId))
+                else:
+                    new_object['description'] = item['description']
 
-                        except Exception as e:
-                            error_msg = 'Error Copying File: {}'.format(e)
-                            logger.info(error_msg)
-                            raise RestException(error_msg)
+                """
+                Make sure we skip to the beginning of the file before streaming it
+                """
+                temp_file.seek(0)
+                logger.debug('Uploading a downlaoded DataONE object to the current network')
+                try:
+                    logger.debug('Transferring item {} ID {}'.format(file['name'], itemId))
+                    client.create(pid, io.BytesIO(temp_file.read()), meta)
+                    new_objects.append(new_object)
+                    logger.debug('Finished transferring object')
+                except Exception as e:
+                    """
+                    If the upload failed, we'll want to try it again later, so save the id
+                    """
+                    logger.warning('Error uploading object with ID {}. Error: {}'
+                                   .format(itemId, e))
+                    failed_items.append(itemId)
+                    pass
 
-                        temp_file.seek(0)
+    retry_objects = list()
+    if failed_items:
+        logger.info('{} items failed to upload to DataONE.'.format(len(failed_items)))
+        if previous_failure:
+            # If we already failed once, quit and let the user know there was an error
+            logger.warning('Failed to upload to Dataone. Terminating.')
+            raise RestException('There was an error while uploading your files to the server.')
+        retry_objects = transfer_prod_to_dev(failed_items, user, user_id, client, True)
 
-                        pid = str(uuid.uuid4())
-                        logger.info(file['name'])
-                        logger.info('Generating System Metadata')
-
-                        meta = generate_system_metadata(pid=pid,
-                                                        format_id=file['mimeType'],
-                                                        file_object=temp_file.read(),
-                                                        name=file['name'],
-                                                        rights_holder=user_id)
-                        # Upload the file to the development server
-
-                        item = Item().load(itemId, level=AccessType.READ, user=user)
-                        new_object = dict()
-                        new_object['pid'] = pid
-                        new_object['name'] = file['name']
-                        new_object['description'] = item['description']
-                        new_object['size'] = file['size']
-                        new_object['mimeType'] = file['mimeType']
-                        new_objects.append(new_object)
-                        try:
-                            temp_file.seek(0)
-                            logger.info('Uploading data to DataONE')
-                            client.create(pid, temp_file.read(), meta)
-                            logger.info("Finished uploading data to DataONE")
-
-                        except Exception as e:
-                            logger.info("Failure {}".format(e))
-                            raise ValidationException('Error uploading file to DataONE.'
-                                                      ' {0}'.format(str(e)))
-
-        except Exception as e:
-            logger.info('Error transfering file from DataONE to NCEAS {}'.format(str(e)))
-            raise RestException('Failed to process file located at {}. {}'.format(url, e))
-
-    logger.info('Finished uploading objects to dev {}'.format(new_objects))
+    logger.debug('Finished uploading objects to dev {}'.format(new_objects))
+    if retry_objects:
+        return new_objects+retry_objects
     return new_objects

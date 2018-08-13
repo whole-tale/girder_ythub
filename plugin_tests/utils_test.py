@@ -1,16 +1,10 @@
 import uuid
 
 from tests import base
-from girder.api.rest import RestException
-from girder.constants import ROOT_DIR
-from girder.models.model_base import ValidationException
 from girder.models.item import Item
-from girder.models.folder import Folder
 from girder.models.file import File
 from girder.models.user import User
 from girder.models.assetstore import Assetstore
-from d1_client.mnclient_2_0 import MemberNodeClient_2_0
-from d1_common.types import dataoneTypes
 
 
 def setUpModule():
@@ -131,23 +125,6 @@ class TestDataONEUtils(base.TestCase):
         self.assertEqual(folder['name'], folder_name)
         self.assertEqual(folder['description'], folder_desc)
 
-    def test_create_repository_file(self):
-        from server.utils import create_repository_file
-
-        recipe = {'_id': '123456789', 'name': 'test_recipe'}
-
-        # Check that we get `None` back when the assetstore isn't found
-        self.assertIsNone(create_repository_file(recipe))
-
-        # Create the assetstore
-        Assetstore().createGridFsAssetstore('GridFS local', db='db_name')
-        file_id =create_repository_file(recipe)
-        print(file_id)
-        admin_user = User().getAdmins()[0]
-        file = File().load(file_id, user=admin_user)
-
-        self.assertEqual(str(file['_id']), file_id)
-
     def test_get_dataone_package_url(self):
         from server.utils import get_dataone_package_url
         from server.constants import DataONELocations
@@ -216,21 +193,21 @@ class TestDataONEUtils(base.TestCase):
     def test_is_in_network(self):
         from server.utils import is_in_network
 
-        network1 = 'https://dev.nceas.ucsb.edu/knb/d1/mn/v2'
-        network2 = 'https://knb.ecoinformatics.org/knb/d1/mn'
-        url1 = 'https://cn-stage-2.test.dataone.org/cn/v2/resolve/knb.109062.1'
-        url2 = 'https://cn.dataone.org/cn/v2/resolve/0258e4ad-d54d-469b-8a92-355069f6889b'
+        dev_network = 'https://dev.nceas.ucsb.edu/knb/d1/mn/v2'
+        prod_network = 'https://knb.ecoinformatics.org/knb/d1/mn'
+        dev_object = 'https://cn-stage-2.test.dataone.org/cn/v2/resolve/knb.109062.1'
+        prod_object = 'https://cn.dataone.org/cn/v2/resolve/0258e4ad-d54d-469b-8a92-355069f6889b'
 
-        res = is_in_network(url1, network1)
+        res = is_in_network(dev_object, dev_network)
         self.assertTrue(res)
 
-        res = is_in_network(url1, network2)
+        res = is_in_network(dev_object, prod_network)
         self.assertFalse(res)
 
-        res = is_in_network(url2, network1)
+        res = is_in_network(prod_object, dev_network)
         self.assertFalse(res)
 
-        res = is_in_network(url2, network2)
+        res = is_in_network(prod_object, prod_network)
         self.assertTrue(res)
 
     def test_is_dev_url(self):
@@ -241,6 +218,3 @@ class TestDataONEUtils(base.TestCase):
 
         url2 = 'https://cn-stage-2.test.dataone.org/cn/v2/resolve/knb.109062.1'
         self.assertTrue(is_dev_url(url2))
-
-
-

@@ -7,7 +7,6 @@ import requests
 from urllib.parse import urlparse
 from girder.api import access
 from girder.api.describe import Description, autoDescribeRoute
-from girder.constants import TokenScope, AccessType
 from girder.api.docs import addModel
 from girder.api.rest import Resource, RestException
 
@@ -15,7 +14,6 @@ from ..dataone_register import \
     D1_lookup, \
     get_package_list
 from ..constants import DataONELocations
-from ..dataone_upload import create_upload_package
 
 dataMap = {
     'type': 'object',
@@ -136,7 +134,6 @@ class Repository(Resource):
 
         self.route('GET', ('lookup',), self.lookupData)
         self.route('GET', ('listFiles',), self.listFiles)
-        self.route('GET', ('createPackage',), self.createPackage)
 
     @access.public
     @autoDescribeRoute(
@@ -203,54 +200,3 @@ class Repository(Resource):
                     pass
 
             return results
-
-    @access.user(scope=TokenScope.DATA_WRITE)
-    @autoDescribeRoute(
-        Description('Uploads files to DataONE, which creates a package out of them.')
-        .notes('This endpoint takes a list of items, a tale, and a user-which are used to '
-               'upload the items and tale artifacts to DataONE. During this '
-               'process, any required metadata such as the EML document, system metadata, and '
-               'RDF document are generated. The landing page for the package is returned as a '
-               'string. The itemId parameter should look like [\'item1\', \'item2\', \'item3\']. '
-               'The JWT is obtained via the \'token\' endpoint on the Data ONE coordinating '
-               'node.')
-        .jsonParam(name='itemIds',
-                   required=True,
-                   description='A list of the files that are going to be uploaded to DataONE')
-        .param('taleId',
-               description='The ID of the tale that the user wants to publish.',
-               required=True)
-        .param('repository',
-               description='The url for the member node endpoint.',
-               required=True)
-        .param('jwt',
-               description='The user\'s DataONE jwt.',
-               required=True)
-        .param('licenseId',
-               description='The ID of the license that the package is under. This is the '
-                           'SPDX identifier',
-               required=True)
-        .jsonParam('provInfo',
-                   description='A string representation of a dictionary that can describe '
-                               'additional information about the tale. The contents of '
-                               'this query are placed in the tale.yaml file. '
-                               'An example value is '
-                               '{\"entryPoint\": \"/home/data/main.py\"}',
-                   required=False)
-
-    )
-    def createPackage(self, itemIds, taleId, repository, jwt, licenseId, provInfo=str()):
-        user = self.getCurrentUser()
-        tale = self.model('tale',
-                          'wholetale').load(taleId,
-                                            user=user,
-                                            level=AccessType.READ)
-
-        package_url = create_upload_package(item_ids=itemIds,
-                                            tale=tale,
-                                            user=user,
-                                            repository=repository,
-                                            jwt=jwt,
-                                            license_id=licenseId,
-                                            prov_info=provInfo)
-        return package_url
