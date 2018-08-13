@@ -265,7 +265,7 @@ def create_minimum_eml(tale,
     for item_id in item_ids:
         item = Item().load(item_id, user=user, level=AccessType.READ)
         object_format = get_file_format(item_id, user)
-        logger.info('Adding existing file {}'.format(item['name']))
+        logger.debug('Adding existing file {}'.format(item['name']))
         # Create the record for the object
         add_object_record(dataset,
                           item['name'],
@@ -275,7 +275,7 @@ def create_minimum_eml(tale,
 
     for new_dataone_object in new_dataone_objects:
         # Create the record for the object
-        logger.info('Adding copy EML record {}'.format(new_dataone_object))
+        logger.debug('Adding copy EML record {}'.format(new_dataone_object))
         add_object_record(dataset,
                           new_dataone_object['name'],
                           new_dataone_object['description'],
@@ -283,7 +283,7 @@ def create_minimum_eml(tale,
                           new_dataone_object['mimeType'])
 
     # Add a section for the tale.yml file
-    logger.info('Adding tale.yaml to EML')
+    logger.debug('Adding tale.yaml to EML')
     file_sizes.get('tale_yaml')
     description = file_descriptions[ExtraFileNames.tale_config]
     name = ExtraFileNames.tale_config
@@ -296,7 +296,7 @@ def create_minimum_eml(tale,
 
     # Add a section for the license file
     if file_sizes.get('license'):
-        logger.info('Adding LICENSE to EML')
+        logger.debug('Adding LICENSE to EML')
         description = file_descriptions[ExtraFileNames.license_filename]
         name = ExtraFileNames.license_filename
         object_format = 'text/plain'
@@ -308,7 +308,7 @@ def create_minimum_eml(tale,
 
     # Add a section for the repository file
     if file_sizes.get('repository'):
-        logger.info('Adding repository.tar.gz to EML')
+        logger.debug('Adding repository.tar.gz to EML')
         description = file_descriptions[ExtraFileNames.environment_file]
         name = ExtraFileNames.environment_file
         object_format = 'application/tar+gzip'
