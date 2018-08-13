@@ -16,7 +16,6 @@ from girder.constants import \
 
 from .utils import \
     check_pid, \
-    get_file_format, \
     get_tale_description, \
     get_file_item, \
     strip_html_tags, \
@@ -221,6 +220,7 @@ def create_minimum_eml(tale,
         raise RestException('Unable to find your name or email address. Please ensure '
                             'you have authenticated with DataONE.')
 
+    logger.debug('Creating EML Record')
     # Create the namespace
     ns = ET.Element('eml:eml')
     ns.set('xmlns:eml', "eml://ecoinformatics.org/eml-2.1.1")
@@ -262,16 +262,13 @@ def create_minimum_eml(tale,
     set_user_contact(contact, user_id, email)
 
     # Add a <otherEntity> block for each object
-    for item_id in item_ids:
-        item = Item().load(item_id, user=user, level=AccessType.READ)
-        object_format = get_file_format(item_id, user)
-        logger.debug('Adding existing file {}'.format(item['name']))
+    for item in item_ids:
         # Create the record for the object
         add_object_record(dataset,
                           item['name'],
-                          item['description'],
+                          item.get('description', ''),
                           item['size'],
-                          object_format)
+                          item['mimeType'])
 
     for new_dataone_object in new_dataone_objects:
         # Create the record for the object
@@ -317,7 +314,6 @@ def create_minimum_eml(tale,
                           description,
                           file_sizes.get('repository'),
                           object_format)
-
     """
     Emulate the behavior of ElementTree.tostring in Python 3.6.0
      Write the contents to a stream and then return its content.
@@ -637,7 +633,7 @@ def transfer_prod_to_dev(items,
 
     retry_objects = list()
     if failed_items:
-        logger.info('{} items failed to upload to DataONE.'.format(len(failed_items)))
+        logger.debug('{} items failed to upload to DataONE.'.format(len(failed_items)))
         if previous_failure:
             # If we already failed once, quit and let the user know there was an error
             logger.warning('Failed to upload to Dataone. Terminating.')
