@@ -571,8 +571,9 @@ def publish(item_ids,
         logger.debug('Creating the DataONE client')
         client = create_client(repository, {
             "headers": {
-                "Authorization": "Bearer " + jwt},
-            "user_agent": "safari"})
+                "Authorization": "Bearer " + jwt,
+                "user_agent": "safari",
+                "Connection": "close"}})
 
     except DataONEException as e:
         logger.warning('Error creating the DataONE Client: {}'.format(e))
