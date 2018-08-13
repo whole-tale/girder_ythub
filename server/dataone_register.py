@@ -179,6 +179,8 @@ def find_initial_pid(path):
     if re.search(r'^http[s]?:\/\/dev.nceas.ucsb.edu\/#view\/', path):
         return re.sub(
             r'^http[s]?:\/\/dev.nceas.ucsb.edu\/#view\/', '', path)
+    if re.search(r'resolve', path):
+        return path.split("resolve/", 1)[1]
     elif doi is not None:
         return 'doi:{}'.format(doi.group())
     else:

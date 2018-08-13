@@ -22,6 +22,7 @@ from .rest.dataset import Dataset
 from .rest.recipe import Recipe
 from .rest.image import Image
 from .rest.repository import Repository
+from .rest.publish import Publish
 from .rest.harvester import listImportedData
 from .rest.tale import Tale
 from .rest.instance import Instance
@@ -300,6 +301,7 @@ def load(info):
     events.unbind('model.user.save.created', CoreEventHandler.USER_DEFAULT_FOLDERS)
     events.bind('model.user.save.created', 'wholetale', addDefaultFolders)
     info['apiRoot'].repository = Repository()
+    info['apiRoot'].publish = Publish()
     info['apiRoot'].folder.route('GET', ('registered',), listImportedData)
     info['apiRoot'].folder.route('GET', (':id', 'listing'), listFolder)
     info['apiRoot'].folder.route('GET', (':id', 'dataset'), getDataSet)

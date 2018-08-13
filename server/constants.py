@@ -86,12 +86,31 @@ class ExtraFileNames:
     # Name for the tale config file
     tale_config = 'tale.yml'
     license_filename = 'LICENSE'
+    environment_file = 'docker-environment.tar.gz'
 
 
 """
 A dictionary that maps a license ID to a license file
 """
-license_files = {'CC0-1.0': 'cc0.txt', 'CC-BY-3.0': 'ccby3.txt', 'CC-BY-4.0': 'ccby4.txt'}
+license_files = {'CC0-1.0': 'cc0.txt',
+                 'CC-BY-3.0': 'ccby3.txt',
+                 'CC-BY-4.0': 'ccby4.txt'}
+
+"""
+A dictionary for the descriptions of the manually added package files.
+"""
+file_descriptions = {
+    ExtraFileNames.environment_file:
+        'Holds the dockerfile and additional configurations for the '
+        'underlying compute environment. This environment was used as the '
+        'base image, and includes the the IDE that is used while running the Tale.',
+    ExtraFileNames.tale_config:
+        'A configuration file, holding information that is needed to '
+        'reproduce the compute environment.',
+    ExtraFileNames.license_filename:
+        'The package\'s licensing information.'
+
+}
 
 
 """

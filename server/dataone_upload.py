@@ -1,6 +1,11 @@
 import uuid
 import yaml as yaml
 import os
+import io
+import tempfile
+from urllib.request import urlopen
+from shutil import copyfileobj
+
 
 from girder import logger
 from girder.api.rest import RestException
@@ -8,7 +13,6 @@ from girder.models.file import File
 from girder.models.notification import \
     Notification, \
     ProgressState
-from girder.models.model_base import ValidationException
 from girder.constants import \
     AccessType, \
     ROOT_DIR
@@ -19,7 +23,8 @@ from .dataone_package import \
     create_minimum_eml, \
     generate_system_metadata, \
     create_resource_map, \
-    create_external_object_structure
+    create_external_object_structure, \
+    transfer_prod_to_dev
 from .dataone_register import find_initial_pid
 from .utils import \
     check_pid, \
@@ -27,7 +32,9 @@ from .utils import \
     get_remote_url, \
     is_dataone_url, \
     get_dataone_package_url, \
-    extract_user_id
+    extract_user_id, \
+    is_in_network, \
+    is_dev_url
 
 from .constants import \
     API_VERSION, \
@@ -71,9 +78,8 @@ def upload_file(client, pid, file_object, system_metadata):
     pid = check_pid(pid)
     try:
         client.create(pid, file_object, system_metadata)
-
-    except Exception as e:
-        raise ValidationException('Error uploading file to DataONE. {0}'.format(str(e)))
+    except DataONEException as e:
+        raise RestException('Error uploading file to DataONE. {0}'.format(str(e)))
 
 
 def create_upload_eml(tale,
@@ -82,7 +88,8 @@ def create_upload_eml(tale,
                       item_ids,
                       license_id,
                       user_id,
-                      file_sizes=dict()):
+                      file_sizes,
+                      new_dataone_objects):
     """
     Creates the EML metadata document along with an additional metadata document
     and uploads them both to DataONE. A pid is created for the EML document, and is
@@ -97,6 +104,7 @@ def create_upload_eml(tale,
     :param file_sizes: We need to sometimes account for non-data files
      (like tale.yml) .The size needs to be in the EML record so pass them
       in here. The size should be described in bytes
+    :param new_dataone_objects:
     :type tale: wholetale.models.tale
     :type client: MemberNodeClient_2_0
     :type user: girder.models.user
@@ -104,6 +112,7 @@ def create_upload_eml(tale,
     :type license_id: str
     :type user_id: str
     :type file_sizes: dict
+    :type new_dataone_objects: dict
     :return: pid of the EML document
     :rtype: str
     """
@@ -116,8 +125,8 @@ def create_upload_eml(tale,
                                  eml_pid,
                                  file_sizes,
                                  license_id,
-                                 user_id)
-
+                                 user_id,
+                                 new_dataone_objects)
     # Create the metadata describing the EML document
     meta = generate_system_metadata(pid=eml_pid,
                                     format_id='eml://ecoinformatics.org/eml-2.1.1',
@@ -126,7 +135,10 @@ def create_upload_eml(tale,
                                     rights_holder=user_id)
     # meta is type d1_common.types.generated.dataoneTypes_v2_0.SystemMetadata
     # Upload the EML document with its metadata
-    upload_file(client=client, pid=eml_pid, file_object=eml_doc, system_metadata=meta)
+    upload_file(client=client,
+                pid=eml_pid,
+                file_object=io.BytesIO(eml_doc),
+                system_metadata=meta)
     return eml_pid
 
 
@@ -162,12 +174,15 @@ def create_upload_resmap(res_pid, eml_pid, obj_pids, client, rights_holder):
                                     name=str(),
                                     rights_holder=rights_holder)
 
-    upload_file(client=client, pid=res_pid, file_object=res_map, system_metadata=meta)
+    upload_file(client=client,
+                pid=res_pid,
+                file_object=io.BytesIO(res_map),
+                system_metadata=meta)
 
 
 def create_upload_object_metadata(client, file_object, rights_holder):
     """
-    Takes a file from girder and
+    Takes a file that exists on the filesystem and
         1. Creates metadata describing it
         2. Uploads the file_object with the metadata to DataONE
         3. Returns a pid that is assigned to file_object so that it can
@@ -195,13 +210,13 @@ def create_upload_object_metadata(client, file_object, rights_holder):
 
     upload_file(client=client,
                 pid=pid,
-                file_object=assetstore.open(file_object).read(),
+                file_object=io.BytesIO(assetstore.open(file_object).read()),
                 system_metadata=meta)
 
     return pid
 
 
-def filter_items(item_ids, user):
+def filter_items(item_ids, user, member_node):
     """
     Take a list of item ids and determine whether it:
        1. Exists on the local file system
@@ -209,8 +224,10 @@ def filter_items(item_ids, user):
        3. Is linked to a remote location other than DataONE
     :param item_ids: A list of items to be processed
     :param user: The user that is requesting the package creation
+    :param member_node: The member node that is being interfaced
     :type item_ids: list
     :type user: girder.models.User
+    :type member_node: str
     :return: A dictionary of lists for each file location
     For example,
      {'dataone': ['uuid:123456', 'doi.10x501'],
@@ -219,21 +236,36 @@ def filter_items(item_ids, user):
     :rtype: dict
     """
 
-    dataone_objects = list()
+    dataone_objects_out = list()
+    dataone_objects_in = list()
     remote_objects = list()
     local_objects = list()
 
+    logger.debug('In filter items')
     for item_id in item_ids:
-        # Check if it points do a file on DataONE
+        logger.debug('Processing item {}'.format(str(item_id)))
+        # Check if it points do a dataone objbect
         url = get_remote_url(item_id, user)
-        if url is not None and is_dataone_url(url):
-            dataone_objects.append(find_initial_pid(url))
-            continue
-        """
-        If there is a url, and it's not pointing to a DataONE resource, then assume
-         it's pointing to an external object
-        """
+        logger.debug('Found URL {}'.format(url))
         if url is not None:
+            logger.debug('URL {}'.format(url))
+            if is_dataone_url(url) or is_dev_url(url):
+                res = is_in_network(url, member_node)
+                if res:
+                    logger.debug('File is in network')
+                    pid = find_initial_pid(url)
+                    dataone_objects_in.append(pid)
+                    logger.debug('Found PID {}'.format(str(pid)))
+                    continue
+                else:
+                    # File is out of network. Need to download and upload it
+                    logger.debug('File is out of netowrk')
+                    dataone_objects_out.append(item_id)
+                    continue
+            """
+            If there is a url, and it's not pointing to a DataONE resource, then assume
+            it's pointing to an external object
+            """
             remote_objects.append(item_id)
             continue
 
@@ -241,7 +273,10 @@ def filter_items(item_ids, user):
         # is a list of girder.models.File objects
         local_objects.append(get_file_item(item_id, user))
 
-    return {'dataone': dataone_objects, 'remote': remote_objects, 'local': local_objects}
+    return {'dataone_in': dataone_objects_in,
+            'dataone_out': dataone_objects_out,
+            'remote': remote_objects,
+            'local': local_objects}
 
 
 def create_paths_structure(item_ids, user):
@@ -348,7 +383,10 @@ def create_upload_tale_yaml(tale,
                                     name=ExtraFileNames.tale_config,
                                     rights_holder=rights_holder)
     # Upload the file
-    upload_file(client=client, pid=pid, file_object=yaml_file, system_metadata=meta)
+    upload_file(client=client,
+                pid=pid,
+                file_object=io.StringIO(yaml_file),
+                system_metadata=meta)
 
     # Return the pid
     return pid, len(yaml_file)
@@ -384,8 +422,6 @@ def upload_license_file(client, license_id, rights_holder):
     except IOError:
         logger.warning('Failed to open license file')
         return None, 0
-    finally:
-        f.close()
 
     # Create a pid for the file
     pid = str(uuid.uuid4())
@@ -402,13 +438,72 @@ def upload_license_file(client, license_id, rights_holder):
     return pid, license_length
 
 
-def create_upload_package(item_ids,
-                          tale,
-                          user,
-                          repository,
-                          jwt,
-                          license_id,
-                          prov_info):
+def create_upload_repository(tale, client, user, rights_holder):
+    """
+    Downloads the repository that's pointed to by the recipe and uploads it to the
+    node that `client` points to.
+    :param tale: The Tale that is being registered
+    :param client: The interface to the member node
+    :param user: The user that's publishing the tale
+    :param rights_holder: The owner of this object
+    :type tale: girder.models.tale
+    :type client: MemberNodeClient_2_0
+    :type user: girder.models.user
+    :type rights_holder: str
+    :return:
+    """
+    try:
+        image = ModelImporter.model('image', 'wholetale').load(
+            tale['imageId'], user=user, level=AccessType.READ, exc=True)
+        recipe = ModelImporter.model('recipe', 'wholetale').load(
+            image['recipeId'], user=user, level=AccessType.READ, exc=True)
+        download_url = recipe['url'] + '/tarball/' + recipe['commitId']
+
+        with tempfile.NamedTemporaryFile() as temp_file:
+            src = urlopen(download_url)
+            try:
+                # Copy the response into the temporary file
+                copyfileobj(src, temp_file)
+                logger.debug('Copied file, size: {}'.format(temp_file.tell()))
+
+            except IOError as e:
+                error_msg = 'Error copying environment file to disk. {}'.format(e)
+                logger.warning(error_msg)
+
+                # We should stop if we can't upload the repository
+                raise RestException(error_msg)
+
+        # Create a pid for the file
+            pid = str(uuid.uuid4())
+        # Create system metadata for the file
+            temp_file.seek(0)
+            meta = generate_system_metadata(pid=pid,
+                                            format_id='application/tar+gzip',
+                                            file_object=temp_file.read(),
+                                            name=ExtraFileNames.environment_file,
+                                            rights_holder=rights_holder)
+            temp_file.seek(0)
+            logger.debug('Uploading repository to DataONE')
+            upload_file(client=client,
+                        pid=pid,
+                        file_object=io.BytesIO(temp_file.read()),
+                        system_metadata=meta)
+
+            size = os.path.getsize(temp_file.name)
+        return pid, size
+
+    except IOError as e:
+        logger.debug('Failed to process repository'.format(e))
+    return None, 0
+
+
+def publish(item_ids,
+            tale,
+            user,
+            repository,
+            jwt,
+            license_id,
+            prov_info):
     """
     Responsible for delegating all of the tasks to take a user's Tale and create a package on
     DataONE.
@@ -457,6 +552,8 @@ def create_upload_package(item_ids,
     # the state
     progress = Notification().initProgress(user, "Creating DataONE Package")
 
+    client = None
+
     # create_client can throw DataONEException
     try:
         """
@@ -464,89 +561,138 @@ def create_upload_package(item_ids,
          particular member node by specifying `repository`. The jwt is the jwt token from
          DataONE.
         """
-        client = create_client(repository, {"headers": {
-            "Authorization": "Bearer "+jwt}})
-
-        user_id = extract_user_id(jwt)
-
-        """
-        If the client was successfully created, sort all of the items by their type:
-          a. Not linked to an external repository
-          b. Pointing to DataONE
-          c. Pointing to remote file not on DataONE (eg Globus)
-        """
-        filtered_items = filter_items(item_ids, user)
-
-        """
-        Iterate through the list of objects that are local (ie files without a `linkUrl`
-         and upload them to DataONE. The call to create_upload_object_metadata will
-         return a pid that describes the object (not the metadata object). We'll save
-         this pid so that we can pass it to the resource map.
-        """
-        # List that holds pids that are assigned to any local objects
-        local_file_pids = list()
-        Notification().updateProgress(progress, message="Publishing Tale to DataONE")
-        for file in filtered_items['local']:
-            logger.debug('Processing local files for DataONE upload')
-            local_file_pids.append(create_upload_object_metadata(client, file, user_id))
-
-        tale_yaml_pid, tale_yaml_length = create_upload_tale_yaml(tale,
-                                                                  filtered_items['remote'],
-                                                                  item_ids,
-                                                                  user,
-                                                                  client,
-                                                                  prov_info,
-                                                                  user_id)
-
-        """
-        Upload the license file
-        """
-        license_pid, license_size = upload_license_file(client, license_id, user_id)
-
-        Notification().updateProgress(progress, message="Creating Tale metadata")
-        """
-        Create an EML document describing the data, and then upload it. Save the
-         pid for the resource map.
-        """
-        file_sizes = {'tale_yaml': tale_yaml_length, 'license': license_size}
-        eml_pid = create_upload_eml(tale,
-                                    client,
-                                    user,
-                                    item_ids,
-                                    license_id,
-                                    extract_user_id(jwt),
-                                    file_sizes)
-
-        """
-        Once all objects are uploaded, create and upload the resource map. This file describes
-         the object relations (ie the package). This should be the last file that is uploaded.
-         Also filter out any pids that are None, which would have resulted from an error. This
-         prevents referencing objects that failed to upload.
-        """
-        upload_objects = filter(None, filtered_items['dataone'] +
-                                local_file_pids +
-                                [tale_yaml_pid, license_pid])
-        resmap_pid = str(uuid.uuid4())
-        create_upload_resmap(resmap_pid,
-                             eml_pid,
-                             upload_objects,
-                             client,
-                             user_id)
-
-        package_url = get_dataone_package_url(repository, resmap_pid)
-
-        Notification().updateProgress(progress,
-                                      state=ProgressState.SUCCESS,
-                                      message="Your Tale was successfully "
-                                              "published to DataONE and can "
-                                              "be viewed at {}".format(package_url))
-
-        return package_url
+        logger.debug('Creating the DataONE client')
+        client = create_client(repository, {
+            "headers": {
+                "Authorization": "Bearer " + jwt},
+            "user_agent": "safari"})
 
     except DataONEException as e:
-        logger.warning('Error publishing DataONE package: {}'.format(e))
-        Notification().updateProgress(progress,
-                                      state=ProgressState.ERROR,
-                                      message="There was a problem publishing your Tale."
-                                              " to DataONE. ".format(str(e)))
-        raise RestException('Error uploading file to DataONE. {}'.format(str(e)))
+        logger.warning('Error creating the DataONE Client: {}'.format(e))
+        # We'll want to exit if we can't create the client
+        raise RestException('Failed to establish connection with DataONE. {}'.format(e))
+
+    elevated_user = ModelImporter.model('user').getAdmins()[0]
+
+    user_id = extract_user_id(jwt)
+    if user_id is None:
+        # Exit if we can't get the userId from the JWT
+        raise RestException('Failed to process your DataONE credentials. Please'
+                            ' ensure you are logged into DataONE.')
+    """
+    Sort all of the input files based on where they are located,
+        1. HTTP resource
+        2. DataONE resource
+        3. Local filesystem object
+    """
+    filtered_items = filter_items(item_ids, user, repository)
+
+    """
+    Any files that exist on DataONE should be transfered to the network that the
+    client points to. To do this we download the file, and then upload it to the
+    network.
+    """
+    Notification().updateProgress(progress, message="Uploading Files")
+    new_dataone_objects = transfer_prod_to_dev(filtered_items['dataone_out'],
+                                               elevated_user,
+                                               user_id,
+                                               client)
+
+    """
+    Iterate through the list of objects that are local (ie files without a `linkUrl`
+    and upload them to DataONE. The call to create_upload_object_metadata will
+     return a pid that describes the object (not the metadata object). We'll save
+        this pid so that we can pass it to the resource map.
+    """
+    local_file_pids = list()
+    for file in filtered_items['local']:
+        logger.debug('Processing local files for DataONE upload')
+        local_file_pids.append(create_upload_object_metadata(client, file, user_id))
+
+    logger.debug('Processing Tale YAML file')
+    tale_yaml_pid, tale_yaml_length = create_upload_tale_yaml(tale,
+                                                              filtered_items['remote'],
+                                                              item_ids,
+                                                              elevated_user,
+                                                              client,
+                                                              prov_info,
+                                                              user_id)
+
+    """
+    Upload the license file
+    """
+    logger.debug('Uploading the license file')
+    license_pid, license_size = upload_license_file(client, license_id, user_id)
+
+    """
+    Upload the repository"""
+    repository_pid, repository_size = create_upload_repository(tale, client, user, user_id)
+
+    # Check repository upload status. If failed, we need to exit and let the user know
+    Notification().updateProgress(progress, message="Creating Tale Metadata")
+
+    """
+    Create an EML document describing the data, and then upload it. Save the
+    pid for the resource map.
+    """
+    file_sizes = {'tale_yaml': tale_yaml_length,
+                  'license': license_size,
+                  'repository': repository_size}
+
+    """
+    Get all of the items, except the ones that were transferred from an external
+    source
+    """
+    eml_items = filtered_items.get('dataone_in') + \
+        filtered_items.get('local') + filtered_items.get('remote')
+
+    eml_items = filter(None, eml_items)
+    eml_items = list(eml_items)
+    logger.debug('Creating DataONE EML record for new Tale')
+    eml_pid = create_upload_eml(tale,
+                                client,
+                                elevated_user,
+                                eml_items,
+                                license_id,
+                                extract_user_id(jwt),
+                                file_sizes,
+                                new_dataone_objects)
+
+    # Check eml file status. If it failed, we need to exit and let the user know
+    logger.debug('Finished creating DataONE EML record')
+
+    """
+    While transfering the files from DataONE, new pids were assigned to each file
+    These need to be added to the resource map.
+    """
+    new_pids = list()
+    for dataone_object in new_dataone_objects:
+        new_pids.append(dataone_object['pid'])
+
+    """
+    Once all objects are uploaded, create and upload the resource map. This file describes
+    the object relations (ie the package). This should be the last file that is uploaded.
+    Also filter out any pids that are None, which would have resulted from an error. This
+    prevents referencing objects that failed to upload.
+    """
+    upload_objects = filter(None, filtered_items.get('dataone_in') +
+                            local_file_pids + new_pids +
+                            [tale_yaml_pid, license_pid, repository_pid, eml_pid])
+    resmap_pid = str(uuid.uuid4())
+
+    logger.debug('Creating DataONE resource map')
+    create_upload_resmap(resmap_pid,
+                         eml_pid,
+                         upload_objects,
+                         client,
+                         user_id)
+    logger.debug('Finished creating DataONE resource map')
+    package_url = get_dataone_package_url(repository, resmap_pid)
+
+    Notification().updateProgress(progress,
+                                  state=ProgressState.SUCCESS,
+                                  message='Your Tale was successfully '
+                                          'published to DataONE and can '
+                                          'be viewed at {}'.format(package_url))
+
+    return package_url

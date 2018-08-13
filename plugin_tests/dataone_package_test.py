@@ -88,14 +88,15 @@ class TestDataONEUpload(base.TestCase):
                 'email': 'test@test.com'}
         eml_pid ='123456789'
         file_sizes = {'tale_yaml': 123, 'license': 456}
-
+        license_name = 'CC-BY-4.0'
+        rights_holder = "http://myorcid"
         eml = create_minimum_eml(tale,
                                  user,
                                  [],
                                  eml_pid,
                                  file_sizes,
-                                 'CC-BY-3.0',
-                                 "http://myorcid")
+                                 license_name,
+                                 rights_holder)
         root = ET.fromstring(eml)
 
         expected_root = {'packageId': '123456789',
