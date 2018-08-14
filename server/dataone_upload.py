@@ -296,14 +296,18 @@ def create_paths_structure(item_ids, user):
     path_file = dict()
 
     logger.debug('Recording the file paths for the items in the '
-                 'Tale.')
+                 'Tale. {}'.format(type(item_ids)))
     for item_id in item_ids:
+        logger.info("Item ID: {}  Type: {}".format(item_id, type(item_id)))
         item = ModelImporter.model('item').load(item_id,
                                                 level=AccessType.READ,
                                                 user=user)
+        logger.debug('Loaded item')
         path = getResourcePath('item', item, force=True)
+        logger.debug('Got resource path')
         path_file[item['name']] = path
-
+        logger.debug()
+    logger.debug('Leaving create_paths')
     return path_file
 
 
@@ -361,7 +365,6 @@ def create_upload_tale_yaml(tale,
 
     # Create the dict that holds the file paths
     file_paths = dict()
-    logger.debug(('creating paths structure'))
     file_paths['paths'] = create_paths_structure(item_ids, user)
 
     # Create the dict that tracks externally defined objects, if applicable
@@ -370,11 +373,13 @@ def create_upload_tale_yaml(tale,
         logger.debug('Found remote object, creating structure for them')
         external_files['external files'] = create_external_object_structure(remote_objects, user)
 
+    logger.debug('Appending tale yaml')
     # Append all of the information together
     yaml_file = dict(tale_info)
     yaml_file.update(file_paths)
 
     if bool(external_files):
+        logger.debug('External files found. Appending to tale yaml')
         yaml_file.update(external_files)
     if prov_info:
         yaml_file.update(prov_info)
@@ -384,6 +389,7 @@ def create_upload_tale_yaml(tale,
     # Create a pid for the file
     pid = str(uuid.uuid4())
     # Create system metadata for the file
+    logger.debug('Generating system metadata for the tale yaml')
     meta = generate_system_metadata(pid=pid,
                                     format_id='text/plain',
                                     file_object=yaml_file,
