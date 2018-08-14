@@ -284,9 +284,9 @@ def create_paths_structure(item_ids, user):
     """
     Creates a file that lists the path that each item is located at.
     :param item_ids: A list of items that are in the tale
-    :param user:
+    :param user: The user that is used to access the file
     :type item_ids: list
-    :type user:
+    :type user: girder.models.User
     :return: The dict representing the file structure
     :rtype: dict
     """
