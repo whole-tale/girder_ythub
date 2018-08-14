@@ -280,7 +280,7 @@ def filter_items(item_ids, user, member_node):
             'local': local_objects}
 
 
-def create_paths_structure(item_ids, user):
+def create_paths_structure(item_ids):
     """
     Creates a file that lists the path that each item is located at.
     :param item_ids: A list of items that are in the tale
@@ -301,12 +301,13 @@ def create_paths_structure(item_ids, user):
         logger.info("Item ID: {}  Type: {}".format(item_id, type(item_id)))
         item = ModelImporter.model('item').load(item_id,
                                                 level=AccessType.READ,
-                                                user=user)
+                                                force=True)
         logger.debug('Loaded item')
-        path = getResourcePath('item', item, force=True)
+        path = getResourcePath('item',
+                               item,
+                               force=True)
         logger.debug('Got resource path')
         path_file[item['name']] = path
-        logger.debug()
     logger.debug('Leaving create_paths')
     return path_file
 
@@ -365,7 +366,7 @@ def create_upload_tale_yaml(tale,
 
     # Create the dict that holds the file paths
     file_paths = dict()
-    file_paths['paths'] = create_paths_structure(item_ids, user)
+    file_paths['paths'] = create_paths_structure(item_ids)
 
     # Create the dict that tracks externally defined objects, if applicable
     external_files = dict()
@@ -664,7 +665,7 @@ def publish(item_ids,
     logger.debug('Creating DataONE EML record for new Tale')
     eml_pid = create_upload_eml(tale,
                                 client,
-                                elevated_user,
+                                user,
                                 eml_items,
                                 license_id,
                                 extract_user_id(jwt),
