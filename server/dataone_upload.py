@@ -284,7 +284,9 @@ def create_paths_structure(item_ids, user):
     """
     Creates a file that lists the path that each item is located at.
     :param item_ids: A list of items that are in the tale
+    :param user:
     :type item_ids: list
+    :type user:
     :return: The dict representing the file structure
     :rtype: dict
     """
@@ -303,7 +305,10 @@ def create_paths_structure(item_ids, user):
                                                 level=AccessType.READ,
                                                 user=user)
         logger.debug('Loaded item')
-        path = getResourcePath('item', item, force=True)
+        path = getResourcePath('item',
+                               item,
+                               user,
+                               force=True)
         logger.debug('Got resource path')
         path_file[item['name']] = path
         logger.debug()
