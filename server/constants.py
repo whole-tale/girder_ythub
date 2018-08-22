@@ -61,3 +61,17 @@ class ImageStatus(object):
 
         return status in (ImageStatus.INVALID, ImageStatus.UNAVAILABLE,
                           ImageStatus.BUILDING, ImageStatus.AVAILABLE)
+
+
+class DataONELocations:
+    """
+    An enumeration that describes the different DataONE
+    endpoints.
+    """
+    # Production coordinating node
+    prod_cn = 'https://cn.dataone.org/cn/v2'
+    # Development member node
+    dev_mn = 'https://dev.nceas.ucsb.edu/knb/d1/mn/v2'
+    # Development coordinating node
+    dev_cn = 'https://cn-stage-2.test.dataone.org/cn/v2'
+    
