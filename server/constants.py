@@ -74,4 +74,3 @@ class DataONELocations:
     dev_mn = 'https://dev.nceas.ucsb.edu/knb/d1/mn/v2'
     # Development coordinating node
     dev_cn = 'https://cn-stage-2.test.dataone.org/cn/v2'
-    
