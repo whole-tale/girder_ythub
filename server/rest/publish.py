@@ -5,8 +5,9 @@ from girder.api import access
 from girder.api.describe import Description, autoDescribeRoute
 from girder.constants import TokenScope, AccessType
 from girder.api.rest import Resource, RestException
-
-from ..dataone_upload import publish
+from girder.plugins.jobs.constants import JobStatus
+from girder.plugins.jobs.models.job import Job
+from girder.plugins.worker import getCeleryApp
 
 
 class Publish(Resource):
@@ -57,21 +58,32 @@ class Publish(Resource):
                        authToken,
                        licenseSPDX,
                        provInfo=str()):
+
         user = self.getCurrentUser()
+        token = self.getCurrentToken()
 
         tale = self.model('tale',
                           'wholetale').load(taleId,
                                             user=user,
                                             level=AccessType.READ)
-        try:
-            package_url = publish(item_ids=itemIds,
-                                  tale=tale,
-                                  user=user,
-                                  repository=remoteMemberNode,
-                                  jwt=authToken,
-                                  license_id=licenseSPDX,
-                                  prov_info=provInfo)
-            return package_url
-        except Exception as e:
-            'There was an error while publishing your Tale to DataONE. {}'.format(e)
-            raise RestException(e)
+
+        jobTitle = 'Publishing %s to DataONE' % tale['category']
+        jobModel = Job()
+
+        args = (itemIds,
+                tale,
+                remoteMemberNode,
+                authToken,
+                token,
+                user,
+                provInfo,
+                licenseSPDX)
+
+        job = jobModel.createJob(
+            title=jobTitle, type='publish', handler='worker_handler',
+            user=user, public=False, args=args, kwargs={},
+            otherFields={
+                'celeryTaskName': 'gwvolman.tasks.publish'
+            })
+        jobModel.scheduleJob(job)
+        return job
