@@ -4,10 +4,8 @@
 from girder.api import access
 from girder.api.describe import Description, autoDescribeRoute
 from girder.constants import TokenScope, AccessType
-from girder.api.rest import Resource, RestException
-from girder.plugins.jobs.constants import JobStatus
+from girder.api.rest import Resource
 from girder.plugins.jobs.models.job import Job
-from girder.plugins.worker import getCeleryApp
 
 
 class Publish(Resource):
