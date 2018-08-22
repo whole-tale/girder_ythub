@@ -5,3 +5,6 @@ celery[redis]
 requests
 redis
 git+https://github.com/whole-tale/gwvolman#egg=gwvolman
+dataone.common
+dataone.libclient
+dataone.cli
