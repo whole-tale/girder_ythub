@@ -59,7 +59,6 @@ class Publish(Resource):
 
         user = self.getCurrentUser()
         token = self.getCurrentToken()
-
         tale = self.model('tale',
                           'wholetale').load(taleId,
                                             user=user,
@@ -72,11 +71,10 @@ class Publish(Resource):
                 tale,
                 remoteMemberNode,
                 authToken,
-                token,
-                user,
+                str(token['_id']),
+                str(user['_id']),
                 provInfo,
                 licenseSPDX)
-
         job = jobModel.createJob(
             title=jobTitle, type='publish', handler='worker_handler',
             user=user, public=False, args=args, kwargs={},
