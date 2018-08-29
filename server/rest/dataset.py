@@ -13,9 +13,8 @@ from ..constants import \
     DataONELocations
 from ..schema.misc import dataMapListSchema
 from ..utils import getOrCreateRootFolder
-from .harvester import \
-    register_http_resource, \
-    register_DataONE_resource
+from ..lib.data_map import DataMap
+from ..constants import IMPORT_PROVIDERS
 
 
 datasetModel = {
@@ -224,27 +223,19 @@ class Dataset(Resource):
             parent = self.model(parentType).load(
                 parentId, user=user, level=AccessType.WRITE, exc=True)
 
+        dataMaps = DataMap.fromList(dataMap)
+
         progress = True
         importedData = dict(folder=[], item=[])
         with ProgressContext(progress, user=user,
                              title='Registering resources') as ctx:
-            for data in dataMap:
-                if data['repository'] == 'DataONE':
-                    importedData['folder'].append(
-                        register_DataONE_resource(
-                            parent,
-                            parentType,
-                            ctx,
-                            user,
-                            data['dataId'],
-                            name=data['name'],
-                            base_url=base_url)
-                    )
-                elif data['repository'] == 'HTTP':
-                    importedData['item'].append(
-                        register_http_resource(parent, parentType, ctx, user,
-                                               data['dataId'], data['name'])
-                    )
+            for dataMap in dataMaps:
+                # probably would be nicer if Entity kept all details and the dataMap
+                # would be merged into it
+                provider = IMPORT_PROVIDERS.getFromDataMap(dataMap)
+                (objType, obj) = provider.register(parent, parentType, ctx, user, dataMap,
+                                                   base_url=base_url)
+                importedData[objType].append(obj)
 
         if copyToHome:
             with ProgressContext(progress, user=user,

@@ -11,14 +11,15 @@ from girder.api.docs import addModel
 from girder.api.rest import Resource, RestException
 
 from ..constants import DataONELocations
+from ..lib.entity import Entity
 from ..lib.data_map import dataMapDoc
 from ..lib.file_map import fileMapDoc
 
+from ..constants import RESOLVERS, IMPORT_PROVIDERS
 
 
 addModel('dataMap', dataMapDoc)
 addModel('fileMap', fileMapDoc)
-
 
 
 class Repository(Resource):
@@ -28,6 +29,13 @@ class Repository(Resource):
 
         self.route('GET', ('lookup',), self.lookupData)
         self.route('GET', ('listFiles',), self.listFiles)
+
+    @staticmethod
+    def _buildAndResolveEntity(dataId, base_url, user):
+        entity = Entity(dataId, user)
+        entity['base_url'] = base_url
+        # resolve DOIs, etc.
+        return RESOLVERS.resolve(entity)
 
     @access.public
     @autoDescribeRoute(
@@ -46,22 +54,21 @@ class Repository(Resource):
                required=False, dataType='string', default=DataONELocations.prod_cn)
         .responseClass('dataMap', array=True))
     def lookupData(self, dataId, base_url):
-        from concurrent.futures import ThreadPoolExecutor, as_completed
+        # methinks all logic should be in the model or lib and the resource should only
+        # delegate to the model/lib.
+        # also, why is size required at this point?
         results = []
-        futures = {}
-        with ThreadPoolExecutor(max_workers=4) as executor:
-            for pid in dataId:
-                futures[executor.submit(D1_lookup, pid, base_url)] = pid
-                futures[executor.submit(_http_lookup, pid)] = pid
+        for pid in dataId:
+            entity = Repository._buildAndResolveEntity(pid, base_url, self.getCurrentUser())
+            provider = IMPORT_PROVIDERS.getProvider(entity)
+            results.append(provider.lookup(entity))
 
-            for future in as_completed(futures):
-                try:
-                    if future.result():
-                        results.append(future.result())
-                except RestException:
-                    pass
+        #for pid in dataId:
+            #futures[executor.submit(D1_lookup, pid, base_url)] = pid
+            #futures[executor.submit(_http_lookup, pid)] = pid
 
-            return sorted(results, key=lambda k: k['name'])
+        results = [x.toDict() for x in results]
+        return sorted(results, key=lambda k: k['name'])
 
     @access.public
     @autoDescribeRoute(
@@ -78,19 +85,13 @@ class Repository(Resource):
                default=DataONELocations.prod_cn)
         .responseClass('fileMap', array=True))
     def listFiles(self, dataId, base_url):
-        from concurrent.futures import ThreadPoolExecutor, as_completed
         results = []
-        futures = {}
-        with ThreadPoolExecutor(max_workers=4) as executor:
-            for pid in dataId:
-                futures[executor.submit(get_package_list, pid, base_url)] = pid
-                futures[executor.submit(_http_lookup, pid)] = pid
+        for pid in dataId:
+            entity = Repository._buildAndResolveEntity(pid, base_url, self.getCurrentUser())
+            provider = IMPORT_PROVIDERS.getProvider(entity)
+            results.append(provider.listFiles(entity))
+        return [x.toDict() for x in results]
 
-            for future in as_completed(futures):
-                try:
-                    if future.result():
-                        results.append(future.result())
-                except RestException:
-                    pass
-
-            return results
+        #for pid in dataId:
+        #    futures[executor.submit(get_package_list, pid, base_url)] = pid
+        #    futures[executor.submit(_http_lookup, pid)] = pid
