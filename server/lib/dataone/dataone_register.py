@@ -9,9 +9,9 @@ import requests
 
 from girder import logger
 from girder.api.rest import RestException
-from .constants import DataONELocations
-from .utils import \
-    esc
+from ...constants import DataONELocations
+from ...utils import esc
+from ..data_map import DataMap
 
 
 def query(q,
@@ -242,14 +242,9 @@ def D1_lookup(path, base_url):
     # Compute package size (sum of 'size' values)
     total_size = sum([int(doc.get('size', 0)) for doc in docs])
 
-    data_map = {
-        'dataId': package_pid,
-        'size': total_size,
-        'name': metadata[0].get('title', 'no title'),
-        'doi': metadata[0].get('identifier', 'no DOI').split('doi:')[-1],
-        'repository': 'DataONE',
-    }
-    return data_map
+    return DataMap(package_pid, total_size, name=metadata[0].get('title', 'no title'),
+                   doi=metadata[0].get('identifier', 'no DOI').split('doi:')[-1],
+                   repository='DataONE')
 
 
 def get_documents(package_pid, base_url):

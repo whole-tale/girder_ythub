@@ -10,9 +10,6 @@ from girder.api.describe import Description, autoDescribeRoute
 from girder.api.docs import addModel
 from girder.api.rest import Resource, RestException
 
-from ..dataone_register import \
-    D1_lookup, \
-    get_package_list
 from ..constants import DataONELocations
 from ..lib.data_map import dataMapDoc
 from ..lib.file_map import fileMapDoc
