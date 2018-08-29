@@ -23,32 +23,6 @@ addModel('dataMap', dataMapDoc)
 addModel('fileMap', fileMapDoc)
 
 
-def _http_lookup(pid):
-    url = urlparse(pid)
-    if url.scheme not in ('http', 'https'):
-        return
-    headers = requests.head(pid).headers
-
-    valid_target = headers.get('Content-Type') is not None
-    valid_target = valid_target and ('Content-Length' in headers or
-                                     'Content-Range' in headers)
-    if not valid_target:
-        return
-
-    if 'Content-Disposition' in headers:
-        fname = re.search('^.*filename=([\w.]+).*$',
-                          headers['Content-Disposition'])
-        if fname:
-            fname = fname.groups()[0]
-    else:
-        fname = os.path.basename(url.path.rstrip('/'))
-
-    size = headers.get('Content-Length') or \
-        headers.get('Content-Range').split('/')[-1]
-
-    return dict(dataId=pid, doi='unknown', name=fname, repository='HTTP',
-                size=int(size))
-
 
 class Repository(Resource):
     def __init__(self):

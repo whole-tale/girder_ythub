@@ -17,24 +17,6 @@ from ..dataone_register import \
 from ..constants import DataONELocations
 
 
-def register_http_resource(parent, parentType, progress, user, url, name):
-    progress.update(increment=1, message='Processing file {}.'.format(url))
-    headers = requests.head(url).headers
-    size = headers.get('Content-Length') or \
-        headers.get('Content-Range').split('/')[-1]
-    fileModel = ModelImporter.model('file')
-    fileDoc = fileModel.createLinkFile(
-        url=url, parent=parent, name=name, parentType=parentType,
-        creator=user, size=int(size),
-        mimeType=headers.get('Content-Type', 'application/octet-stream'),
-        reuseExisting=True)
-    gc_file = fileModel.filter(fileDoc, user)
-
-    gc_item = ModelImporter.model('item').load(
-        gc_file['itemId'], force=True)
-    gc_item['meta'] = {'identifier': 'unknown', 'provider': 'HTTP'}
-    gc_item = ModelImporter.model('item').updateItem(gc_item)
-    return gc_item
 
 
 def register_DataONE_resource(parent,
