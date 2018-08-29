@@ -3,7 +3,7 @@
 
 from girder.api import access
 from girder.api.describe import Description, autoDescribeRoute
-from girder.constants import TokenScope, AccessType
+from girder.constants import TokenScope
 from girder.api.rest import Resource
 from girder.plugins.jobs.models.job import Job
 
@@ -59,16 +59,12 @@ class Publish(Resource):
 
         user = self.getCurrentUser()
         token = self.getCurrentToken()
-        tale = self.model('tale',
-                          'wholetale').load(taleId,
-                                            user=user,
-                                            level=AccessType.READ)
 
-        jobTitle = 'Publishing %s to DataONE' % tale['category']
+        jobTitle = 'Publishing Tale to DataONE'
         jobModel = Job()
 
         args = (itemIds,
-                tale,
+                taleId,
                 remoteMemberNode,
                 authToken,
                 str(token['_id']),
