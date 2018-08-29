@@ -3,7 +3,7 @@
 
 from girder.api import access
 from girder.api.describe import Description, autoDescribeRoute
-from girder.constants import TokenScope, AccessType
+from girder.constants import TokenScope
 from girder.api.rest import Resource
 from girder.plugins.jobs.models.job import Job
 
