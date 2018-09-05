@@ -55,7 +55,7 @@ class Publish(Resource):
                        remoteMemberNode,
                        authToken,
                        licenseSPDX,
-                       provInfo=str()):
+                       provInfo=dict()):
 
         user = self.getCurrentUser()
         token = self.getCurrentToken()

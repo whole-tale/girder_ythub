@@ -57,14 +57,23 @@ def register_DataONE_resource(parent,
     data = extract_data_docs(docs)
     children = extract_resource_docs(docs)
 
+    """
+    The download url is different between DataONE production and DataONE dev.
+    Check which place we're registering from and set the url section.
+    """
+    if base_url == DataONELocations.prod_cn:
+        url_insert = 'resolve'
+    else:
+        url_insert = 'object'
+
     # Add in URLs to resolve each metadata/data object by
     for i in range(len(metadata)):
         metadata[i]['url'] = \
-            "{}/resolve/{}".format(base_url, metadata[i]['identifier'])
+            "{}/{}/{}".format(base_url, url_insert, metadata[i]['identifier'])
 
     for i in range(len(data)):
         data[i]['url'] = \
-            "{}/resolve/{}".format(base_url, data[i]['identifier'])
+            "{}/{}/{}".format(base_url, url_insert, data[i]['identifier'])
 
     # Determine the folder name. This is usually the title of the metadata file
     # in the package but when there are multiple metadata files in the package,
