@@ -18,8 +18,7 @@ def query(q,
           base_url=DataONELocations.prod_cn,
           fields=["identifier"],
           rows=1000,
-          start=0,
-          test=False):
+          start=0):
     """
     Query a DataONE Solr index.
     :param q: The query
@@ -27,7 +26,6 @@ def query(q,
     :param fields: The field to search for
     :param rows: Number of rows to return
     :param start: Which row to start at
-    :param test: Flag used when registering data from dev.nceas
     :return: The content of the response
     """
 
@@ -92,7 +90,7 @@ def find_resource_pid(pid, base_url):
     # Find out if the PID is an OAI-ORE PID and return early if so
     try:
         if result['response']['docs'][0]['formatType'] == 'RESOURCE':
-            return(result['response']['docs'][0]['identifier'])
+            return result['response']['docs'][0]['identifier']
     except KeyError:
         error_msg = 'Unable to find a resource file in the data package'
         logger.warning(error_msg)
@@ -166,19 +164,18 @@ def find_initial_pid(path):
     :return: The object's pid, or the original path if one wasn't found
     :rtype: str
     """
-
     # http://blog.crossref.org/2015/08/doi-regular-expressions.html
     doi_regex = re.compile('(10.\d{4,9}/[-._;()/:A-Z0-9]+)', re.IGNORECASE)
     doi = doi_regex.search(path)
-    if re.search(r'^http[s]?:\/\/search.dataone.org\/#view\/', path):
+    if re.search(r'^http[s]?:\/\/search.dataone.org\/[#]?view\/', path):
         return re.sub(
-            r'^http[s]?:\/\/search.dataone.org\/#view\/', '', path)
+            r'^http[s]?:\/\/search.dataone.org\/[#]?view\/', '', path)
     elif re.search(r'\Ahttp[s]?:\/\/cn[a-z\-\d\.]*\.dataone\.org\/cn\/v\d\/[a-zA-Z]+\/.+\Z', path):
         return re.sub(
             r'\Ahttp[s]?:\/\/cn[a-z\-\d\.]*\.dataone\.org\/cn\/v\d\/[a-zA-Z]+\/', '', path)
-    if re.search(r'^http[s]?:\/\/dev.nceas.ucsb.edu\/#view\/', path):
+    if re.search(r'^http[s]?:\/\/dev.nceas.ucsb.edu\/[#]?view\/', path):
         return re.sub(
-            r'^http[s]?:\/\/dev.nceas.ucsb.edu\/#view\/', '', path)
+            r'^http[s]?:\/\/dev.nceas.ucsb.edu\/[#]?view\/', '', path)
     if re.search(r'resolve', path):
         return path.split("resolve/", 1)[1]
     elif doi is not None:
@@ -203,21 +200,21 @@ def get_package_pid(path, base_url):
 
 
 def extract_metadata_docs(docs):
-    metadata = [doc for doc in docs if doc['formatType'] == 'METADATA']
+    metadata = [doc for doc in docs if doc.get('formatType') == 'METADATA']
     if not metadata:
         raise RestException('No metadata file was found in the package.')
     return metadata
 
 
 def extract_data_docs(docs):
-    data = [doc for doc in docs if doc['formatType'] == 'DATA']
+    data = [doc for doc in docs if doc.get('formatType') == 'DATA']
 #    if not data:
 #        raise RestException('No data found.')
     return data
 
 
 def extract_resource_docs(docs):
-    resource = [doc for doc in docs if doc['formatType'] == 'RESOURCE']
+    resource = [doc for doc in docs if doc.get('formatType') == 'RESOURCE']
     return resource
 
 
@@ -238,21 +235,21 @@ def D1_lookup(path, base_url):
     if not docs:
         raise RestException('Failed to find any documents in the provided package')
     # Filter the Solr result by TYPE so we can construct the package
-    metadata = [doc for doc in docs if doc['formatType'] == 'METADATA']
+    metadata = [doc for doc in docs if doc.get('formatType') == 'METADATA']
     if not metadata:
         raise RestException('No metadata found.')
 
     # Compute package size (sum of 'size' values)
     total_size = sum([int(doc.get('size', 0)) for doc in docs])
 
-    dataMap = {
+    data_map = {
         'dataId': package_pid,
         'size': total_size,
         'name': metadata[0].get('title', 'no title'),
         'doi': metadata[0].get('identifier', 'no DOI').split('doi:')[-1],
         'repository': 'DataONE',
     }
-    return dataMap
+    return data_map
 
 
 def get_documents(package_pid, base_url):
@@ -291,9 +288,10 @@ def check_multiple_metadata(metadata):
 def get_package_list(path, base_url, package=None, isChild=False):
     """
 
-    :param path:
-    :param package:
-    :param isChild:
+    :param path: The path to a package
+    :param base_url: The node endpoint
+    :param package: Holds the information about the package
+    :param isChild: A bool set when the package has a parent
     :return:
     """
 
