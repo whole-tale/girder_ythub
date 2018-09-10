@@ -27,12 +27,17 @@ class ImportProvider:
 class ImportProviders:
     def __init__(self):
         self.providers = []
+        self.providerMap = {}
 
     def addProvider(self, provider: ImportProvider):
         self.providers.append(provider)
+        self.providerMap[provider.getName()] = provider
 
     def getProvider(self, entity: Entity) -> ImportProvider:
         for provider in self.providers:
             if provider.matches(entity):
                 return provider
         raise Exception('Could not find suitable provider for entity %s' % entity)
+
+    def getFromDataMap(self, dataMap: DataMap) -> ImportProvider:
+        return self.providerMap[dataMap.getRepository()]
