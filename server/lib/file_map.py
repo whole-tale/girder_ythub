@@ -121,9 +121,9 @@ class FileMap:
 
     @staticmethod
     def fromDict(d: Dict):
-        name = FileMap._checkSingleEntryDict(d)
+        (name, value) = FileMap._checkSingleEntryDict(d)
         fm = FileMap(name)
-        FileMap._fromDict1(fm, d[name])
+        FileMap._fromDict1(fm, value)
         return fm
 
     @staticmethod
@@ -133,7 +133,7 @@ class FileMap:
         key = next(iter(d.keys()))
         if (expectedKey is not None) and (key != expectedKey):
             raise Exception('Invalid data. Unexpected key %s in dictionary %s' % (key, d))
-        return key
+        return (key, d[key])
 
     @staticmethod
     def _fromDict1(fm: 'FileMap', d: Dict):
@@ -145,9 +145,12 @@ class FileMap:
 
     @staticmethod
     def _addFiles(fm: 'FileMap', l: List[Dict[str, Dict[str, object]]]):
-        for file in l:
-            name = FileMap._checkSingleEntryDict(file)
-            size = FileMap._checkSingleEntryDict(file[name], 'size')
+        # can this list ever have more than 1 element?
+        if len(l) == 0:
+            return
+        dict = l[0]
+        for name in dict.keys():
+            (_, size) = FileMap._checkSingleEntryDict(dict[name], 'size')
             fm.addFile(name, size)
 
     @staticmethod
