@@ -1,12 +1,14 @@
 from typing import Tuple
 from html.parser import HTMLParser
-from urllib.parse import parse_qs
+from urllib.parse import parse_qs, quote_plus
 from urllib.request import OpenerDirector, HTTPSHandler
 
+from plugins.wholetale.server.lib.file_map import FileMap
 from ..import_providers import ImportProvider
 from ..resolvers import DOIResolver
 from ..entity import Entity
 from ..data_map import DataMap
+from ..import_item import ImportItem
 
 from girder.plugins.wt_data_manager.lib.handlers._globus.clients import Clients
 
@@ -22,7 +24,8 @@ class GlobusImportProvider(ImportProvider):
     def lookup(self, entity: Entity) -> DataMap:
         doc = self._getDocument(entity.getValue())
         (endpoint, path, doi, title) = self._extractMeta(doc)
-        size = self._computeSize(endpoint, path, entity.getUser())
+        tc = self.clients.getUserTransferClient(entity.getUser())
+        size = self._computeSize(tc, endpoint, path, entity.getUser())
         return DataMap(entity.getValue(), size, doi=doi, name=title, repository=self.getName())
 
     def _getDocument(self, url):
@@ -36,27 +39,60 @@ class GlobusImportProvider(ImportProvider):
             else:
                 raise Exception('Error fetching document %s: %s' % (url, resp.read()))
 
-
     def _extractMeta(self, doc) -> Tuple[str, str, str, str]:
         dp = DocParser()
         dp.feed(doc)
         return dp.getMeta()
 
-    def _computeSize(self, endpoint, path, user):
-        tc = self.clients.getUserTransferClient(user)
-        return self._computeSizeRec(tc, endpoint, '/~/%s' % path)
-
-    def _computeSizeRec(self, tc, endpoint, path):
+    def _computeSize(self, tc, endpoint, path, user):
         sz = 0
+        for item in self._listRecursive2(tc, endpoint, path):
+            if item.type == ImportItem.FILE:
+                sz += item.size
+        return sz
+
+    def listFiles(self, entity: Entity) -> FileMap:
+        stack = []
+        top = None
+        for item in self._listRecursive(entity.getUser(), entity.getValue(), None):
+            if item.type == ImportItem.FOLDER:
+                if len(stack) == 0:
+                    fm = FileMap(item.name)
+                else:
+                    fm = stack[-1].addChild(item.name)
+                stack.append(fm)
+            elif item.type == ImportItem.END_FOLDER:
+                top = stack.pop()
+            elif item.type == ImportItem.FILE:
+                stack[-1].addFile(item.name, item.size)
+        return top
+
+    def _listRecursive(self, user, pid: str, name: str, base_url: str = None, progress=None):
+        doc = self._getDocument(pid)
+        (endpoint, path, doi, title) = self._extractMeta(doc)
+        yield ImportItem(ImportItem.FOLDER, name = title)
+        tc = self.clients.getUserTransferClient(user)
+        yield from self._listRecursive2(tc, endpoint, '/~/%s' % path, progress)
+        yield ImportItem(ImportItem.END_FOLDER)
+
+    def _listRecursive2(self, tc, endpoint: str, path: str, progress=None):
+        if progress:
+            progress.update(increment=1, message='Listing files')
         for entry in tc.operation_ls(endpoint, path=path):
             if entry['type'] == 'dir':
-                sz = sz + self._computeSizeRec(tc, endpoint, path + '/' + entry['name'])
+                yield ImportItem(ImportItem.FOLDER, name = entry['name'])
+                yield from self._listRecursive2(tc, endpoint, path + '/' + entry['name'], progress)
+                yield ImportItem(ImportItem.END_FOLDER)
             elif entry['type'] == 'file':
-                sz = sz + entry['size']
-        return sz
+                yield ImportItem(ImportItem.FILE, entry['name'], size=entry['size'],
+                                 mimeType='application/octet-stream',
+                                 url='https://www.globus.org/app/transfer?origin_id=%s&origin_path=%s'
+                                     % (endpoint, quote_plus(path)),
+                                 meta={'url': 'globus://%s/%s' % (endpoint, path)})
 
 
 TRANSFER_URL_PREFIX = 'https://www.globus.org/app/transfer?'
+
 
 class DocParser(HTMLParser):
     def __init__(self):

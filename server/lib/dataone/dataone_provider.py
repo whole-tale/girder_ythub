@@ -4,6 +4,7 @@ from girder.utility.model_importer import ModelImporter
 from ..import_providers import ImportProvider
 from ..data_map import DataMap
 from ..file_map import FileMap
+from ..import_item import ImportItem
 from ..entity import Entity
 from .dataone_register import D1_lookup, get_package_list
 from .dataone_register import \
@@ -45,17 +46,11 @@ class DataOneImportProvider(ImportProvider):
         result = get_package_list(entity.getValue(), entity['base_url'])
         return FileMap.fromDict(result)
 
-    def register(self, parent: object, parentType: str, progress, user, dataMap: DataMap,
-                 base_url: str=DataONELocations.prod_cn):
-        pid = dataMap.getDataId()
-        name = dataMap.getName()
-        folder = self._register(parent, parentType, progress, user, pid, name, base_url)
-        return ('folder', folder)
-
-    def _register(self, parent: object, parentType: str, progress, user, pid: str, name: str,
-                  base_url: str = DataONELocations.prod_cn):
+    def _listRecursive(self, user, pid: str, name: str, base_url: str = DataONELocations.prod_cn,
+                       progress=None):
         """Create a package description (Dict) suitable for dumping to JSON."""
-        progress.update(increment=1, message='Processing package {}.'.format(pid))
+        if progress:
+            progress.update(increment=1, message='Processing package {}.'.format(pid))
 
         # query for things in the resource map. At this point, it is assumed that the pid
         # has been correctly identified by the user in the UI.
@@ -87,12 +82,13 @@ class DataOneImportProvider(ImportProvider):
         if not name:
             name = primary_metadata[0]['title']
 
-        gc_folder = ModelImporter.model('folder').createFolder(
-            parent, name, description='',
-            parentType=parentType, creator=user, reuseExisting=True)
-        gc_folder = ModelImporter.model('folder').setMetadata(
-            gc_folder, {'identifier': primary_metadata[0]['identifier'],
-                        'provider': 'DataONE'})
+        #gc_folder = ModelImporter.model('folder').createFolder(
+        #    parent, name, description='',
+        #    parentType=parentType, creator=user, reuseExisting=True)
+        #gc_folder = ModelImporter.model('folder').setMetadata(
+        #    gc_folder, {'identifier': primary_metadata[0]['identifier'],
+        #                'provider': 'DataONE'})
+        yield ImportItem(ImportItem.FOLDER, name, identifier=primary_metadata[0]['identifier'])
 
         fileModel = ModelImporter.model('file')
         itemModel = ModelImporter.model('item')
@@ -102,27 +98,28 @@ class DataOneImportProvider(ImportProvider):
             except KeyError:
                 fileName = fileObj['identifier']
 
-            gc_item = itemModel.createItem(
-                fileName, user, gc_folder, reuseExisting=True)
-            gc_item = itemModel.setMetadata(
-                gc_item, {'identifier': fileObj['identifier']})
+            #gc_item = itemModel.createItem(
+            #    fileName, user, gc_folder, reuseExisting=True)
+            #gc_item = itemModel.setMetadata(
+            #    gc_item, {'identifier': fileObj['identifier']})
 
-            fileModel.createLinkFile(
-                url=fileObj['url'], parent=gc_item,
-                name=fileName, parentType='item',
-                creator=user, size=int(fileObj['size']),
-                mimeType=fileObj['formatId'], reuseExisting=True)
+            #fileModel.createLinkFile(
+            #    url=fileObj['url'], parent=gc_item,
+            #    name=fileName, parentType='item',
+            #    creator=user, size=int(fileObj['size']),
+            #    mimeType=fileObj['formatId'], reuseExisting=True)
+            yield ImportItem(ImportItem.FILE, fileName, identifier=fileObj['identifier'],
+                           url=fileObj['url'], size=int(fileObj['size']),
+                           mimeType=fileObj['formatId'])
 
         # Recurse and add child packages if any exist
         if children is not None and len(children) > 0:
             for child in children:
                 logger.debug('Registering child package, {}'.debug(child['identifier']))
-                self._register(gc_folder, 'folder', progress, user,
-                                          child['identifier'],
-                                          base_url)
+                yield from self._listRecursive(progress, user, child['identifier'], base_url)
 
+        yield ImportItem(ImportItem.END_FOLDER)
         logger.debug('Finished registering dataset')
-        return gc_folder
 
     def _addResolutionUrls(self, list, base_url):
         """
