@@ -75,7 +75,7 @@ def find_resource_pid(pid):
     # Find out if the PID is an OAI-ORE PID and return early if so
     try:
         if result['response']['docs'][0]['formatType'] == 'RESOURCE':
-            return(result['response']['docs'][0]['identifier'])
+            return result['response']['docs'][0]['identifier']
     except KeyError:
         raise RestException('Unable to find a resource file in the data package')
 
@@ -141,9 +141,9 @@ def find_initial_pid(path):
     """
 
     doi = _DOI_REGEX.search(path)
-    if re.search(r'^http[s]?:\/\/search.dataone.org\/#view\/', path):
+    if re.search(r'^http[s]?:\/\/search.dataone.org\/[#]?view\/', path):
         return re.sub(
-            r'^http[s]?:\/\/search.dataone.org\/#view\/', '', path)
+            r'^http[s]?:\/\/search.dataone.org\/[#]?view\/', '', path)
     elif re.search(r'^http[s]?://cn.dataone.org/cn/d1/v[\d]/\w+/', path):
         return re.sub(
             r'^http[s]?://cn.dataone.org/cn/d1/v[\d]/\w+/', '', path)
@@ -225,7 +225,7 @@ def get_package_pid(path):
 
 
 def extract_metadata_docs(docs):
-    metadata = [doc for doc in docs if doc['formatType'] == 'METADATA']
+    metadata = [doc for doc in docs if doc.get('formatType') == 'METADATA']
     if not metadata:
         raise RestException('No metadata file was found in the package.')
     return metadata
@@ -254,7 +254,7 @@ def D1_lookup(path):
     docs = get_documents(package_pid)
 
     # Filter the Solr result by TYPE so we can construct the package
-    metadata = [doc for doc in docs if doc['formatType'] == 'METADATA']
+    metadata = [doc for doc in docs if doc.get('formatType') == 'METADATA']
     if not metadata:
         raise RestException('No metadata found.')
 
