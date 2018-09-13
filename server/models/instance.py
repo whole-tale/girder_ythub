@@ -127,13 +127,6 @@ class Instance(AccessControlledModel):
         self.remove(instance)
 
     def createInstance(self, tale, user, token, name=None, save=True):
-        existing = self.findOne({
-            'taleId': tale['_id'],
-            'creatorId': user['_id'],
-        })
-        if existing:
-            return existing
-
         if not name:
             name = tale.get('title', '')
 

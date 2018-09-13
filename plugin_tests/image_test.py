@@ -91,7 +91,8 @@ class ImageTestCase(base.TestCase):
             self.assertEqual(celeryMock.mock_calls[0][1], ('girder_worker',))
 
             sendTaskCalls = celeryMock.return_value.send_task.mock_calls
-            mock_repo_url = 'https://github.com/{}/archive/{}.tar.gz'.format(GOOD_REPO, GOOD_COMMIT)
+            # mock_repo_url = \
+            #    'https://github.com/{}/archive/{}.tar.gz'.format(GOOD_REPO, GOOD_COMMIT)
             self.assertEqual(len(sendTaskCalls), 1)
             self.assertEqual(sendTaskCalls[0][1], (
                 'gwvolman.tasks.build_image',

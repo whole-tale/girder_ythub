@@ -6,6 +6,7 @@ from girder.api.docs import addModel
 from girder.api.rest import Resource, filtermodel, RestException
 from girder.constants import AccessType, SortDir
 from girder.utility import path as path_util
+from ..constants import PluginSettings
 
 
 instanceModel = {
@@ -60,6 +61,11 @@ instanceModel = {
     }
 }
 addModel('instance', instanceModel, resources='instance')
+instanceCapErrMsg = (
+    'You have reached a limit for running instances ({}). '
+    'Please shutdown one of the running instances before '
+    'continuing.'
+)
 
 
 class Instance(Resource):
@@ -137,6 +143,7 @@ class Instance(Resource):
         .param('name', 'A user-friendly, short name of the tale.',
                required=False)
         .responseClass('instance')
+        .errorResponse(instanceCapErrMsg, 400)
         .errorResponse('Read access was denied for the tale.', 403)
     )
     def createInstance(self, taleId, imageId, name, params):
@@ -169,5 +176,19 @@ class Instance(Resource):
                     title=title, description=None, public=False)
 
         instanceModel = self.model('instance', 'wholetale')
+        existing = instanceModel.findOne({
+            'taleId': tale['_id'],
+            'creatorId': user['_id'],
+        })
+        if existing:
+            return existing
+
+        running_instances = list(
+            instanceModel.list(user=user, currentUser=user)
+        )
+        instance_cap = self.model('setting').get(PluginSettings.INSTANCE_CAP)
+        if len(running_instances) + 1 > int(instance_cap):
+            raise RestException(instanceCapErrMsg.format(instance_cap))
+
         return instanceModel.createInstance(tale, user, token, name=name,
                                             save=True)

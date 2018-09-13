@@ -8,6 +8,7 @@ API_VERSION = '2.0'
 CATALOG_NAME = 'WholeTale Catalog'
 WORKSPACE_NAME = 'WholeTale Workspaces'
 DATADIRS_NAME = 'WholeTale Data Mountpoints'
+SCRIPTDIRS_NAME = 'WholeTale Narrative'
 
 
 class HarvesterType:
@@ -21,6 +22,13 @@ class PluginSettings:
     TMPNB_URL = 'wholetale.tmpnb_url'
     HUB_PRIV_KEY = 'wholetale.priv_key'
     HUB_PUB_KEY = 'wholetale.pub_key'
+    INSTANCE_CAP = 'wholetale.instance_cap'
+
+
+class SettingDefault:
+    defaults = {
+        PluginSettings.INSTANCE_CAP: 2
+    }
 
 
 # Constants representing the setting keys for this plugin
