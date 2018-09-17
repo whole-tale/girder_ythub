@@ -79,6 +79,7 @@ class DataONELocations:
     # Development coordinating node
     dev_cn = 'https://cn-stage-2.test.dataone.org/cn/v2'
 
+
 RESOLVERS = Resolvers()
 RESOLVERS.add(DOIResolver())
 

@@ -3,6 +3,7 @@ from .data_map import DataMap
 from .file_map import FileMap
 from .import_providers import ImportProvider
 
+
 class NullImportProvider(ImportProvider):
     def __init__(self):
         super().__init__('null')

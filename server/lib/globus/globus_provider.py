@@ -70,7 +70,7 @@ class GlobusImportProvider(ImportProvider):
     def _listRecursive(self, user, pid: str, name: str, base_url: str = None, progress=None):
         doc = self._getDocument(pid)
         (endpoint, path, doi, title) = self._extractMeta(doc)
-        yield ImportItem(ImportItem.FOLDER, name = title)
+        yield ImportItem(ImportItem.FOLDER, name=title)
         tc = self.clients.getUserTransferClient(user)
         yield from self._listRecursive2(tc, endpoint, '/~/%s' % path, progress)
         yield ImportItem(ImportItem.END_FOLDER)
@@ -80,15 +80,16 @@ class GlobusImportProvider(ImportProvider):
             progress.update(increment=1, message='Listing files')
         for entry in tc.operation_ls(endpoint, path=path):
             if entry['type'] == 'dir':
-                yield ImportItem(ImportItem.FOLDER, name = entry['name'])
+                yield ImportItem(ImportItem.FOLDER, name=entry['name'])
                 yield from self._listRecursive2(tc, endpoint, path + '/' + entry['name'], progress)
                 yield ImportItem(ImportItem.END_FOLDER)
             elif entry['type'] == 'file':
-                yield ImportItem(ImportItem.FILE, entry['name'], size=entry['size'],
-                                 mimeType='application/octet-stream',
-                                 url='https://www.globus.org/app/transfer?origin_id=%s&origin_path=%s'
-                                     % (endpoint, quote_plus(path)),
-                                 meta={'url': 'globus://%s/%s' % (endpoint, path)})
+                yield ImportItem(
+                    ImportItem.FILE, entry['name'], size=entry['size'],
+                    mimeType='application/octet-stream',
+                    url='https://www.globus.org/app/transfer?origin_id=%s&origin_path=%s'
+                    % (endpoint, quote_plus(path)),
+                    meta={'url': 'globus://%s/%s' % (endpoint, path)})
 
 
 TRANSFER_URL_PREFIX = 'https://www.globus.org/app/transfer?'

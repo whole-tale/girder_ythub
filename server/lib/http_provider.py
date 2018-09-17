@@ -8,7 +8,7 @@ from girder.utility.model_importer import ModelImporter
 from .import_providers import ImportProvider
 from .entity import Entity
 from .data_map import DataMap
-from .file_map import FileMap, FileItem
+from .file_map import FileMap
 
 
 class HTTPImportProvider(ImportProvider):
@@ -44,7 +44,7 @@ class HTTPImportProvider(ImportProvider):
             fname = os.path.basename(url.path.rstrip('/'))
 
         size = headers.get('Content-Length') or \
-               headers.get('Content-Range').split('/')[-1]
+            headers.get('Content-Range').split('/')[-1]
 
         return DataMap(pid, int(size), name=fname, repository=self.getName())
 
@@ -63,7 +63,7 @@ class HTTPImportProvider(ImportProvider):
         progress.update(increment=1, message='Processing file {}.'.format(url))
         headers = requests.head(url).headers
         size = headers.get('Content-Length') or \
-               headers.get('Content-Range').split('/')[-1]
+            headers.get('Content-Range').split('/')[-1]
         fileModel = ModelImporter.model('file')
         fileDoc = fileModel.createLinkFile(
             url=url, parent=parent, name=dataMap.getName(), parentType=parentType,

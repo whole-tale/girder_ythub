@@ -1,14 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import os
-import re
-import requests
-
-from urllib.parse import urlparse
 from girder.api import access
 from girder.api.describe import Description, autoDescribeRoute
 from girder.api.docs import addModel
-from girder.api.rest import Resource, RestException
+from girder.api.rest import Resource
 
 from ..constants import DataONELocations
 from ..lib.entity import Entity
@@ -63,9 +58,9 @@ class Repository(Resource):
             provider = IMPORT_PROVIDERS.getProvider(entity)
             results.append(provider.lookup(entity))
 
-        #for pid in dataId:
-            #futures[executor.submit(D1_lookup, pid, base_url)] = pid
-            #futures[executor.submit(_http_lookup, pid)] = pid
+        # for pid in dataId:
+        #    futures[executor.submit(D1_lookup, pid, base_url)] = pid
+        #    futures[executor.submit(_http_lookup, pid)] = pid
 
         results = [x.toDict() for x in results]
         return sorted(results, key=lambda k: k['name'])
@@ -92,6 +87,6 @@ class Repository(Resource):
             results.append(provider.listFiles(entity))
         return [x.toDict() for x in results]
 
-        #for pid in dataId:
+        # for pid in dataId:
         #    futures[executor.submit(get_package_list, pid, base_url)] = pid
         #    futures[executor.submit(_http_lookup, pid)] = pid
