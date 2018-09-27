@@ -99,6 +99,7 @@ class Instance(AccessControlledModel):
     def deleteInstance(self, instance, token):
         payload = {
             'instanceId': str(instance['_id']),
+            'sessionId': instance.get('sessionId'),
             'girder_token': str(token['_id']),
             'apiUrl': getWorkerApiUrl()
         }
@@ -191,7 +192,8 @@ def finalizeInstance(event):
             instance.update({
                 'url': url,
                 'status': InstanceStatus.RUNNING,
-                'containerInfo': containerInfo
+                'containerInfo': containerInfo,
+                'sessionId': service.get('sessionId')
             })
         elif status == JobStatus.ERROR:
             instance['status'] = InstanceStatus.ERROR
