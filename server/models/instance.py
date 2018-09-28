@@ -8,14 +8,12 @@ import ssl
 from ..constants import API_VERSION, InstanceStatus
 from ..schema.misc import containerInfoSchema
 from girder import logger
-from girder.api.rest import getApiUrl
 from girder.constants import AccessType, SortDir
 from girder.exceptions import ValidationException
 from girder.models.model_base import AccessControlledModel
 from girder.plugins.worker import getCeleryApp, getWorkerApiUrl
 from girder.plugins.jobs.constants import JobStatus
 from gwvolman.tasks import create_volume, launch_container
-from six.moves import urllib
 
 from tornado.httpclient import HTTPRequest, HTTPError, HTTPClient
 # FIXME look into removing tornado
@@ -182,15 +180,10 @@ def finalizeInstance(event):
             job['args'][0]['instanceId'], force=True)
         if status == JobStatus.SUCCESS:
             service = getCeleryApp().AsyncResult(job['celeryTaskId']).get()
-            netloc = urllib.parse.urlsplit(getApiUrl()).netloc
-            domain = '{}.{}'.format(
-                service['name'], netloc.split(':')[0].split('.', 1)[1])
-            url = 'https://{}/{}'.format(domain, service.get('urlPath', ''))
             valid_keys = set(containerInfoSchema['properties'].keys())
             containerInfo = {key: service.get(key, '') for key in valid_keys}
-            _wait_for_server(url)
             instance.update({
-                'url': url,
+                'url': service.get('url', 'http://unknown.com'),
                 'status': InstanceStatus.RUNNING,
                 'containerInfo': containerInfo,
                 'sessionId': service.get('sessionId')
