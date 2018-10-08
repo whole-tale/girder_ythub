@@ -81,32 +81,14 @@ class DataOneImportProvider(ImportProvider):
         if not name:
             name = primary_metadata[0]['title']
 
-        # gc_folder = ModelImporter.model('folder').createFolder(
-        #     parent, name, description='',
-        #     parentType=parentType, creator=user, reuseExisting=True)
-        # gc_folder = ModelImporter.model('folder').setMetadata(
-        #     gc_folder, {'identifier': primary_metadata[0]['identifier'],
-        #                'provider': 'DataONE'})
         yield ImportItem(ImportItem.FOLDER, name, identifier=primary_metadata[0]['identifier'])
 
-        # fileModel = ModelImporter.model('file')
-        # itemModel = ModelImporter.model('item')
         for fileObj in data:
             try:
                 fileName = fileObj['fileName']
             except KeyError:
                 fileName = fileObj['identifier']
 
-            # gc_item = itemModel.createItem(
-            #     fileName, user, gc_folder, reuseExisting=True)
-            # gc_item = itemModel.setMetadata(
-            #     gc_item, {'identifier': fileObj['identifier']})
-
-            # fileModel.createLinkFile(
-            #     url=fileObj['url'], parent=gc_item,
-            #     name=fileName, parentType='item',
-            #     creator=user, size=int(fileObj['size']),
-            #     mimeType=fileObj['formatId'], reuseExisting=True)
             yield ImportItem(ImportItem.FILE, fileName, identifier=fileObj['identifier'],
                              url=fileObj['url'], size=int(fileObj['size']),
                              mimeType=fileObj['formatId'])
