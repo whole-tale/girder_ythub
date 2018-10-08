@@ -14,6 +14,7 @@ from girder.api.rest import \
 from girder.constants import AccessType, TokenScope, CoreEventHandler
 from girder.exceptions import GirderException
 from girder.models.model_base import ValidationException
+from girder.models.file import File as fileModel
 from girder.utility import assetstore_utilities, setting_utilities
 from girder.utility.model_importer import ModelImporter
 
@@ -274,6 +275,29 @@ def addDefaultFolders(event):
         folderModel.setUserAccess(folder, user, AccessType.ADMIN, save=True)
 
 
+def validateFileLink(event):
+    # allow globus URLs
+    doc = event.info
+    if doc.get('assetstoreId') is None:
+        if 'linkUrl' not in doc:
+            raise ValidationException(
+                'File must have either an assetstore ID or a link URL.',
+                'linkUrl')
+            doc['linkUrl'] = doc['linkUrl'].strip()
+
+        if not doc['linkUrl'].startswith(('http:', 'https:', 'globus:')):
+            raise ValidationException(
+                'Linked file URL must start with http: or https: or globus:.',
+                'linkUrl')
+    if 'name' not in doc or not doc['name']:
+        raise ValidationException('File name must not be empty.', 'name')
+
+    doc['exts'] = [ext.lower() for ext in doc['name'].split('.')[1:]]
+    doc = fileModel().save(doc, validate=False, triggerEvents=False)
+    event.preventDefault()
+    event.addResponse(doc)
+
+
 def load(info):
     info['apiRoot'].wholetale = wholeTale()
     info['apiRoot'].instance = Instance()
@@ -298,6 +322,7 @@ def load(info):
     info['apiRoot'].image = image
     events.bind('jobs.job.update.after', 'wholetale', image.updateImageStatus)
     events.bind('jobs.job.update.after', 'wholetale', finalizeInstance)
+    events.bind('model.file.validate', 'wholetale', validateFileLink)
     events.unbind('model.user.save.created', CoreEventHandler.USER_DEFAULT_FOLDERS)
     events.bind('model.user.save.created', 'wholetale', addDefaultFolders)
     info['apiRoot'].repository = Repository()
