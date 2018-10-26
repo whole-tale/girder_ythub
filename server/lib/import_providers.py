@@ -46,7 +46,7 @@ class ImportProvider:
                 rootObj = obj
                 rootType = objType
 
-        return (rootObj, rootType)
+        return rootType, rootObj
 
     def _registerFolder(self, stack, item: ImportItem, user):
         (parent, parentType) = stack[-1]
