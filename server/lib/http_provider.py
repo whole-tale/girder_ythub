@@ -74,6 +74,6 @@ class HTTPImportProvider(ImportProvider):
 
         gc_item = ModelImporter.model('item').load(
             gc_file['itemId'], force=True)
-        gc_item['meta'] = {'identifier': 'unknown', 'provider': 'HTTP'}
+        gc_item['meta'] = {'identifier': None, 'provider': 'HTTP'}
         gc_item = ModelImporter.model('item').updateItem(gc_item)
         return ('item', gc_item)
