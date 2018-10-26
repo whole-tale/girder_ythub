@@ -233,7 +233,7 @@ class Dataset(Resource):
                 # probably would be nicer if Entity kept all details and the dataMap
                 # would be merged into it
                 provider = IMPORT_PROVIDERS.getFromDataMap(dataMap)
-                (obj, objType) = provider.register(parent, parentType, ctx, user, dataMap,
+                objType, obj = provider.register(parent, parentType, ctx, user, dataMap,
                                                    base_url=base_url)
                 importedData[objType].append(obj)
 
