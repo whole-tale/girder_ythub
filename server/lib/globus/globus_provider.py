@@ -91,9 +91,7 @@ class GlobusImportProvider(ImportProvider):
                 yield ImportItem(
                     ImportItem.FILE, entry['name'], size=entry['size'],
                     mimeType='application/octet-stream',
-                    url='https://www.globus.org/app/transfer?origin_id=%s&origin_path=%s'
-                    % (endpoint, quote_plus(path)),
-                    meta={'url': 'globus://%s/%s' % (endpoint, path)})
+                    url='globus://%s/%s' % (endpoint, path))
 
 
 TRANSFER_URL_PREFIX = 'https://www.globus.org/app/transfer?'
