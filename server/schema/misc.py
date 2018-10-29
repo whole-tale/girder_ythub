@@ -47,7 +47,7 @@ dataMapSchema = {
         },
         'size': {
             'type': 'integer',
-            'minimum': 0,
+            'minimum': -1,
             'description': 'The total size of the dataset in bytes.'
         }
     },
