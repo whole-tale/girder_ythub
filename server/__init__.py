@@ -5,8 +5,9 @@ from cryptography.exceptions import UnsupportedAlgorithm
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 import six
+from celery.result import AsyncResult
 
-from girder import events, logprint
+from girder import events, logprint, logger
 from girder.api import access
 from girder.api.describe import Description, describeRoute, autoDescribeRoute
 from girder.api.rest import \
@@ -14,6 +15,9 @@ from girder.api.rest import \
 from girder.constants import AccessType, TokenScope, CoreEventHandler
 from girder.exceptions import GirderException
 from girder.models.model_base import ValidationException
+from girder.plugins.jobs.constants import JobStatus
+from girder.plugins.jobs.models.job import Job as JobModel
+from girder.plugins.worker import getCeleryApp
 from girder.utility import assetstore_utilities, setting_utilities
 from girder.utility.model_importer import ModelImporter
 
@@ -274,6 +278,35 @@ def addDefaultFolders(event):
         folderModel.setUserAccess(folder, user, AccessType.ADMIN, save=True)
 
 
+@access.user
+@autoDescribeRoute(
+    Description('Get output from celery job.')
+    .modelParam('id', 'The ID of the job.', model=JobModel, force=True, includeLog=True)
+    .errorResponse('ID was invalid.')
+    .errorResponse('Read access was denied for the job.', 403)
+)
+@boundHandler()
+def getJobResult(self, job):
+    user = self.getCurrentUser()
+    if not job.get('public', False):
+        if user:
+            JobModel().requireAccess(job, user, level=AccessType.READ)
+        else:
+            self.ensureTokenScopes('jobs.job_' + str(job['_id']))
+
+    celeryTaskId = job.get('celeryTaskId')
+    if celeryTaskId is None:
+        logger.warn(
+            "Job '{}' doesn't have a Celery task id.".format(job['_id']))
+        return
+    if job['status'] != JobStatus.SUCCESS:
+        logger.warn(
+            "Job '{}' hasn't completed sucessfully.".format(job['_id']))
+        return
+    asyncResult = AsyncResult(celeryTaskId, app=getCeleryApp())
+    return asyncResult.get()
+
+
 def load(info):
     info['apiRoot'].wholetale = wholeTale()
     info['apiRoot'].instance = Instance()
@@ -305,6 +338,7 @@ def load(info):
     info['apiRoot'].folder.route('GET', ('registered',), listImportedData)
     info['apiRoot'].folder.route('GET', (':id', 'listing'), listFolder)
     info['apiRoot'].folder.route('GET', (':id', 'dataset'), getDataSet)
+    info['apiRoot'].job.route('GET', (':id', 'result'), getJobResult)
     info['apiRoot'].item.route('GET', (':id', 'listing'), listItem)
     info['apiRoot'].resource.route('GET', (), listResources)
 
