@@ -11,9 +11,13 @@ from girder.api.rest import Resource, filtermodel, RestException,\
 
 from girder.constants import AccessType, SortDir, TokenScope
 from girder.utility import ziputil
+from girder.models.token import Token
+from girder.plugins.jobs.constants import REST_CREATE_JOB_TOKEN_SCOPE
+from gwvolman.tasks import create_adhoc_tale
+
 from ..schema.tale import taleModel as taleSchema
 from ..models.tale import Tale as taleModel
-
+from ..models.image import Image as imageModel
 
 addModel('tale', taleSchema, resources='tale')
 
@@ -29,6 +33,7 @@ class Tale(Resource):
         self.route('GET', (':id',), self.getTale)
         self.route('PUT', (':id',), self.updateTale)
         self.route('POST', (), self.createTale)
+        self.route('POST', ('import', ), self.createTaleFromDataset)
         self.route('DELETE', (':id',), self.deleteTale)
         self.route('GET', (':id', 'access'), self.getTaleAccess)
         self.route('PUT', (':id', 'access'), self.updateTaleAccess)
@@ -122,6 +127,26 @@ class Tale(Resource):
     )
     def deleteTale(self, tale, params):
         self._model.remove(tale)
+
+    @access.user
+    @autoDescribeRoute(
+        Description('Create a new tale from external dataset.')
+        .param('imageId', "The ID of the tale's image.", required=True)
+        .param('url', "External Dataset.", required=True)
+        .responseClass('job')
+        .errorResponse('You are not authorized to create tales.', 403)
+    )
+    def createTaleFromDataset(self, imageId, url):
+        user = self.getCurrentUser()
+        image = imageModel().load(imageId, user=user, level=AccessType.READ,
+                                  exc=True)
+        token = self.getCurrentToken()
+        Token().addScope(token, scope=REST_CREATE_JOB_TOKEN_SCOPE)
+        taleTask = create_adhoc_tale.delay(
+            str(image['_id']), [url],
+            girder_client_token=str(token['_id'])
+        )
+        return taleTask.job
 
     @access.user
     @autoDescribeRoute(
