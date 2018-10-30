@@ -23,7 +23,7 @@ taleModel = {
             "description": "Title of the Tale"
         },
         "description": {
-            "type": "string",
+            "type": ["string", "null"],
             "description": "The description of the Tale (Markdown)"
         },
         "imageId": {
@@ -102,6 +102,16 @@ taleModel = {
         "icon": {
             "type": "string",
             "description": "A URL to an image icon"
+        },
+        "doi": {
+            "type": ["string", "null"],
+            "description": "A unique identifier assigned to this tale from a "
+                           "publishing source."
+        },
+        "publishedURI": {
+            "type": ["string", "null"],
+            "description": "A URI pointing to the location of the published "
+                           "Tale."
         }
     },
     'example': {
@@ -120,6 +130,7 @@ taleModel = {
             }
         ],
         "description": "#### Markdown Editor",
+        "doi": "doi:x.xx.xxx",
         "folderId": "5c4887409759c200017b2316",
         "format": 4,
         "icon": ("https://raw.githubusercontent.com/whole-tale/jupyter-base/"
@@ -132,6 +143,8 @@ taleModel = {
         "narrativeId": "5c4887409759c200017b2319",
         "public": False,
         "published": False,
+        "publishedURI": "https://dev.nceas.ucsb.edu/view/urn:uuid:939e48ec-1107-45d9"
+                        "-baa7-05cef08e51cd",
         "title": "My Tale",
         "updated": "2019-01-23T15:48:17.476000+00:00"
     }
