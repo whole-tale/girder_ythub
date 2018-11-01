@@ -132,18 +132,21 @@ class Tale(Resource):
     @autoDescribeRoute(
         Description('Create a new tale from external dataset.')
         .param('imageId', "The ID of the tale's image.", required=True)
-        .param('url', "External Dataset.", required=True)
+        .param('url', 'External Dataset.', required=True)
+        .param('spawn', 'If false, create only Tale object without a corresponding '
+                        'Instance.',
+               default=True, required=False, dataType='boolean')
         .responseClass('job')
         .errorResponse('You are not authorized to create tales.', 403)
     )
-    def createTaleFromDataset(self, imageId, url):
+    def createTaleFromDataset(self, imageId, url, spawn):
         user = self.getCurrentUser()
         image = imageModel().load(imageId, user=user, level=AccessType.READ,
                                   exc=True)
         token = self.getCurrentToken()
         Token().addScope(token, scope=REST_CREATE_JOB_TOKEN_SCOPE)
         taleTask = create_adhoc_tale.delay(
-            str(image['_id']), [url],
+            str(image['_id']), [url], spawn,
             girder_client_token=str(token['_id'])
         )
         return taleTask.job
