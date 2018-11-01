@@ -1,7 +1,7 @@
 import InstanceCollection from './InstanceCollection';
-import FrontendCollection from './FrontendCollection';
+import ImageCollection from './ImageCollection';
 
 export {
   InstanceCollection,
-  FrontendCollection
+  ImageCollection
 };

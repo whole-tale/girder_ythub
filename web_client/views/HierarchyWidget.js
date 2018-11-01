@@ -6,8 +6,6 @@ import { getCurrentUser } from 'girder/auth';
 
 import HierarchyWidget from 'girder/views/widgets/HierarchyWidget';
 
-import FrontendSelectorWidget from './widgets/FrontendSelectorWidget';
-
 import WholeTaleHierarchyWidget from '../templates/WholeTaleHierarchyWidget.pug';
 import WholeTaleFolderMenu from '../templates/WholeTaleFolderMenu.pug';
 
@@ -102,10 +100,7 @@ function _stopNB(e) {
 }
 
 function _startNB() {
-    new FrontendSelectorWidget({
-        el: $('#g-dialog-container'),
-        parentView: this
-    }).render();
+    console.log('I was here');
 }
 
 HierarchyWidget.prototype.events['click a.g-visit-instance'] = _visitNB;
