@@ -100,7 +100,6 @@ function _stopNB(e) {
 }
 
 function _startNB() {
-    console.log('I was here');
 }
 
 HierarchyWidget.prototype.events['click a.g-visit-instance'] = _visitNB;
