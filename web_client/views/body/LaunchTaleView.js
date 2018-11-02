@@ -75,6 +75,18 @@ var LaunchTaleView = View.extend({
                             this.$('button.g-save-tale').html('<i class="icon-play"></i>Run').girderEnable(true);
                         }
                     }, this));
+                    this.$('.g-job-progress>.progress-bar').css('width', '100%')
+                      .removeClass('progress-bar-info').addClass('progress-bar-success');
+                } else if (this.job.get('status') === JobStatus.ERROR) {
+                    restRequest({
+                        url: 'job/' + this.job.id + '/result',
+                        method: 'GET',
+                        error: null
+                    }).done(_.bind(function (resp) {
+                        this.$('.g-validation-failed-message').text(resp);
+                    }, this));
+                    this.$('.g-job-progress>.progress-bar').css('width', '100%')
+                      .removeClass('progress-bar-info').addClass('progress-bar-danger');
                 }
             }
         });
@@ -85,11 +97,9 @@ var LaunchTaleView = View.extend({
                 return;
             }
             if (info.resource._id === this.job.id) {
-                let color = JobStatus.color(info.resource.status);
                 this.$('.g-job-progress-message').text(info.message);
-                this.$('.g-job-progress>.progress-bar').css('width',
+                this.$('.g-job-progress>.progress-bar-info').css('width',
                     Math.ceil(100 * info.current / info.total) + '%');
-                this.$('.g-job-progress>.progress-bar').css('color', color);
             }
         });
 
