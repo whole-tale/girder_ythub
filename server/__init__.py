@@ -302,9 +302,12 @@ def getJobResult(self, job):
     if job['status'] != JobStatus.SUCCESS:
         logger.warn(
             "Job '{}' hasn't completed sucessfully.".format(job['_id']))
-        return
     asyncResult = AsyncResult(celeryTaskId, app=getCeleryApp())
-    return asyncResult.get()
+    try:
+        result = asyncResult.get()
+    except Exception as ex:
+        result = str(ex)
+    return result
 
 
 def load(info):
