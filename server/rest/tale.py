@@ -13,7 +13,7 @@ from girder.constants import AccessType, SortDir, TokenScope
 from girder.utility import ziputil
 from girder.models.token import Token
 from girder.plugins.jobs.constants import REST_CREATE_JOB_TOKEN_SCOPE
-from gwvolman.tasks import create_adhoc_tale
+from gwvolman.tasks import import_tale
 
 from ..schema.tale import taleModel as taleSchema
 from ..models.tale import Tale as taleModel
@@ -145,7 +145,7 @@ class Tale(Resource):
                                   exc=True)
         token = self.getCurrentToken()
         Token().addScope(token, scope=REST_CREATE_JOB_TOKEN_SCOPE)
-        taleTask = create_adhoc_tale.delay(
+        taleTask = import_tale.delay(
             str(image['_id']), [url], spawn,
             girder_client_token=str(token['_id'])
         )
