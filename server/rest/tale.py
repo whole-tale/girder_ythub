@@ -140,21 +140,30 @@ class Tale(Resource):
                default=True, required=False, dataType='boolean')
         .jsonParam('lookupKwargs', 'Optional keyword arguments passed to '
                    'GET /repository/lookup', requireObject=True, required=False)
+        .jsonParam('taleKwargs', 'Optional keyword arguments passed to POST /tale',
+                   required=False)
         .responseClass('job')
         .errorResponse('You are not authorized to create tales.', 403)
     )
-    def createTaleFromDataset(self, imageId, url, spawn, lookupKwargs):
+    def createTaleFromDataset(self, imageId, url, spawn, lookupKwargs, taleKwargs):
         user = self.getCurrentUser()
         image = imageModel().load(imageId, user=user, level=AccessType.READ,
                                   exc=True)
         token = self.getCurrentToken()
         Token().addScope(token, scope=REST_CREATE_JOB_TOKEN_SCOPE)
+
         try:
             lookupKwargs['dataId'] = [url]
         except TypeError:
             lookupKwargs = dict(dataId=[url])
+
+        try:
+            taleKwargs['imageId'] = str(image['_id'])
+        except TypeError:
+            taleKwargs = dict(imageId=str(image['_id']))
+
         taleTask = import_tale.delay(
-            str(image['_id']), lookupKwargs, spawn,
+            lookupKwargs, taleKwargs, spawn=spawn,
             girder_client_token=str(token['_id'])
         )
         return taleTask.job
