@@ -28,7 +28,8 @@ var LaunchTaleView = View.extend({
                     method: 'POST',
                     data: {
                         url: this.dataId,
-                        imageId: this.imageId
+                        imageId: this.imageId,
+                        taleKwargs: JSON.stringify({title: $('input#g-name').val()})
                     },
                     error: null
                 }).done(_.bind(function (resp) {
