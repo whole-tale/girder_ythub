@@ -165,7 +165,7 @@ def find_initial_pid(path):
     :rtype: str
     """
     # http://blog.crossref.org/2015/08/doi-regular-expressions.html
-    doi_regex = re.compile('(10.\d{4,9}/[-._;()/:A-Z0-9]+)', re.IGNORECASE)
+    doi_regex = re.compile(r'(10.\d{4,9}/[-._;()/:A-Z0-9]+)', re.IGNORECASE)
     doi = doi_regex.search(path)
     if re.search(r'^http[s]?:\/\/search.dataone.org\/[#]?view\/', path):
         return re.sub(

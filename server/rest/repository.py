@@ -107,13 +107,13 @@ def _http_lookup(pid):
     headers = requests.head(pid).headers
 
     valid_target = headers.get('Content-Type') is not None
-    valid_target = valid_target and ('Content-Length' in headers or
-                                     'Content-Range' in headers)
+    valid_target = valid_target and \
+        ('Content-Length' in headers or 'Content-Range' in headers)
     if not valid_target:
         return
 
     if 'Content-Disposition' in headers:
-        fname = re.search('^.*filename=([\w.]+).*$',
+        fname = re.search(r'^.*filename=([\w.]+).*$',
                           headers['Content-Disposition'])
         if fname:
             fname = fname.groups()[0]
