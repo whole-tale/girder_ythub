@@ -9,7 +9,7 @@ from girder.models.model_base import \
 from girder.constants import AccessType
 
 
-_GIT_REPO_REGEX = re.compile('(\w+://)(.+@)*([\w\d\.]+)(:[\d]+){0,1}/*(.*)')
+_GIT_REPO_REGEX = re.compile(r'(\w+://)(.+@)*([\w\d\.]+)(:[\d]+){0,1}/*(.*)')
 
 
 class Recipe(AccessControlledModel):

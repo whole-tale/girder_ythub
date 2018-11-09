@@ -10,7 +10,7 @@ from girder.constants import AccessType
 from ..constants import ImageStatus
 
 
-_GIT_REPO_REGEX = re.compile('(\w+://)(.+@)*([\w\d\.]+)(:[\d]+){0,1}/*(.*)')
+_GIT_REPO_REGEX = re.compile(r'(\w+://)(.+@)*([\w\d\.]+)(:[\d]+){0,1}/*(.*)')
 _DEFAULT_ICON = ('https://raw.githubusercontent.com/whole-tale/dashboard/'
                  'd1914c9896c3e87a29601760ad7d0dfaa0d98ae2'
                  '/public/images/whole_tale_logo.png')
