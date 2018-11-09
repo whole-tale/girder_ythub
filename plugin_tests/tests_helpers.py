@@ -10,11 +10,11 @@ XPRA_REPO = 'whole-tale/xpra-base'
 XPRA_COMMIT = 'fad88f5'
 
 
-@httmock.urlmatch(scheme='https', netloc='^api\.github\.com$',
-                  path='^/repos/([\w\-]+)/([\w\-]+)$', method='GET')
+@httmock.urlmatch(scheme='https', netloc=r'^api\.github\.com$',
+                  path=r'^/repos/([\w\-]+)/([\w\-]+)$', method='GET')
 def mockReposRequest(url, request):
     owner, repo = re.match(
-        '^/repos/([\w\-]+)/([\w\-]+)$', url.path).groups()
+        r'^/repos/([\w\-]+)/([\w\-]+)$', url.path).groups()
     repo_slug = os.path.join(owner, repo)
     headers = {'content-type': 'application/json'}
     if repo_slug == GOOD_REPO:
@@ -29,12 +29,12 @@ def mockReposRequest(url, request):
     return httmock.response(404, content, headers, None, 5, request)
 
 
-@httmock.urlmatch(scheme='https', netloc='^api\.github\.com$',
-                  path='^/repos/([\w\-]+)/([\w\-]+)/commits/(\w+)$',
+@httmock.urlmatch(scheme='https', netloc=r'^api\.github\.com$',
+                  path=r'^/repos/([\w\-]+)/([\w\-]+)/commits/(\w+)$',
                   method='GET')
 def mockCommitRequest(url, request):
     owner, repo, commit = re.match(
-        '^/repos/([\w\-]+)/([\w\-]+)/commits/(\w+)$',
+        r'^/repos/([\w\-]+)/([\w\-]+)/commits/(\w+)$',
         url.path).groups()
     headers = {'content-type': 'application/json'}
     if commit == GOOD_COMMIT:

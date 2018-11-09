@@ -1,5 +1,3 @@
-import uuid
-
 from tests import base
 
 
@@ -24,4 +22,3 @@ class TestDataONEUtils(base.TestCase):
 
         self.assertEqual(folder['name'], folder_name)
         self.assertEqual(folder['description'], folder_desc)
-

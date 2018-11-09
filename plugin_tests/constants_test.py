@@ -26,7 +26,6 @@ class TestDataONEUtils(base.TestCase):
         self.assertEqual(PluginSettings.HUB_PRIV_KEY, 'wholetale.priv_key')
         self.assertEqual(PluginSettings.HUB_PUB_KEY, 'wholetale.pub_key')
 
-
     def test_dataone_endpoints(self):
         # Testing this to make sure the endpoints aren't accidentally changed
         from server.constants import DataONELocations

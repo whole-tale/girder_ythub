@@ -1,3 +1,4 @@
+import time
 import mock
 import httmock
 import six
@@ -8,9 +9,23 @@ from .tests_helpers import \
     mockOtherRequest, mockCommitRequest, mockReposRequest
 
 
+JobStatus = None
+utils = None
+worker = None
+Instance = None
+InstanceStatus = None
+
+
 def setUpModule():
     base.enabledPlugins.append('wholetale')
     base.startServer()
+    global JobStatus, utils, worker, CustomJobStatus, Instance, \
+        InstanceStatus
+    from girder.plugins.jobs.constants import JobStatus
+    from girder.plugins import worker
+    from girder.plugins.worker import utils
+    from girder.plugins.wholetale.models.instance import Instance
+    from girder.plugins.wholetale.constants import InstanceStatus
 
 
 def tearDownModule():
@@ -18,16 +33,17 @@ def tearDownModule():
 
 
 class FakeAsyncResult(object):
-    def __init__(self):
+    def __init__(self, instanceId=None):
         self.task_id = 'fake_id'
+        self.instanceId = instanceId
 
     def get(self, timeout=None):
         return dict(
             nodeId='123456',
             mountPoint='/foo/bar',
             volumeName='blah_volume',
-            name='tmp-blah',
-            urlPath='?token=foo'
+            sessionId='sessionId',
+            instanceId=self.instanceId
         )
 
 
@@ -148,99 +164,95 @@ class TaleTestCase(base.TestCase):
                     resp.json['message'], instanceCapErrMsg.format('0'))
                 setting.set(PluginSettings.INSTANCE_CAP, current_cap)
 
-    def testInstanceFlow(self):
-        return  # FIXME
-
-        with mock.patch('celery.Celery') as celeryMock:
-            with mock.patch('tornado.httpclient.HTTPClient') as tornadoMock:
-                instance = celeryMock.return_value
-                instance.send_task.return_value = FakeAsyncResult()
-
-                req = tornadoMock.return_value
-                req.fetch.return_value = {}
-
-                resp = self.request(
-                    path='/instance', method='POST', user=self.user,
-                    params={'taleId': str(self.tale_one['_id']),
-                            'name': 'tale one'}
-                )
-        self.assertStatusOk(resp)
-        self.assertEqual(resp.json['url'], 'https://tmp-blah.0.0.1/?token=foo')
-        self.assertEqual(resp.json['name'], 'tale one')
-        self.assertEqual(resp.json['containerInfo']['volumeName'], 'blah_volume')
-        instance_one = resp.json
-
-        with mock.patch('celery.Celery') as celeryMock:
-            instance = celeryMock.return_value
-            instance.send_task.return_value = FakeAsyncResult()
+    @mock.patch('gwvolman.tasks.create_volume')
+    @mock.patch('gwvolman.tasks.launch_container')
+    @mock.patch('gwvolman.tasks.shutdown_container')
+    @mock.patch('gwvolman.tasks.remove_volume')
+    def testInstanceFlow(self, lc, cv, sc, rv):
+        with mock.patch('girder_worker.task.celery.Task.apply_async', spec=True) \
+                as mock_apply_async:
             resp = self.request(
                 path='/instance', method='POST', user=self.user,
-                params={'taleId': str(self.tale_two['_id'])},
+                params={'taleId': str(self.tale_one['_id']),
+                        'name': 'tale one'}
             )
-            self.assertStatusOk(resp)
-            instance_two = resp.json
+            mock_apply_async.assert_called_once()
 
-            resp = self.request(
-                path='/instance', method='POST', user=self.admin,
-                params={'taleId': str(self.tale_one['_id'])},
-            )
-            self.assertStatusOk(resp)
-            instance_three = resp.json
-
-            # Make sure that instance is a singleton
-            resp = self.request(
-                path='/instance', method='POST', user=self.admin,
-                params={'taleId': str(self.tale_one['_id'])},
-            )
-            self.assertStatusOk(resp)
-            self.assertEqual(resp.json['_id'], instance_three['_id'])
-
-        resp = self.request(
-            path='/instance', method='GET', user=self.user,
-            params={}
-        )
         self.assertStatusOk(resp)
-        self.assertEqual(set([_['_id'] for _ in resp.json]),
-                         {instance_one['_id'], instance_two['_id']})
+        instance = resp.json
 
+        # Create a job to be handled by the worker plugin
+        from girder.plugins.jobs.models.job import Job
+        jobModel = Job()
+        job = jobModel.createJob(
+            title='Spawn Instance', type='celery', handler='worker_handler',
+            user=self.user, public=False, args=[{'instanceId': instance['_id']}], kwargs={})
+        job = jobModel.save(job)
+        self.assertEqual(job['status'], JobStatus.INACTIVE)
+
+        # Schedule the job, make sure it is sent to celery
+        with mock.patch('celery.Celery') as celeryMock, \
+                mock.patch('girder.plugins.worker.getCeleryApp') as gca:
+
+            celeryMock().AsyncResult.return_value = FakeAsyncResult(instance['_id'])
+            gca().send_task.return_value = FakeAsyncResult(instance['_id'])
+
+            jobModel.scheduleJob(job)
+            for i in range(20):
+                job = jobModel.load(job['_id'], force=True)
+                if job['status'] == JobStatus.QUEUED:
+                    break
+                time.sleep(0.1)
+            self.assertEqual(job['status'], JobStatus.QUEUED)
+
+            instance = Instance().load(instance['_id'], force=True)
+            self.assertEqual(instance['status'], InstanceStatus.LAUNCHING)
+
+            # Make sure we sent the job to celery
+            sendTaskCalls = gca.return_value.send_task.mock_calls
+
+            self.assertEqual(len(sendTaskCalls), 1)
+            self.assertEqual(sendTaskCalls[0][1], (
+                'girder_worker.run', job['args'], job['kwargs']))
+
+            self.assertTrue('headers' in sendTaskCalls[0][2])
+            self.assertTrue('jobInfoSpec' in sendTaskCalls[0][2]['headers'])
+
+            # Make sure we got and saved the celery task id
+            job = jobModel.load(job['_id'], force=True)
+            self.assertEqual(job['celeryTaskId'], 'fake_id')
+            Job().updateJob(job, log='job running', status=JobStatus.RUNNING)
+            Job().updateJob(job, log='job ran', status=JobStatus.SUCCESS)
+
+        # Check if set up properly
         resp = self.request(
-            path='/instance', method='GET', user=self.admin,
-            params={'taleId': str(self.tale_one['_id'])}
+            path='/instance/{_id}'.format(**instance), method='GET', user=self.user
         )
-        self.assertStatusOk(resp)
-        self.assertEqual(set([_['_id'] for _ in resp.json]),
-                         {instance_one['_id'], instance_three['_id']})
+        self.assertEqual(resp.json['containerInfo']['nodeId'], '123456')
+        self.assertEqual(resp.json['containerInfo']['volumeName'], 'blah_volume')
+        self.assertEqual(resp.json['status'], InstanceStatus.RUNNING)
 
+        # Check that the instance is a singleton
         resp = self.request(
-            path='/instance', method='GET', user=self.admin,
+            path='/instance', method='POST', user=self.user,
             params={'taleId': str(self.tale_one['_id']),
-                    'userId': str(self.admin['_id'])}
+                    'name': 'tale one'}
         )
         self.assertStatusOk(resp)
-        self.assertEqual(set([_['_id'] for _ in resp.json]),
-                         {instance_three['_id']})
+        self.assertEqual(resp.json['_id'], str(instance['_id']))
 
-        with mock.patch('celery.Celery') as celeryMock:
-            instance = celeryMock.return_value
-            instance.send_task.return_value = FakeAsyncResult()
+        with mock.patch('girder_worker.task.celery.Task.apply_async', spec=True) \
+                as mock_apply_async:
             resp = self.request(
-                path='/instance/{_id}'.format(**instance_two), method='DELETE',
+                path='/instance/{_id}'.format(**instance), method='DELETE',
                 user=self.user)
             self.assertStatusOk(resp)
+            mock_apply_async.assert_called_once()
 
         resp = self.request(
-            path='/instance/{_id}'.format(**instance_two), method='GET',
+            path='/instance/{_id}'.format(**instance), method='GET',
             user=self.user)
         self.assertStatus(resp, 400)
-
-        resp = self.request(
-            path='/instance/{_id}'.format(**instance_one), method='GET',
-            user=self.user)
-        self.assertStatusOk(resp)
-        for key in instance_one.keys():
-            if key in ('access', 'updated', 'created', 'lastActivity'):
-                continue
-            self.assertEqual(resp.json[key], instance_one[key])
 
     def tearDown(self):
         self.model('folder').remove(self.userPrivateFolder)
