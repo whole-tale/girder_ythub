@@ -5,7 +5,6 @@ from cryptography.exceptions import UnsupportedAlgorithm
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 import six
-from celery.result import AsyncResult
 
 from girder import events, logprint, logger
 from girder.api import access
@@ -302,7 +301,7 @@ def getJobResult(self, job):
     if job['status'] != JobStatus.SUCCESS:
         logger.warn(
             "Job '{}' hasn't completed sucessfully.".format(job['_id']))
-    asyncResult = AsyncResult(celeryTaskId, app=getCeleryApp())
+    asyncResult = getCeleryApp().AsyncResult(celeryTaskId)
     try:
         result = asyncResult.get()
     except Exception as ex:

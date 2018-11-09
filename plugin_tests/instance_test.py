@@ -220,6 +220,12 @@ class TaleTestCase(base.TestCase):
             Job().updateJob(job, log='job running', status=JobStatus.RUNNING)
             Job().updateJob(job, log='job ran', status=JobStatus.SUCCESS)
 
+            resp = self.request(
+                path='/job/{_id}/result'.format(**job), method='GET', user=self.user
+            )
+            self.assertStatusOk(resp)
+            self.assertEqual(resp.json['nodeId'], '123456')
+
         # Check if set up properly
         resp = self.request(
             path='/instance/{_id}'.format(**instance), method='GET', user=self.user
