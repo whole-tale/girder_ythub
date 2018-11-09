@@ -1,3 +1,4 @@
+import mock
 import httmock
 import os
 import json
@@ -499,6 +500,26 @@ class TaleTestCase(base.TestCase):
         self.assertEqual(tale['involatileData'],
                          [{'id': str(data_dir['_id']), 'type': 'folder'}])
         self.model('tale', 'wholetale').remove(tale)
+
+    @mock.patch('gwvolman.tasks.import_tale')
+    def testTaleImport(self, it):
+        with mock.patch('girder_worker.task.celery.Task.apply_async', spec=True) \
+                as mock_apply_async:
+            # mock_apply_async.return_value = 1
+            mock_apply_async().job.return_value = json.dumps({'job': 1, 'blah': 2})
+            resp = self.request(
+                path='/tale/import', method='POST', user=self.user,
+                params={'url': 'http://blah.com/', 'spawn': False,
+                        'imageId': self.image['_id']}
+            )
+            self.assertStatusOk(resp)
+            job_call = mock_apply_async.call_args_list[-1][-1]
+            self.assertEqual(
+                job_call['args'],
+                ({'dataId': ['http://blah.com/']}, {'imageId': str(self.image['_id'])})
+            )
+            self.assertEqual(job_call['kwargs'], {'spawn': False})
+            self.assertEqual(job_call['headers']['girder_job_title'], 'Import Tale')
 
     def tearDown(self):
         self.model('user').remove(self.user)

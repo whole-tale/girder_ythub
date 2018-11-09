@@ -10,8 +10,6 @@ from .tests_helpers import \
 
 
 JobStatus = None
-utils = None
-worker = None
 Instance = None
 InstanceStatus = None
 
@@ -19,11 +17,9 @@ InstanceStatus = None
 def setUpModule():
     base.enabledPlugins.append('wholetale')
     base.startServer()
-    global JobStatus, utils, worker, CustomJobStatus, Instance, \
+    global JobStatus, CustomJobStatus, Instance, \
         InstanceStatus
     from girder.plugins.jobs.constants import JobStatus
-    from girder.plugins import worker
-    from girder.plugins.worker import utils
     from girder.plugins.wholetale.models.instance import Instance
     from girder.plugins.wholetale.constants import InstanceStatus
 
