@@ -3,8 +3,8 @@ class ImportItem:
     FOLDER = 1
     END_FOLDER = 2
 
-    def __init__(self, type, name: str=None, identifier: str=None, url: str=None, size: int=-1,
-                 mimeType: str=None, meta=None):
+    def __init__(self, type, name: str = None, identifier: str = None, url: str = None,
+                 size: int = -1, mimeType: str = None, meta=None):
         self.type = type
         self.name = name
         self.identifier = identifier

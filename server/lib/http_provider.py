@@ -30,13 +30,13 @@ class HTTPImportProvider(ImportProvider):
         headers = requests.head(pid).headers
 
         valid_target = headers.get('Content-Type') is not None
-        valid_target = valid_target and ('Content-Length' in headers or
-                                         'Content-Range' in headers)
+        valid_target = valid_target and \
+            ('Content-Length' in headers or 'Content-Range' in headers)
         if not valid_target:
             raise Exception('Failed to get size for %s' % pid)
 
         if 'Content-Disposition' in headers:
-            fname = re.search('^.*filename=([\w.]+).*$',
+            fname = re.search(r'^.*filename=([\w.]+).*$',
                               headers['Content-Disposition'])
             if fname:
                 fname = fname.groups()[0]
@@ -58,7 +58,7 @@ class HTTPImportProvider(ImportProvider):
             return fm
 
     def register(self, parent: object, parentType: str, progress, user, dataMap: DataMap,
-                 base_url: str=None):
+                 base_url: str = None):
         url = dataMap.getDataId()
         progress.update(increment=1, message='Processing file {}.'.format(url))
         headers = requests.head(url).headers

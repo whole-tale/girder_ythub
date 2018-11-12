@@ -127,7 +127,7 @@ class FileMap:
         return fm
 
     @staticmethod
-    def _checkSingleEntryDict(d: Dict, expectedKey: str=None):
+    def _checkSingleEntryDict(d: Dict, expectedKey: str = None):
         if len(d) > 1:
             raise Exception('Invalid data. Dictionary %s should have only one element' % d)
         key = next(iter(d.keys()))

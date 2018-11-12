@@ -1,6 +1,6 @@
 from typing import Tuple
 from html.parser import HTMLParser
-from urllib.parse import parse_qs, quote_plus
+from urllib.parse import parse_qs
 from urllib.request import OpenerDirector, HTTPSHandler
 
 from plugins.wholetale.server.lib.file_map import FileMap
@@ -24,7 +24,7 @@ class GlobusImportProvider(ImportProvider):
     def lookup(self, entity: Entity) -> DataMap:
         doc = self._getDocument(entity.getValue())
         (endpoint, path, doi, title) = self._extractMeta(doc)
-        tc = self.clients.getUserTransferClient(entity.getUser())
+        self.clients.getUserTransferClient(entity.getUser())
         # Don't compute size here. The recursive traversal of typical directory structures
         # in a datase takes ages and we want the lookup method to quickly identify whether
         # a repository has a dataset or not.

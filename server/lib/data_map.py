@@ -42,7 +42,8 @@ dataMapDoc = {
 
 
 class DataMap:
-    def __init__(self, dataId: str, size: int, doi: str=None, name: str=None, repository: str=None):
+    def __init__(self, dataId: str, size: int, doi: str = None, name: str = None,
+                 repository: str = None):
         self.dataId = dataId
         self.size = size
         self.repository = repository

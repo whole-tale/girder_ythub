@@ -26,7 +26,7 @@ class ImportProvider:
         raise NotImplementedError()
 
     def register(self, parent: object, parentType: str, progress, user, dataMap: DataMap,
-                 base_url: str=None):
+                 base_url: str = None):
         stack = [(parent, parentType)]
         pid = dataMap.getDataId()
         name = dataMap.getName()
@@ -71,7 +71,7 @@ class ImportProvider:
                                       reuseExisting=True)
         return (gitem, 'item')
 
-    def _listRecursive(self, user, pid: str, name: str, base_url: str=None, progress=None):
+    def _listRecursive(self, user, pid: str, name: str, base_url: str = None, progress=None):
         raise NotImplementedError()
 
 

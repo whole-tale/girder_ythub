@@ -27,7 +27,7 @@ class Resolvers:
 
 
 class ResolutionException(Exception):
-    def __init__(self, message: str, prev: Exception=None):
+    def __init__(self, message: str, prev: Exception = None):
         self.message = message
         self.prev = prev
 
