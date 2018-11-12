@@ -9,7 +9,7 @@ import requests
 
 from girder import logger
 from girder.api.rest import RestException
-from ...constants import DataONELocations
+from . import DataONELocations
 from ...utils import esc
 from ..data_map import DataMap
 

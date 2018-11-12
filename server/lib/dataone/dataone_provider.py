@@ -1,5 +1,6 @@
 from girder import logger
 
+from . import DataONELocations
 from ..import_providers import ImportProvider
 from ..data_map import DataMap
 from ..file_map import FileMap
@@ -12,7 +13,6 @@ from .dataone_register import \
     extract_data_docs, \
     extract_resource_docs, \
     check_multiple_metadata
-from ...constants import DataONELocations
 
 ALL_LOCATIONS = [DataONELocations.prod_cn, DataONELocations.dev_mn, DataONELocations.dev_cn]
 ALL_LOCATIONS_2 = ['https://knb.ecoinformatics.org/#view/', 'https://search.dataone.org/view/',

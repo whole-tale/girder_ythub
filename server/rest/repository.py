@@ -5,7 +5,7 @@ from girder.api.describe import Description, autoDescribeRoute
 from girder.api.docs import addModel
 from girder.api.rest import Resource
 
-from ..constants import DataONELocations
+from girder.plugins.wholetale.lib.dataone import DataONELocations
 from ..lib.entity import Entity
 from ..lib.data_map import dataMapDoc
 from ..lib.file_map import fileMapDoc

@@ -8,9 +8,9 @@ from girder.constants import AccessType, SortDir, TokenScope
 from girder.models.model_base import ValidationException
 from girder.utility import path as path_util
 from girder.utility.progress import ProgressContext
-from ..constants import \
-    CATALOG_NAME,\
-    DataONELocations
+from ..constants import CATALOG_NAME
+
+from girder.plugins.wholetale.lib.dataone import DataONELocations
 from ..schema.misc import dataMapListSchema
 from ..utils import getOrCreateRootFolder
 from ..lib.data_map import DataMap

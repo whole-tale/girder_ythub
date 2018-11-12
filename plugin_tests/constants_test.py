@@ -28,7 +28,7 @@ class TestDataONEUtils(base.TestCase):
 
     def test_dataone_endpoints(self):
         # Testing this to make sure the endpoints aren't accidentally changed
-        from server.constants import DataONELocations
+        from server.lib.dataone import DataONELocations
 
         self.assertEqual(DataONELocations.prod_cn, 'https://cn.dataone.org/cn/v2')
         self.assertEqual(DataONELocations.dev_mn, 'https://dev.nceas.ucsb.edu/knb/d1/mn/v2')

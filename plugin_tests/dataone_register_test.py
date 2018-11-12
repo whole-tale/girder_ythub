@@ -60,7 +60,7 @@ class TestDataONERegister(base.TestCase):
 
     def test_find_resource_pid(self):
         from server.lib.dataone.dataone_register import find_resource_pid
-        from server.constants import DataONELocations
+        from server.lib.dataone import DataONELocations
 
         # Test the case where no data object could be located
         with pytest.raises(RestException):
@@ -139,7 +139,7 @@ class TestDataONERegister(base.TestCase):
     def test_get_package_list_nested(self):
         # Test that we're getting all of the files in a nested package
         from server.lib.dataone.dataone_register import get_package_list
-        from server.constants import DataONELocations
+        from server.lib.dataone import DataONELocations
 
         package = get_package_list(
             "https://search.dataone.org/#view/urn:uuid:6f5533ab-6508-4ac7-82a3-1df88ed4580e",
@@ -156,7 +156,7 @@ class TestDataONERegister(base.TestCase):
     def test_get_package_list_flat(self):
         # Test that we're getting all of the files in a non-nested package
         from server.lib.dataone.dataone_register import get_package_list
-        from server.constants import DataONELocations
+        from server.lib.dataone import DataONELocations
 
         package = get_package_list(
             'https://search.dataone.org/#view/urn:uuid:7ec733c4-aa63-405a-a58d-1d773a9025a9',
