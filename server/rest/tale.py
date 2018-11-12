@@ -11,9 +11,13 @@ from girder.api.rest import Resource, filtermodel, RestException,\
 
 from girder.constants import AccessType, SortDir, TokenScope
 from girder.utility import ziputil
+from girder.models.token import Token
+from girder.plugins.jobs.constants import REST_CREATE_JOB_TOKEN_SCOPE
+from gwvolman.tasks import import_tale
+
 from ..schema.tale import taleModel as taleSchema
 from ..models.tale import Tale as taleModel
-
+from ..models.image import Image as imageModel
 
 addModel('tale', taleSchema, resources='tale')
 
@@ -29,6 +33,7 @@ class Tale(Resource):
         self.route('GET', (':id',), self.getTale)
         self.route('PUT', (':id',), self.updateTale)
         self.route('POST', (), self.createTale)
+        self.route('POST', ('import', ), self.createTaleFromDataset)
         self.route('DELETE', (':id',), self.deleteTale)
         self.route('GET', (':id', 'access'), self.getTaleAccess)
         self.route('PUT', (':id', 'access'), self.updateTaleAccess)
@@ -122,6 +127,46 @@ class Tale(Resource):
     )
     def deleteTale(self, tale, params):
         self._model.remove(tale)
+
+    @access.user
+    @autoDescribeRoute(
+        Description('Create a new tale from an external dataset.')
+        .notes('Currently, this task only handles importing raw data. '
+               'In the future, it should also allow importing serialized Tales.')
+        .param('imageId', "The ID of the tale's image.", required=True)
+        .param('url', 'External dataset identifier.', required=True)
+        .param('spawn', 'If false, create only Tale object without a corresponding '
+                        'Instance.',
+               default=True, required=False, dataType='boolean')
+        .jsonParam('lookupKwargs', 'Optional keyword arguments passed to '
+                   'GET /repository/lookup', requireObject=True, required=False)
+        .jsonParam('taleKwargs', 'Optional keyword arguments passed to POST /tale',
+                   required=False)
+        .responseClass('job')
+        .errorResponse('You are not authorized to create tales.', 403)
+    )
+    def createTaleFromDataset(self, imageId, url, spawn, lookupKwargs, taleKwargs):
+        user = self.getCurrentUser()
+        image = imageModel().load(imageId, user=user, level=AccessType.READ,
+                                  exc=True)
+        token = self.getCurrentToken()
+        Token().addScope(token, scope=REST_CREATE_JOB_TOKEN_SCOPE)
+
+        try:
+            lookupKwargs['dataId'] = [url]
+        except TypeError:
+            lookupKwargs = dict(dataId=[url])
+
+        try:
+            taleKwargs['imageId'] = str(image['_id'])
+        except TypeError:
+            taleKwargs = dict(imageId=str(image['_id']))
+
+        taleTask = import_tale.delay(
+            lookupKwargs, taleKwargs, spawn=spawn,
+            girder_client_token=str(token['_id'])
+        )
+        return taleTask.job
 
     @access.user
     @autoDescribeRoute(

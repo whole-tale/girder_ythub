@@ -1,0 +1,34 @@
+.g-body-title Launch Ad-Hoc Tale
+
+.g-creation-instruction.
+  Explain what are we doing here... You are being redirected from ..., we are creating a Tale for you.
+  Please choose an environment before continuing.
+
+form#g-tale-create-form.modal-form(role="form")
+  .form-group
+    label.control-label(for="g-name") Name
+    input#g-name.input-sm.form-control(type="text", placeholder="Enter Tale name")
+  .form-group
+    label.control-label Compute Environment
+    .btn-group
+      button.g-image-select.btn.btn-sm.btn-default.dropdown-toggle(
+        data-toggle="dropdown", title="Sort by Field")
+        | Choose Environment
+        i.icon-down-dir
+      ul.dropdown-menu.pull-right(role="menu")
+        each image in images
+          li(role="presentation")
+            a.g-image(role="menuitem", image-cid=image.cid)
+              = image.get('name')
+  .form-group
+    label.control-label Data Source: 
+      = dataId
+  .g-validation-failed-message
+  .g-job-progress-container
+    .g-job-progress.progress.progress-striped
+      .progress-bar.progress-bar-info(role="progressbar")
+    .g-job-progress-message Starting upload...
+  a.g-cancel-tale.btn.btn-small.btn-default Cancel
+  button.g-save-tale.btn.btn-small.btn-primary(type="submit" class="disabled")
+    i.icon-plus-squared
+    | Create

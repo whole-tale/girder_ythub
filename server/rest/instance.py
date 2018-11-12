@@ -142,11 +142,14 @@ class Instance(Resource):
                required=False)
         .param('name', 'A user-friendly, short name of the tale.',
                required=False)
+        .param('spawn', 'If false, create only db object without a corresponding '
+                        'container.',
+               default=True, required=False, dataType='boolean')
         .responseClass('instance')
         .errorResponse(instanceCapErrMsg, 400)
         .errorResponse('Read access was denied for the tale.', 403)
     )
-    def createInstance(self, taleId, imageId, name, params):
+    def createInstance(self, taleId, imageId, name, spawn):
         if taleId is None and imageId is None:
             raise RestException(
                 'You need to provide "imageId" or "taleId".'
@@ -191,4 +194,4 @@ class Instance(Resource):
             raise RestException(instanceCapErrMsg.format(instance_cap))
 
         return instanceModel.createInstance(tale, user, token, name=name,
-                                            save=True)
+                                            save=True, spawn=spawn)

@@ -97,7 +97,7 @@ class ImageTestCase(base.TestCase):
             self.assertEqual(sendTaskCalls[0][1], (
                 'gwvolman.tasks.build_image',
                 (image['_id'], self.recipe['url'], self.recipe['commitId']), {})
-                             )
+            )
 
             job = resp.json
             imageId = job['args'][0]
