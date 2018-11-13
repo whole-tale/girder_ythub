@@ -204,7 +204,7 @@ class DataONEHarversterTestCase(base.TestCase):
             resp = self.request(
                 path='/repository/lookup', method='GET',
                 params={'dataId':
-                        json.dumps(['urn:uuid:c878ae53-06cf-40c9-a830-7f6f564133f9',
+                        json.dumps(['doi:10.18739/A2ND53',
                                     'http://use.yt/upload/944d8537'])})
             self.assertStatus(resp, 200)
             dataMap = resp.json
@@ -219,7 +219,7 @@ class DataONEHarversterTestCase(base.TestCase):
                     'size': 40882
                 }, {
                     'dataId': 'http://use.yt/upload/944d8537',
-                    'doi': 'unknown',
+                    'doi': None,
                     'name': 'nginx.tmpl',
                     'repository': 'HTTP',
                     'size': 8792
