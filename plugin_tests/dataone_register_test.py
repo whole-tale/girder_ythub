@@ -1,3 +1,4 @@
+import vcr
 import pytest
 import json
 import os
@@ -8,6 +9,13 @@ from girder.constants import ROOT_DIR
 '''Tests for the methods in dataone_register.py. Some of these tests use live requests,
 while others use mocked JSON responses/data structures.'''
 
+# it should be
+# DATA_PATH = os.path.join(os.environ['GIRDER_TEST_DATA_PREFIX'], 'plugins', 'wholetale')
+# but...
+DATA_PATH = os.path.join(
+    os.path.dirname(os.environ['GIRDER_TEST_DATA_PREFIX']),
+    'data_src', 'plugins', 'wholetale'
+)
 
 def setUpModule():
     base.enabledPlugins.append('wholetale')
@@ -58,6 +66,7 @@ class TestDataONERegister(base.TestCase):
         res = find_initial_pid(bad_url)
         self.assertEqual(res, bad_url)
 
+    @vcr.use_cassette(os.path.join(DATA_PATH, 'test_find_resource_pid.txt'))
     def test_find_resource_pid(self):
         from server.lib.dataone.dataone_register import find_resource_pid
         from server.lib.dataone import DataONELocations
@@ -136,6 +145,7 @@ class TestDataONERegister(base.TestCase):
             metadata = set()
             check_multiple_maps(metadata)
 
+    @vcr.use_cassette(os.path.join(DATA_PATH, 'test_get_package_list_nested.txt'))
     def test_get_package_list_nested(self):
         # Test that we're getting all of the files in a nested package
         from server.lib.dataone.dataone_register import get_package_list
@@ -153,6 +163,7 @@ class TestDataONERegister(base.TestCase):
 
         self.assertDictEqual(package, expected_result)
 
+    @vcr.use_cassette(os.path.join(DATA_PATH, 'test_get_package_list_flat.txt'))
     def test_get_package_list_flat(self):
         # Test that we're getting all of the files in a non-nested package
         from server.lib.dataone.dataone_register import get_package_list
