@@ -3,31 +3,42 @@ import re
 from urllib.parse import urlparse, urlunparse
 from urllib.request import urlopen
 
+from girder.models.setting import Setting
+
 from ..import_providers import ImportProvider
 from ..data_map import DataMap
 from ..file_map import FileMap
 from ..import_item import ImportItem
 from ..entity import Entity
-
-
-# Url returning json that contains all active Dataverse instances
-_INSTALLATIONS_URL = 'https://services.dataverse.harvard.edu/miniverse/map/installations-json'
+from ... import constants
 
 
 class DataverseImportProvider(ImportProvider):
+    _dataverse_regex = None
+
     def __init__(self):
         super().__init__('Dataverse')
-        self._get_dataverse_installations()
 
-    def _get_dataverse_installations(self):
-        resp = urlopen(_INSTALLATIONS_URL).read()
-        data = json.loads(resp.decode('utf-8'))
+    @property
+    def dataverse_regex(self):
+        if not self._dataverse_regex:
+            self._dataverse_regex = self.create_dataverse_regex()
+        return self._dataverse_regex
+
+    @staticmethod
+    def get_base_url_setting():
+        return Setting().get(constants.PluginSettings.DATAVERSE_URL)
+
+    def create_dataverse_regex(self):
+        resp = urlopen(self.get_base_url_setting())
+        resp_body = resp.read()
+        data = json.loads(resp_body.decode('utf-8'))
         urls = [_['url'] for _ in data['installations']]
-        self.regex_dataverse = re.compile("^" + "|".join(urls) + ".*$")
+        return re.compile("^" + "|".join(urls) + ".*$")
 
     def matches(self, entity: Entity) -> bool:
         url = entity.getValue()
-        return self.regex_dataverse.match(url) is not None
+        return self.dataverse_regex.match(url) is not None
 
     @staticmethod
     def _parse_dataset(pid: str):

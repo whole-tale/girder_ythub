@@ -23,11 +23,14 @@ class PluginSettings:
     HUB_PRIV_KEY = 'wholetale.priv_key'
     HUB_PUB_KEY = 'wholetale.pub_key'
     INSTANCE_CAP = 'wholetale.instance_cap'
+    DATAVERSE_URL = 'wholetale.dataverse_url'
 
 
 class SettingDefault:
     defaults = {
         PluginSettings.INSTANCE_CAP: 2,
+        PluginSettings.DATAVERSE_URL:
+            'https://services.dataverse.harvard.edu/miniverse/map/installations-json'
     }
 
 

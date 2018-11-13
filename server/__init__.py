@@ -97,9 +97,27 @@ def validateInstanceCap(doc):
             'Instance Cap needs to be an integer.', 'value')
 
 
+@setting_utilities.validator(PluginSettings.DATAVERSE_URL)
+def validateDataverseURL(doc):
+    if not doc['value']:
+        raise ValidationException(
+            'Dataverse Instances list URL must be set.', 'value')
+    try:
+        result = urlparse(doc['value'])
+        return all([result.scheme, result.netloc, result.path])
+    except Exception:
+        raise ValidationException(
+            'Invalid Dataverse URL', 'value')
+
+
 @setting_utilities.default(PluginSettings.INSTANCE_CAP)
 def defaultInstanceCap():
     return SettingDefault.defaults[PluginSettings.INSTANCE_CAP]
+
+
+@setting_utilities.default(PluginSettings.DATAVERSE_URL)
+def defaultDataverseURL():
+    return SettingDefault.defaults[PluginSettings.DATAVERSE_URL]
 
 
 @access.public(scope=TokenScope.DATA_READ)
