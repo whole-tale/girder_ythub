@@ -80,4 +80,4 @@ class Repository(Resource):
             entity = Repository._buildAndResolveEntity(pid, base_url, self.getCurrentUser())
             provider = IMPORT_PROVIDERS.getProvider(entity)
             results.append(provider.listFiles(entity))
-        return [x.toDict() for x in results]
+        return sorted([x.toDict() for x in results], key=lambda k: list(k))

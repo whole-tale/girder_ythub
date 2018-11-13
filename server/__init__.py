@@ -99,7 +99,7 @@ def validateInstanceCap(doc):
 
 
 @setting_utilities.validator(PluginSettings.DATAONE_URL)
-def validateDataverseURL(doc):
+def validateDataONEURL(doc):
     if not doc['value']:
         raise ValidationException(
             'DataONE CN URL must be set.', 'value')
@@ -117,7 +117,7 @@ def defaultInstanceCap():
 
 
 @setting_utilities.default(PluginSettings.DATAONE_URL)
-def defaultDataverseURL():
+def defaultDataONEURL():
     return SettingDefault.defaults[PluginSettings.DATAONE_URL]
 
 

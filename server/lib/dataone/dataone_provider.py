@@ -34,19 +34,24 @@ class DataOneImportProvider(ImportProvider):
     @staticmethod
     def create_regex():
         urls = []
-        resp = urlopen(Setting().get(constants.PluginSettings.DATAONE_URL))
+        url = Setting().get(constants.PluginSettings.DATAONE_URL)
+        resp = urlopen(url)
+        logger.info('[DataONE] using {} to find nodes'.format(url))
         resp_body = resp.read()
 
         tree = ElementTree.fromstring(resp_body)
         if tree.tag.endswith('nodeList'):
+            logger.info('[DataONE] Registering a node list from CN')
             for node in tree.findall('node'):
                 node_url = urlparse(node.find('baseURL').text)
                 urls.append(urlunparse(node_url._replace(path='')))
         elif tree.tag.endswith('node'):
+            logger.info('[DataONE] Registering a single MN')
             node_url = urlparse(tree.find('baseURL').text)
             urls.append(urlunparse(node_url._replace(path='')))
 
         urls += ADDITIONAL_LOCATIONS
+        logger.debug("[DataONE] Found following nodes: " + "; ".join(urls))
         return re.compile("^" + "|".join(urls) + ".*$")
 
     def setting_changed(self, event):
@@ -119,7 +124,7 @@ class DataOneImportProvider(ImportProvider):
         # Recurse and add child packages if any exist
         if children is not None and len(children) > 0:
             for child in children:
-                logger.debug('Registering child package, {}'.debug(child['identifier']))
+                logger.debug('Registering child package, {}'.format(child['identifier']))
                 yield from self._listRecursive(progress, user, child['identifier'], base_url)
 
         yield ImportItem(ImportItem.END_FOLDER)

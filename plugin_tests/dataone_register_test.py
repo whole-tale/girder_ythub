@@ -28,6 +28,23 @@ def tearDownModule():
 
 class TestDataONERegister(base.TestCase):
 
+    def setUp(self):
+        users = ({
+            'email': 'root@dev.null',
+            'login': 'admin',
+            'firstName': 'Root',
+            'lastName': 'van Klompf',
+            'password': 'secret'
+        }, {
+            'email': 'joe@dev.null',
+            'login': 'joeregular',
+            'firstName': 'Joe',
+            'lastName': 'Regular',
+            'password': 'secret'
+        })
+        self.admin, self.user = [self.model('user').createUser(**user)
+                                 for user in users]
+
     def test_find_initial_pid(self):
         from server.lib.dataone.dataone_register import find_initial_pid
 
@@ -156,8 +173,7 @@ class TestDataONERegister(base.TestCase):
             DataONELocations.prod_cn)
 
         # Metadata that should be returned
-        fname = os.path.join(ROOT_DIR, 'plugins', 'wholetale', 'plugin_tests',
-                             'dataone_register_test01.json')
+        fname = os.path.join(DATA_PATH, 'dataone_register_test01.json')
         with open(fname, 'r') as fp:
             expected_result = json.load(fp)
 
@@ -188,3 +204,39 @@ class TestDataONERegister(base.TestCase):
                     {'fileList': [{'science_metadata.xml': {'size': 10491}}]}}}
 
         self.assertDictEqual(package, expected_result)
+
+    @vcr.use_cassette(os.path.join(DATA_PATH, 'test_cn_switch.txt'))
+    def test_cn_switch(self):
+        from girder.plugins.wholetale.constants import PluginSettings, SettingDefault
+        resp = self.request('/system/setting', user=self.admin, method='PUT',
+                            params={'key': PluginSettings.DATAONE_URL,
+                                    'value': 'https://dev.nceas.ucsb.edu/knb/d1/mn/v2'})
+        self.assertStatus(resp, 200)
+
+        resp = self.request(
+            path='/repository/lookup', method='GET',
+            params={'dataId':
+                json.dumps(['https://dev.nceas.ucsb.edu/view/urn:uuid:e921cacb-8583-465a-bb65-60ffe6b994f6']),
+                'base_url': 'https://dev.nceas.ucsb.edu/knb/d1/mn/v2'})
+        self.assertStatus(resp, 200)
+        dataMap = resp.json
+        self.assertEqual(resp.json,
+            [
+                {
+                    "dataId": "urn:uuid:3f19ef84-e495-43b2-aaa0-102e917b2f5f",
+                    "doi": "urn:uuid:e921cacb-8583-465a-bb65-60ffe6b994f6",
+                    "name": "Testing rightsholder",
+                    "repository": "DataONE",
+                    "size": 2491
+                }
+            ]
+        )
+
+        resp = self.request('/system/setting', user=self.admin, method='PUT',
+                            params={'key': PluginSettings.DATAONE_URL,
+                                    'value': SettingDefault.defaults[PluginSettings.DATAONE_URL]})
+        self.assertStatus(resp, 200)
+
+    def tearDown(self):
+        self.model('user').remove(self.user)
+        self.model('user').remove(self.admin)

@@ -1,4 +1,3 @@
-
 import base64
 import httmock
 import json
@@ -6,10 +5,16 @@ import mock
 import operator
 import os
 import six
+import vcr
 from tests import base
 from girder.constants import ROOT_DIR
 from girder.api.rest import RestException
 
+
+DATA_PATH = os.path.join(
+    os.path.dirname(os.environ['GIRDER_TEST_DATA_PREFIX']),
+    'data_src', 'plugins', 'wholetale'
+)
 
 D1_QUERY_URL = (
     'https://cn.dataone.org/cn/v2/query/solr/'
@@ -127,8 +132,7 @@ class MockResponse(object):
 
 
 def fake_urlopen(url):
-    fname = os.path.join(ROOT_DIR, 'plugins', 'wholetale', 'plugin_tests',
-                         'harvester_test01.json')
+    fname = os.path.join(DATA_PATH, 'harvester_test01.json')
     with open(fname, 'r') as fp:
         data = json.load(fp)
     data['data'] = base64.b64decode(
@@ -324,6 +328,18 @@ class DataONEHarversterTestCase(base.TestCase):
         self.assertStatusOk(resp)
         self.assertEqual(resp.json['nItems'], 2)
         self.assertEqual(resp.json['nFolders'], 2)
+
+    @vcr.use_cassette(os.path.join(DATA_PATH, 'test_list_files.txt'))
+    def test_list_files(self):
+        resp = self.request(
+            path='/repository/listFiles', method='GET', user=self.user,
+            params={'dataId': json.dumps(["doi:10.5065/D6862DM8"])}
+        )
+        self.assertStatus(resp, 200)
+        fname = os.path.join(DATA_PATH, 'dataone_listFiles.json')
+        with open(fname, 'r') as fp:
+            data = json.load(fp)
+        self.assertEqual(resp.json, data)
 
     def tearDown(self):
         self.model('user').remove(self.user)

@@ -60,7 +60,7 @@ class FileList:
         self.list.append(fi)
 
     def toList(self):
-        return [x.toDict() for x in self.list]
+        return sorted([x.toDict() for x in self.list], key=lambda k: list(k))
 
 
 class ChildList:
