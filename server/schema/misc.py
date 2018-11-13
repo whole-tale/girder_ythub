@@ -35,7 +35,7 @@ dataMapSchema = {
                             'to a given repository.'),
         },
         'doi': {
-            'type': 'string',
+            'type': ['string', 'null'],
             'description': 'A unique Digital Object Identifier'
         },
         'name': {

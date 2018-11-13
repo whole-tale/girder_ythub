@@ -62,7 +62,7 @@ datasetModel = {
             "description": "Total size of the dataset in bytes."
         },
         "identifier": {
-            "type": "string",
+            "type": ["string", "null"],
             "description": "External, unique identifier"
         },
         "provider": {
