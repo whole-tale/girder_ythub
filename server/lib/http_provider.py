@@ -15,9 +15,9 @@ class HTTPImportProvider(ImportProvider):
     def __init__(self):
         super().__init__('HTTP')
 
-    def matches(self, entity: Entity) -> bool:
-        value = entity.getValue()
-        return value.startswith('http://') or value.startswith('https://')
+    @staticmethod
+    def create_regex():
+        return re.compile(r'^http(s)?://.*')
 
     def lookup(self, entity: Entity) -> DataMap:
         pid = entity.getValue()

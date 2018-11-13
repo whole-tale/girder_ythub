@@ -23,11 +23,13 @@ class PluginSettings:
     HUB_PRIV_KEY = 'wholetale.priv_key'
     HUB_PUB_KEY = 'wholetale.pub_key'
     INSTANCE_CAP = 'wholetale.instance_cap'
+    DATAONE_URL = 'wholetale.dataone_url'
 
 
 class SettingDefault:
     defaults = {
-        PluginSettings.INSTANCE_CAP: 2
+        PluginSettings.INSTANCE_CAP: 2,
+        PluginSettings.DATAONE_URL: 'https://cn.dataone.org/cn/v2/node'
     }
 
 

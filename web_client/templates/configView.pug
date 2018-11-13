@@ -16,6 +16,11 @@ form#g-wholetale-config-form(role="form")
       type="text", value=settings['wholetale.instance_cap'] || '',
       placeholder=`Default: ${defaults['wholetale.instance_cap'] || 'none'}`,
       title="Number of instances that user can run concurrently.")
+    label.control-label(for="wholetale_dataone_url") Dataverse Installations Map
+    input.input-sm.form-control#wholetale_dataone_url(
+      type="text", value=settings['wholetale.dataone_url'] || '',
+      placeholder=`Default: ${defaults['wholetale.dataone_url'] || 'none'}`,
+      title="Location of a DataONE Coordinating Node.")
   p#g-wholetale-error-message.g-validation-failed-message
   button.g-generate-key.btn.btn-small.btn-primary(title="Generate Key")
     | Generate Key

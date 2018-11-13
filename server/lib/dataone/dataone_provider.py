@@ -1,4 +1,10 @@
-from girder import logger
+import re
+from urllib.request import urlopen
+from urllib.parse import urlparse, urlunparse
+from xml.etree import ElementTree
+
+from girder import logger, events
+from girder.models.setting import Setting
 
 from . import DataONELocations
 from ..import_providers import ImportProvider
@@ -13,24 +19,37 @@ from .dataone_register import \
     extract_data_docs, \
     extract_resource_docs, \
     check_multiple_metadata
+from ... import constants
 
 ALL_LOCATIONS = [DataONELocations.prod_cn, DataONELocations.dev_mn, DataONELocations.dev_cn]
-ALL_LOCATIONS_2 = ['https://knb.ecoinformatics.org/#view/', 'https://search.dataone.org/view/',
-                   'https://cn.dataone.org/cn/v2/resolve/']
+# TODO: I'm not sure if search.d.o should be here
+ADDITIONAL_LOCATIONS = ['https://search.dataone.org/view/']
 
 
 class DataOneImportProvider(ImportProvider):
     def __init__(self):
         super().__init__('DataONE')
+        events.bind('model.setting.save.after', 'wholetale', self.setting_changed)
 
-    def matches(self, entity: Entity) -> bool:
-        # need to deal with knb.ecoinformatics.org and other such places since, e.g.,
-        # doi:10.5063/F1JM27VG points there
-        url = entity.getValue()
-        for base_url in ALL_LOCATIONS_2:
-            if url.startswith(base_url):
-                return True
-        return False
+    @staticmethod
+    def create_regex():
+        urls = []
+        resp = urlopen(Setting().get(constants.PluginSettings.DATAONE_URL))
+        resp_body = resp.read()
+
+        tree = ElementTree.fromstring(resp_body)
+        for node in tree.findall('node'):
+            node_url = urlparse(node.find('baseURL').text)
+            urls.append(urlunparse(node_url._replace(path='')))
+
+        urls += ADDITIONAL_LOCATIONS
+        return re.compile("^" + "|".join(urls) + ".*$")
+
+    def setting_changed(self, event):
+        if not hasattr(event, "info") or \
+                event.info.get('key', '') != constants.PluginSettings.DATAONE_URL:
+            return
+        self._regex = None
 
     def lookup(self, entity: Entity) -> DataMap:
         # just wrap D1_lookup for now

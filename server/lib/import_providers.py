@@ -7,17 +7,32 @@ from .import_item import ImportItem
 
 
 class ImportProvider:
+    _regex = None
+
     def __init__(self, name):
         self.name = name
         self.folderModel = ModelImporter.model('folder')
         self.itemModel = ModelImporter.model('item')
         self.fileModel = ModelImporter.model('file')
 
+    @property
+    def regex(self):
+        """Regular expression used to determine if provider matches url"""
+        if not self._regex:
+            self._regex = self.create_regex()
+        return self._regex
+
+    @staticmethod
+    def create_regex():
+        """Create and initialize regular expression used for matching"""
+        raise NotImplementedError()
+
     def getName(self) -> str:
         return self.name
 
     def matches(self, entity: Entity) -> bool:
-        raise NotImplementedError()
+        url = entity.getValue()
+        return self.regex.match(url) is not None
 
     def lookup(self, entity: Entity) -> DataMap:
         raise NotImplementedError()

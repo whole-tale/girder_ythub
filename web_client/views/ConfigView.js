@@ -24,6 +24,9 @@ var ConfigView = View.extend({
                 key: 'wholetale.pub_key',
                 value: this.$('#wholetale_pub_key').val()
             }, {
+                key: 'wholetale.dataone_url',
+                value: this.$('#wholetale_dataone_url').val()
+            }, {
                 key: 'wholetale.instance_cap',
                 value: this.$('#wholetale_instance_cap').val()
             }]);
@@ -52,6 +55,7 @@ var ConfigView = View.extend({
             'wholetale.tmpnb_url',
             'wholetale.priv_key',
             'wholetale.pub_key',
+            'wholetale.dataone_url',
             'wholetale.instance_cap'
         ];
 

@@ -1,3 +1,4 @@
+import re
 from typing import Tuple
 from html.parser import HTMLParser
 from urllib.parse import parse_qs
@@ -18,8 +19,9 @@ class GlobusImportProvider(ImportProvider):
         super().__init__('Globus')
         self.clients = Clients()
 
-    def matches(self, entity: Entity) -> bool:
-        return entity.getValue().startswith('https://publish.globus.org/jspui/handle/')
+    @staticmethod
+    def create_regex():
+        return re.compile(r'^https://publish.globus.org/jspui/handle/.*')
 
     def lookup(self, entity: Entity) -> DataMap:
         doc = self._getDocument(entity.getValue())
