@@ -3,6 +3,7 @@ import re
 from urllib.parse import urlparse, urlunparse
 from urllib.request import urlopen
 
+from girder import events
 from girder.models.setting import Setting
 
 from ..import_providers import ImportProvider
@@ -18,6 +19,7 @@ class DataverseImportProvider(ImportProvider):
 
     def __init__(self):
         super().__init__('Dataverse')
+        events.bind('model.setting.save.after', 'wholetale', self.setting_changed)
 
     @property
     def dataverse_regex(self):
@@ -35,6 +37,12 @@ class DataverseImportProvider(ImportProvider):
         data = json.loads(resp_body.decode('utf-8'))
         urls = [_['url'] for _ in data['installations']]
         return re.compile("^" + "|".join(urls) + ".*$")
+
+    def setting_changed(self, event):
+        if not hasattr(event, "info") or \
+                event.info.get('key', '') != constants.PluginSettings.DATAVERSE_URL:
+            return
+        self._dataverse_regex = None
 
     def matches(self, entity: Entity) -> bool:
         url = entity.getValue()
