@@ -38,8 +38,12 @@ class DataOneImportProvider(ImportProvider):
         resp_body = resp.read()
 
         tree = ElementTree.fromstring(resp_body)
-        for node in tree.findall('node'):
-            node_url = urlparse(node.find('baseURL').text)
+        if tree.tag.endswith('nodeList'):
+            for node in tree.findall('node'):
+                node_url = urlparse(node.find('baseURL').text)
+                urls.append(urlunparse(node_url._replace(path='')))
+        elif tree.tag.endswith('node'):
+            node_url = urlparse(tree.find('baseURL').text)
             urls.append(urlunparse(node_url._replace(path='')))
 
         urls += ADDITIONAL_LOCATIONS
