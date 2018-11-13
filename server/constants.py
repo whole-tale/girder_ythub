@@ -2,12 +2,6 @@
 # -*- coding: utf-8 -*-
 
 from girder import events
-from .lib.resolvers import Resolvers, DOIResolver
-from .lib.import_providers import ImportProviders
-from .lib.http_provider import HTTPImportProvider
-from .lib.null_provider import NullImportProvider
-from .lib.dataone.dataone_provider import DataOneImportProvider
-from .lib.globus.globus_provider import GlobusImportProvider
 
 
 API_VERSION = '2.1'
@@ -69,15 +63,3 @@ class ImageStatus(object):
 
         return status in (ImageStatus.INVALID, ImageStatus.UNAVAILABLE,
                           ImageStatus.BUILDING, ImageStatus.AVAILABLE)
-
-
-RESOLVERS = Resolvers()
-RESOLVERS.add(DOIResolver())
-
-IMPORT_PROVIDERS = ImportProviders()
-IMPORT_PROVIDERS.addProvider(DataOneImportProvider())
-IMPORT_PROVIDERS.addProvider(GlobusImportProvider())
-# (almost) last resort
-IMPORT_PROVIDERS.addProvider(HTTPImportProvider())
-# just throws exceptions
-IMPORT_PROVIDERS.addProvider(NullImportProvider())

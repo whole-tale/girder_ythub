@@ -6,11 +6,10 @@ from girder.api.docs import addModel
 from girder.api.rest import Resource
 
 from girder.plugins.wholetale.lib.dataone import DataONELocations
+from ..lib import RESOLVERS, IMPORT_PROVIDERS
 from ..lib.entity import Entity
 from ..lib.data_map import dataMapDoc
 from ..lib.file_map import fileMapDoc
-
-from ..constants import RESOLVERS, IMPORT_PROVIDERS
 
 
 addModel('dataMap', dataMapDoc)

@@ -13,8 +13,8 @@ from ..constants import CATALOG_NAME
 from girder.plugins.wholetale.lib.dataone import DataONELocations
 from ..schema.misc import dataMapListSchema
 from ..utils import getOrCreateRootFolder
+from ..lib import IMPORT_PROVIDERS
 from ..lib.data_map import DataMap
-from ..constants import IMPORT_PROVIDERS
 
 
 datasetModel = {
