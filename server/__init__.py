@@ -315,9 +315,7 @@ def validateFileLink(event):
         raise ValidationException('File name must not be empty.', 'name')
 
     doc['exts'] = [ext.lower() for ext in doc['name'].split('.')[1:]]
-    doc = fileModel().save(doc, validate=False, triggerEvents=False)
-    event.preventDefault()
-    event.addResponse(doc)
+    event.preventDefault().addResponse(doc)
 
 
 @access.user
