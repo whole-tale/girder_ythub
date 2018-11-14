@@ -21,5 +21,11 @@ add_python_test(dataone_register
   plugins/wholetale/test_cn_switch.txt
   plugins/wholetale/dataone_register_test01.json
 )
+add_python_test(dataverse
+  PLUGIN wholetale
+  EXTERNAL_DATA
+  plugins/wholetale/dataverse_lookup.txt
+  plugins/wholetale/dataverse_listFiles.json
+)
 add_python_style_test(python_static_analysis_wholetale
                       "${PROJECT_SOURCE_DIR}/plugins/wholetale/server")

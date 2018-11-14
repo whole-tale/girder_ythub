@@ -54,7 +54,6 @@ class Repository(Resource):
         results = []
         for pid in dataId:
             entity = Repository._buildAndResolveEntity(pid, base_url, self.getCurrentUser())
-            print(entity)
             provider = IMPORT_PROVIDERS.getProvider(entity)
             results.append(provider.lookup(entity))
 

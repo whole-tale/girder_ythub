@@ -1,7 +1,8 @@
 import json
 import re
 from urllib.parse import urlparse, urlunparse
-from urllib.request import urlopen
+from urllib.request import urlopen, Request
+from xml.etree import ElementTree
 
 from girder import events
 from girder.models.setting import Setting
@@ -50,15 +51,59 @@ class DataverseImportProvider(ImportProvider):
 
     @staticmethod
     def _parse_dataset(pid: str):
-        url = urlunparse(
-            urlparse(pid)._replace(path='/api/datasets/:persistentId')
-        )
-        resp = urlopen(url).read()
-        data = json.loads(resp.decode('utf-8'))
-        meta = data['data']['latestVersion']['metadataBlocks']['citation']['fields']
-        title = next(_['value'] for _ in meta if _['typeName'] == 'title')
-        doi = '{authority}/{identifier}'.format(**data['data'])
-        files = data['data']['latestVersion']['files']
+        url = urlparse(pid)
+        # TODO:
+        #  If we're given 'fileId' that points to a single file we can use:
+        #   https://dataverse.harvard.edu/api/search?q=entityId:{fileId}
+        if url.path.endswith('file.xhtml'):
+            url = urlunparse(
+                url._replace(path='/api/access/datafile/:persistentId/metadata/ddi')
+            )
+            resp = urlopen(url).read()
+            tree = ElementTree.fromstring(resp)
+
+            ddsc = tree.find('{http://www.icpsr.umich.edu/DDI}stdyDscr')
+            citation = ddsc.find('{http://www.icpsr.umich.edu/DDI}citation')
+            titleStmt = citation.find('{http://www.icpsr.umich.edu/DDI}titlStmt')
+            title = titleStmt.find('{http://www.icpsr.umich.edu/DDI}titl').text
+
+            # the only DOI in meta is for dataset
+            # doi = titleStmt.find('{http://www.icpsr.umich.edu/DDI}IDNo').text
+            doi = urlparse(url).query.split('doi:')[-1]  # TODO: fix this
+
+            fdsc = tree.find('{http://www.icpsr.umich.edu/DDI}fileDscr')
+            fileId = fdsc.attrib['ID'][1:]  # 'f12345' -> '12345'
+            ftxt = fdsc.find('{http://www.icpsr.umich.edu/DDI}fileTxt')
+            fileName = ftxt.find('{http://www.icpsr.umich.edu/DDI}fileName').text
+            fileType = ftxt.find('{http://www.icpsr.umich.edu/DDI}fileType').text
+
+            # I haven't found the way to get fileSize from API, nor it's in the metadata
+            access_url = urlunparse(
+                urlparse(url)._replace(path='/api/access/datafile/' + fileId, query='')
+            )
+            req = Request(access_url)
+            req.get_method = lambda: 'HEAD'
+            fileSize = urlopen(req).getheader('Content-Length')
+
+            files = [{
+                'dataFile': {
+                    'filename': fileName,
+                    'mimeType': fileType,
+                    'filesize': int(fileSize),
+                    'id': fileId
+                }
+            }]
+        else:
+            url = urlunparse(
+                url._replace(path='/api/datasets/:persistentId')
+            )
+            print(url)
+            resp = urlopen(url).read()
+            data = json.loads(resp.decode('utf-8'))
+            meta = data['data']['latestVersion']['metadataBlocks']['citation']['fields']
+            title = next(_['value'] for _ in meta if _['typeName'] == 'title')
+            doi = '{authority}/{identifier}'.format(**data['data'])
+            files = data['data']['latestVersion']['files']
         return title, files, doi
 
     def lookup(self, entity: Entity) -> DataMap:
@@ -70,7 +115,7 @@ class DataverseImportProvider(ImportProvider):
     def listFiles(self, entity: Entity) -> FileMap:
         stack = []
         top = None
-        for item in self._listRecursive(entity.getUser(), entity.getValue()):
+        for item in self._listRecursive(entity.getUser(), entity.getValue(), None):
             if item.type == ImportItem.FOLDER:
                 if len(stack) == 0:
                     fm = FileMap(item.name)
@@ -95,7 +140,7 @@ class DataverseImportProvider(ImportProvider):
             yield ImportItem(
                 ImportItem.FILE, obj['dataFile']['filename'],
                 size=obj['dataFile']['filesize'],
-                mimeType='application/octet-stream',
+                mimeType=obj['dataFile'].get('mimeType', 'application/octet-stream'),
                 url=access_url + '/' + str(obj['dataFile']['id'])
             )
         yield ImportItem(ImportItem.END_FOLDER)
