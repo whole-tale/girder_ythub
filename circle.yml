@@ -11,7 +11,7 @@ jobs:
           command: |
             rm -rf /girder/plugins/wholetale
             ln -s /root/project /girder/plugins/wholetale
-            set -o pipefail; pip install --upgrade --force-reinstall -r requirements.txt | cat
+            set -o pipefail; pip install --upgrade --force-reinstall -r requirements.txt -r requirements-dev.txt | cat
       - run:
           name: Install Test Dependencies
           environment:

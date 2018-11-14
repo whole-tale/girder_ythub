@@ -8,14 +8,13 @@ from girder.constants import AccessType, SortDir, TokenScope
 from girder.models.model_base import ValidationException
 from girder.utility import path as path_util
 from girder.utility.progress import ProgressContext
-from ..constants import \
-    CATALOG_NAME,\
-    DataONELocations
+from ..constants import CATALOG_NAME
+
+from girder.plugins.wholetale.lib.dataone import DataONELocations
 from ..schema.misc import dataMapListSchema
 from ..utils import getOrCreateRootFolder
-from .harvester import \
-    register_http_resource, \
-    register_DataONE_resource
+from ..lib import IMPORT_PROVIDERS
+from ..lib.data_map import DataMap
 
 
 datasetModel = {
@@ -63,7 +62,7 @@ datasetModel = {
             "description": "Total size of the dataset in bytes."
         },
         "identifier": {
-            "type": "string",
+            "type": ["string", "null"],
             "description": "External, unique identifier"
         },
         "provider": {
@@ -224,27 +223,19 @@ class Dataset(Resource):
             parent = self.model(parentType).load(
                 parentId, user=user, level=AccessType.WRITE, exc=True)
 
+        dataMaps = DataMap.fromList(dataMap)
+
         progress = True
         importedData = dict(folder=[], item=[])
         with ProgressContext(progress, user=user,
                              title='Registering resources') as ctx:
-            for data in dataMap:
-                if data['repository'] == 'DataONE':
-                    importedData['folder'].append(
-                        register_DataONE_resource(
-                            parent,
-                            parentType,
-                            ctx,
-                            user,
-                            data['dataId'],
-                            name=data['name'],
-                            base_url=base_url)
-                    )
-                elif data['repository'] == 'HTTP':
-                    importedData['item'].append(
-                        register_http_resource(parent, parentType, ctx, user,
-                                               data['dataId'], data['name'])
-                    )
+            for dataMap in dataMaps:
+                # probably would be nicer if Entity kept all details and the dataMap
+                # would be merged into it
+                provider = IMPORT_PROVIDERS.getFromDataMap(dataMap)
+                objType, obj = provider.register(parent, parentType, ctx, user, dataMap,
+                                                 base_url=base_url)
+                importedData[objType].append(obj)
 
         if copyToHome:
             with ProgressContext(progress, user=user,

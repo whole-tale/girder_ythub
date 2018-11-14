@@ -4,3 +4,4 @@ version: 0.5.0
 dependencies:
     - jobs
     - worker
+    - wt_data_manager

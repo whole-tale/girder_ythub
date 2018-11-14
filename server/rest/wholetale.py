@@ -7,7 +7,7 @@ from girder.api import access
 from girder.api.describe import Description, describeRoute
 from girder.api.rest import Resource
 
-from girder.plugins.wholetale.constants import PluginSettings
+from ..constants import PluginSettings
 
 
 class wholeTale(Resource):

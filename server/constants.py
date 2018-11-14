@@ -3,6 +3,7 @@
 
 from girder import events
 
+
 API_VERSION = '2.1'
 CATALOG_NAME = 'WholeTale Catalog'
 WORKSPACE_NAME = 'WholeTale Workspaces'
@@ -22,11 +23,13 @@ class PluginSettings:
     HUB_PRIV_KEY = 'wholetale.priv_key'
     HUB_PUB_KEY = 'wholetale.pub_key'
     INSTANCE_CAP = 'wholetale.instance_cap'
+    DATAONE_URL = 'wholetale.dataone_url'
 
 
 class SettingDefault:
     defaults = {
-        PluginSettings.INSTANCE_CAP: 2
+        PluginSettings.INSTANCE_CAP: 2,
+        PluginSettings.DATAONE_URL: 'https://cn.dataone.org/cn/v2/node'
     }
 
 
@@ -62,16 +65,3 @@ class ImageStatus(object):
 
         return status in (ImageStatus.INVALID, ImageStatus.UNAVAILABLE,
                           ImageStatus.BUILDING, ImageStatus.AVAILABLE)
-
-
-class DataONELocations:
-    """
-    An enumeration that describes the different DataONE
-    endpoints.
-    """
-    # Production coordinating node
-    prod_cn = 'https://cn.dataone.org/cn/v2'
-    # Development member node
-    dev_mn = 'https://dev.nceas.ucsb.edu/knb/d1/mn/v2'
-    # Development coordinating node
-    dev_cn = 'https://cn-stage-2.test.dataone.org/cn/v2'

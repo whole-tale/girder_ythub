@@ -9,9 +9,9 @@ import requests
 
 from girder import logger
 from girder.api.rest import RestException
-from .constants import DataONELocations
-from .utils import \
-    esc
+from . import DataONELocations
+from ...utils import esc
+from ..data_map import DataMap
 
 
 def query(q,
@@ -123,6 +123,14 @@ def find_resource_pid(pid, base_url):
     # still do here is determine the most likely resource map given the set.
     # Usually we do this by rejecting any obsoleted resource maps and that
     # usually leaves us with one.
+
+    # If I look up
+    # https://cn.dataone.org/cn/v2/resolve/urn:uuid:9266a118-78b3-48e3-a675-b3dfcc5d0fc4 the code
+    # gets here. Typing that in the browser correctly results in the file being downloaded.  The
+    # lookup above returns both the file
+    # ('resource_map_urn:uuid:7e4586c0-9812-4355-8f3b-1445b9a8ca53') and the parent dataset
+    # ('resource_map_doi:10.5063/F1JM27VG'). Shouldn't it be possible to look up single files?
+    # [Mihael]
     raise RestException(
         "Multiple resource maps were for the data package, which isn't supported.")
 
@@ -242,14 +250,9 @@ def D1_lookup(path, base_url):
     # Compute package size (sum of 'size' values)
     total_size = sum([int(doc.get('size', 0)) for doc in docs])
 
-    data_map = {
-        'dataId': package_pid,
-        'size': total_size,
-        'name': metadata[0].get('title', 'no title'),
-        'doi': metadata[0].get('identifier', 'no DOI').split('doi:')[-1],
-        'repository': 'DataONE',
-    }
-    return data_map
+    return DataMap(package_pid, total_size, name=metadata[0].get('title', 'no title'),
+                   doi=metadata[0].get('identifier', 'no DOI').split('doi:')[-1],
+                   repository='DataONE')
 
 
 def get_documents(package_pid, base_url):

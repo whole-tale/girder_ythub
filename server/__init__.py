@@ -5,6 +5,7 @@ from cryptography.exceptions import UnsupportedAlgorithm
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 import six
+from urllib.parse import urlparse
 
 from girder import events, logprint, logger
 from girder.api import access
@@ -97,9 +98,27 @@ def validateInstanceCap(doc):
             'Instance Cap needs to be an integer.', 'value')
 
 
+@setting_utilities.validator(PluginSettings.DATAONE_URL)
+def validateDataONEURL(doc):
+    if not doc['value']:
+        raise ValidationException(
+            'DataONE CN URL must be set.', 'value')
+    try:
+        result = urlparse(doc['value'])
+        return all([result.scheme, result.netloc, result.path])
+    except Exception:
+        raise ValidationException(
+            'Invalid DataONE CN URL', 'value')
+
+
 @setting_utilities.default(PluginSettings.INSTANCE_CAP)
 def defaultInstanceCap():
     return SettingDefault.defaults[PluginSettings.INSTANCE_CAP]
+
+
+@setting_utilities.default(PluginSettings.DATAONE_URL)
+def defaultDataONEURL():
+    return SettingDefault.defaults[PluginSettings.DATAONE_URL]
 
 
 @access.public(scope=TokenScope.DATA_READ)
@@ -277,6 +296,27 @@ def addDefaultFolders(event):
         folderModel.setUserAccess(folder, user, AccessType.ADMIN, save=True)
 
 
+def validateFileLink(event):
+    # allow globus URLs
+    doc = event.info
+    if doc.get('assetstoreId') is None:
+        if 'linkUrl' not in doc:
+            raise ValidationException(
+                'File must have either an assetstore ID or a link URL.',
+                'linkUrl')
+            doc['linkUrl'] = doc['linkUrl'].strip()
+
+        if not doc['linkUrl'].startswith(('http:', 'https:', 'globus:')):
+            raise ValidationException(
+                'Linked file URL must start with http: or https: or globus:.',
+                'linkUrl')
+    if 'name' not in doc or not doc['name']:
+        raise ValidationException('File name must not be empty.', 'name')
+
+    doc['exts'] = [ext.lower() for ext in doc['name'].split('.')[1:]]
+    event.preventDefault().addResponse(doc)
+
+
 @access.user
 @autoDescribeRoute(
     Description('Get output from celery job.')
@@ -333,6 +373,7 @@ def load(info):
     info['apiRoot'].image = image
     events.bind('jobs.job.update.after', 'wholetale', image.updateImageStatus)
     events.bind('jobs.job.update.after', 'wholetale', finalizeInstance)
+    events.bind('model.file.validate', 'wholetale', validateFileLink)
     events.unbind('model.user.save.created', CoreEventHandler.USER_DEFAULT_FOLDERS)
     events.bind('model.user.save.created', 'wholetale', addDefaultFolders)
     info['apiRoot'].repository = Repository()
