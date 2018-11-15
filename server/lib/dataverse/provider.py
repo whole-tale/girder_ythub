@@ -1,8 +1,8 @@
 import json
 import re
-from urllib.parse import urlparse, urlunparse
-from urllib.request import urlopen, Request
-from xml.etree import ElementTree
+import os
+from urllib.parse import urlparse, urlunparse, parse_qs
+from urllib.request import urlopen
 
 from girder import events
 from girder.models.setting import Setting
@@ -13,6 +13,34 @@ from ..file_map import FileMap
 from ..import_item import ImportItem
 from ..entity import Entity
 from ... import constants
+
+_DOI_REGEX = re.compile(r'(10.\d{4,9}/[-._;()/:A-Z0-9]+)', re.IGNORECASE)
+_QUOTES_REGEX = re.compile(r'"(.*)"')
+
+
+def _query_dataverse(search_url):
+    resp = urlopen(search_url).read()
+    data = json.loads(resp.decode('utf-8'))['data']
+    if data['count_in_response'] != 1:
+        raise ValueError
+    item = data['items'][0]
+    files = [{
+        'dataFile': {
+            'filename': item['name'],
+            'mimeType': item['file_content_type'],
+            'filesize': item['size_in_bytes'],
+            'id': item['file_id']
+        }
+    }]
+    title = item['name']
+    title_search = _QUOTES_REGEX.search(item['dataset_citation'])
+    if title_search is not None:
+        title = title_search.group().strip('"')
+    doi = None
+    doi_search = _DOI_REGEX.search(item['dataset_citation'])
+    if doi_search is not None:
+        doi = doi_search.group()
+    return title, files, doi
 
 
 class DataverseImportProvider(ImportProvider):
@@ -50,64 +78,69 @@ class DataverseImportProvider(ImportProvider):
         return self.dataverse_regex.match(url) is not None
 
     @staticmethod
-    def _parse_dataset(pid: str):
-        url = urlparse(pid)
-        # TODO:
-        #  If we're given 'fileId' that points to a single file we can use:
-        #   https://dataverse.harvard.edu/api/search?q=entityId:{fileId}
-        if url.path.endswith('file.xhtml'):
-            url = urlunparse(
-                url._replace(path='/api/access/datafile/:persistentId/metadata/ddi')
-            )
-            resp = urlopen(url).read()
-            tree = ElementTree.fromstring(resp)
+    def _parse_dataset(url):
+        """Extract title, file, doi from Dataverse resource.
 
-            ddsc = tree.find('{http://www.icpsr.umich.edu/DDI}stdyDscr')
-            citation = ddsc.find('{http://www.icpsr.umich.edu/DDI}citation')
-            titleStmt = citation.find('{http://www.icpsr.umich.edu/DDI}titlStmt')
-            title = titleStmt.find('{http://www.icpsr.umich.edu/DDI}titl').text
-
-            # the only DOI in meta is for dataset
-            # doi = titleStmt.find('{http://www.icpsr.umich.edu/DDI}IDNo').text
-            doi = urlparse(url).query.split('doi:')[-1]  # TODO: fix this
-
-            fdsc = tree.find('{http://www.icpsr.umich.edu/DDI}fileDscr')
-            fileId = fdsc.attrib['ID'][1:]  # 'f12345' -> '12345'
-            ftxt = fdsc.find('{http://www.icpsr.umich.edu/DDI}fileTxt')
-            fileName = ftxt.find('{http://www.icpsr.umich.edu/DDI}fileName').text
-            fileType = ftxt.find('{http://www.icpsr.umich.edu/DDI}fileType').text
-
-            # I haven't found the way to get fileSize from API, nor it's in the metadata
-            access_url = urlunparse(
-                urlparse(url)._replace(path='/api/access/datafile/' + fileId, query='')
-            )
-            req = Request(access_url)
-            req.get_method = lambda: 'HEAD'
-            fileSize = urlopen(req).getheader('Content-Length')
-
-            files = [{
-                'dataFile': {
-                    'filename': fileName,
-                    'mimeType': fileType,
-                    'filesize': int(fileSize),
-                    'id': fileId
-                }
-            }]
-        else:
-            url = urlunparse(
-                url._replace(path='/api/datasets/:persistentId')
-            )
-            print(url)
-            resp = urlopen(url).read()
-            data = json.loads(resp.decode('utf-8'))
-            meta = data['data']['latestVersion']['metadataBlocks']['citation']['fields']
-            title = next(_['value'] for _ in meta if _['typeName'] == 'title')
-            doi = '{authority}/{identifier}'.format(**data['data'])
-            files = data['data']['latestVersion']['files']
+        Handles: {siteURL}/dataset.xhtml?persistentId={persistentId}
+        """
+        url = urlunparse(
+            url._replace(path='/api/datasets/:persistentId')
+        )
+        resp = urlopen(url).read()
+        data = json.loads(resp.decode('utf-8'))
+        meta = data['data']['latestVersion']['metadataBlocks']['citation']['fields']
+        title = next(_['value'] for _ in meta if _['typeName'] == 'title')
+        doi = '{authority}/{identifier}'.format(**data['data'])
+        files = data['data']['latestVersion']['files']
         return title, files, doi
 
+    @staticmethod
+    def _parse_file_url(url):
+        """Extract title, file, doi from Dataverse resource.
+
+        Handles: {siteURL}/file.xhtml?persistentId={persistentId}&...
+        """
+        qs = parse_qs(url.query)
+        try:
+            full_doi = qs['persistentId'][0]
+        except (KeyError, ValueError):
+            # fail here in a meaningful way...
+            raise
+
+        file_persistent_id = os.path.basename(full_doi)
+        doi = os.path.dirname(full_doi)
+        if doi.startswith('doi:'):
+            doi = doi[4:]
+
+        search_url = urlunparse(
+            url._replace(path='/api/search', query='q=filePersistentId:' + file_persistent_id)
+        )
+        title, files, _ = _query_dataverse(search_url)
+        return title, files, doi
+
+    @staticmethod
+    def _parse_access_url(url):
+        """Extract title, file, doi from Dataverse resource.
+
+        Handles: {siteURL}/api/access/datafile/{fileId}
+        """
+        fileId = os.path.basename(url.path)
+        search_url = urlunparse(
+            url._replace(path='/api/search', query='q=entityId:' + fileId)
+        )
+        return _query_dataverse(search_url)
+
+    def parse_pid(self, pid: str):
+        url = urlparse(pid)
+        if url.path.endswith('file.xhtml'):
+            return self._parse_file_url(url)
+        elif url.path.startswith('/api/access/datafile'):
+            return self._parse_access_url(url)
+        else:
+            return self._parse_dataset(url)
+
     def lookup(self, entity: Entity) -> DataMap:
-        title, files, doi = self._parse_dataset(entity.getValue())
+        title, files, doi = self.parse_pid(entity.getValue())
         size = sum(_['dataFile']['filesize'] for _ in files)
         return DataMap(entity.getValue(), size, doi=doi, name=title,
                        repository=self.getName())
@@ -130,8 +163,7 @@ class DataverseImportProvider(ImportProvider):
 
     def _listRecursive(self, user, pid: str, name: str, base_url: str = None,
                        progress=None):
-        """Create a package description (Dict) suitable for dumping to JSON."""
-        title, files, _ = self._parse_dataset(pid)
+        title, files, _ = self.parse_pid(pid)
         access_url = urlunparse(
             urlparse(pid)._replace(path='/api/access/datafile', query='')
         )
