@@ -5,6 +5,7 @@ from cryptography.exceptions import UnsupportedAlgorithm
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 import six
+from urllib.parse import urlparse
 
 from girder import events, logprint, logger
 from girder.api import access

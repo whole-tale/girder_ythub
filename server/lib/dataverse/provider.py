@@ -192,7 +192,7 @@ class DataverseImportProvider(ImportProvider):
             else:
                 obj['url'] = urlunparse(
                     url._replace(path='/api/access/datafile/' + fileId,
-                    query='')
+                                 query='')
                 )
                 yield obj
 
