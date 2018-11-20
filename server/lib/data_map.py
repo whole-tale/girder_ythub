@@ -77,8 +77,9 @@ class DataMap:
 
     @staticmethod
     def fromDict(d: Dict):
-        return DataMap(d['dataId'], d['size'], repository=d['repository'], doi=d['doi'],
-                       name=d['name'])
+        return DataMap(
+            d['dataId'], d.get('size', 0), repository=d['repository'], doi=d.get('doi'),
+            name=d.get('name', 'Unknown Dataset'))
 
     @staticmethod
     def fromList(d: List[Dict]):
