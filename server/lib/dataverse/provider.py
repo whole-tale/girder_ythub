@@ -2,9 +2,10 @@ import json
 import re
 import os
 from urllib.parse import urlparse, urlunparse, parse_qs
-from urllib.request import urlopen
+from urllib.request import urlopen, Request
+from urllib.error import HTTPError
 
-from girder import events
+from girder import events, logger
 from girder.models.setting import Setting
 
 from ..import_providers import ImportProvider
@@ -16,6 +17,7 @@ from ... import constants
 
 _DOI_REGEX = re.compile(r'(10.\d{4,9}/[-._;()/:A-Z0-9]+)', re.IGNORECASE)
 _QUOTES_REGEX = re.compile(r'"(.*)"')
+_CNTDISP_REGEX = re.compile(r'filename="(.*)"')
 
 
 def _query_dataverse(search_url):
@@ -25,12 +27,11 @@ def _query_dataverse(search_url):
         raise ValueError
     item = data['items'][0]
     files = [{
-        'dataFile': {
-            'filename': item['name'],
-            'mimeType': item['file_content_type'],
-            'filesize': item['size_in_bytes'],
-            'id': item['file_id']
-        }
+        'filename': item['name'],
+        'mimeType': item['file_content_type'],
+        'filesize': item['size_in_bytes'],
+        'id': item['file_id'],
+        'doi': 'fixme'
     }]
     title = item['name']
     title_search = _QUOTES_REGEX.search(item['dataset_citation'])
@@ -41,6 +42,30 @@ def _query_dataverse(search_url):
     if doi_search is not None:
         doi = doi_search.group()
     return title, files, doi
+
+
+def _get_attrs_via_head(obj, url):
+    name = obj['filename']
+    size = obj['filesize']
+    try:
+        req = Request(url)
+        req.get_method = lambda: 'HEAD'
+        resp = urlopen(req)
+    except HTTPError as err:
+        logger.debug(str(err))
+        return name, size
+
+    content_disposition = resp.getheader('Content-Disposition')
+    if content_disposition:
+        fname = _CNTDISP_REGEX.search(content_disposition)
+        if fname:
+            name = fname.groups()[0]
+
+    content_length = resp.getheader('Content-Length')
+    if content_length:
+        size = int(content_length)
+
+    return name, size
 
 
 class DataverseImportProvider(ImportProvider):
@@ -91,7 +116,16 @@ class DataverseImportProvider(ImportProvider):
         meta = data['data']['latestVersion']['metadataBlocks']['citation']['fields']
         title = next(_['value'] for _ in meta if _['typeName'] == 'title')
         doi = '{authority}/{identifier}'.format(**data['data'])
-        files = data['data']['latestVersion']['files']
+        files = []
+        for obj in data['data']['latestVersion']['files']:
+            files.append({
+                'filename': obj['dataFile']['filename'],
+                'filesize': obj['dataFile']['filesize'],
+                'mimeType': obj['dataFile']['contentType'],
+                'id': obj['dataFile']['id'],
+                'doi': obj['dataFile']['persistentId']
+            })
+
         return title, files, doi
 
     @staticmethod
@@ -130,18 +164,49 @@ class DataverseImportProvider(ImportProvider):
         )
         return _query_dataverse(search_url)
 
-    def parse_pid(self, pid: str):
+    @staticmethod
+    def _sanitize_files(url, files):
+        """Sanitize files metadata since results from search queries are inaccurate.
+
+        File size is wrong: https://github.com/IQSS/dataverse/issues/5321
+        URL doesn't point to original format, by default.
+        """
+
+        def _update_attrs(url, obj, query):
+            access_url = urlunparse(
+                url._replace(path='/api/access/datafile/' + fileId,
+                             query=query)
+            )
+            name, size = _get_attrs_via_head(obj, access_url)
+            obj['filesize'] = size
+            obj['filename'] = name
+            obj['url'] = access_url
+            return obj
+
+        for obj in files:
+            fileId = str(obj['id'])
+            # Register original too
+            if obj['mimeType'] == 'text/tab-separated-values':
+                yield _update_attrs(url, obj.copy(), 'format=original')
+            yield _update_attrs(url, obj.copy(), '')
+
+    def parse_pid(self, pid: str, sanitize: bool = False):
         url = urlparse(pid)
         if url.path.endswith('file.xhtml'):
-            return self._parse_file_url(url)
+            parse_method = self._parse_file_url
         elif url.path.startswith('/api/access/datafile'):
-            return self._parse_access_url(url)
+            parse_method = self._parse_access_url
         else:
-            return self._parse_dataset(url)
+            parse_method = self._parse_dataset
+        title, files, doi = parse_method(url)
+
+        if sanitize:
+            files = list(self._sanitize_files(url, files))
+        return title, files, doi
 
     def lookup(self, entity: Entity) -> DataMap:
         title, files, doi = self.parse_pid(entity.getValue())
-        size = sum(_['dataFile']['filesize'] for _ in files)
+        size = sum(_['filesize'] for _ in files)
         return DataMap(entity.getValue(), size, doi=doi, name=title,
                        repository=self.getName())
 
@@ -163,16 +228,13 @@ class DataverseImportProvider(ImportProvider):
 
     def _listRecursive(self, user, pid: str, name: str, base_url: str = None,
                        progress=None):
-        title, files, _ = self.parse_pid(pid)
-        access_url = urlunparse(
-            urlparse(pid)._replace(path='/api/access/datafile', query='')
-        )
+        title, files, _ = self.parse_pid(pid, sanitize=True)
         yield ImportItem(ImportItem.FOLDER, name=title)
         for obj in files:
             yield ImportItem(
-                ImportItem.FILE, obj['dataFile']['filename'],
-                size=obj['dataFile']['filesize'],
-                mimeType=obj['dataFile'].get('mimeType', 'application/octet-stream'),
-                url=access_url + '/' + str(obj['dataFile']['id'])
+                ImportItem.FILE, obj['filename'],
+                size=obj['filesize'],
+                mimeType=obj.get('mimeType', 'application/octet-stream'),
+                url=obj['url']
             )
         yield ImportItem(ImportItem.END_FOLDER)
