@@ -188,7 +188,13 @@ class DataverseImportProvider(ImportProvider):
             # Register original too
             if obj['mimeType'] == 'text/tab-separated-values':
                 yield _update_attrs(url, obj.copy(), 'format=original')
-            yield _update_attrs(url, obj.copy(), '')
+                yield _update_attrs(url, obj.copy(), '')
+            else:
+                obj['url'] = urlunparse(
+                    url._replace(path='/api/access/datafile/' + fileId,
+                    query='')
+                )
+                yield obj
 
     def parse_pid(self, pid: str, sanitize: bool = False):
         url = urlparse(pid)
