@@ -5,7 +5,6 @@ from cryptography.exceptions import UnsupportedAlgorithm
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 import six
-from urllib.parse import urlparse
 
 from girder import events, logprint, logger
 from girder.api import access
@@ -98,27 +97,9 @@ def validateInstanceCap(doc):
             'Instance Cap needs to be an integer.', 'value')
 
 
-@setting_utilities.validator(PluginSettings.DATAONE_URL)
-def validateDataONEURL(doc):
-    if not doc['value']:
-        raise ValidationException(
-            'DataONE CN URL must be set.', 'value')
-    try:
-        result = urlparse(doc['value'])
-        return all([result.scheme, result.netloc, result.path])
-    except Exception:
-        raise ValidationException(
-            'Invalid DataONE CN URL', 'value')
-
-
 @setting_utilities.default(PluginSettings.INSTANCE_CAP)
 def defaultInstanceCap():
     return SettingDefault.defaults[PluginSettings.INSTANCE_CAP]
-
-
-@setting_utilities.default(PluginSettings.DATAONE_URL)
-def defaultDataONEURL():
-    return SettingDefault.defaults[PluginSettings.DATAONE_URL]
 
 
 @access.public(scope=TokenScope.DATA_READ)

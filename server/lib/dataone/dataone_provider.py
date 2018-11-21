@@ -1,10 +1,5 @@
-import re
-from urllib.request import urlopen
-from urllib.parse import urlparse, urlunparse
-from xml.etree import ElementTree
-
-from girder import logger, events
-from girder.models.setting import Setting
+from girder import logger
+from girder.api.rest import RestException
 
 from . import DataONELocations
 from ..import_providers import ImportProvider
@@ -12,53 +7,31 @@ from ..data_map import DataMap
 from ..file_map import FileMap
 from ..import_item import ImportItem
 from ..entity import Entity
-from .dataone_register import D1_lookup, get_package_list
 from .dataone_register import \
+    D1_lookup, \
     extract_metadata_docs, \
     get_documents, \
+    get_package_pid, \
+    get_package_list, \
     extract_data_docs, \
     extract_resource_docs, \
     check_multiple_metadata
-from ... import constants
+
 
 ALL_LOCATIONS = [DataONELocations.prod_cn, DataONELocations.dev_mn, DataONELocations.dev_cn]
-# TODO: I'm not sure if search.d.o should be here
-ADDITIONAL_LOCATIONS = ['https://search.dataone.org/view/']
 
 
 class DataOneImportProvider(ImportProvider):
     def __init__(self):
         super().__init__('DataONE')
-        events.bind('model.setting.save.after', 'wholetale', self.setting_changed)
 
-    @staticmethod
-    def create_regex():
-        urls = []
-        url = Setting().get(constants.PluginSettings.DATAONE_URL)
-        resp = urlopen(url)
-        logger.info('[DataONE] using {} to find nodes'.format(url))
-        resp_body = resp.read()
-
-        tree = ElementTree.fromstring(resp_body)
-        if tree.tag.endswith('nodeList'):
-            logger.info('[DataONE] Registering a node list from CN')
-            for node in tree.findall('node'):
-                node_url = urlparse(node.find('baseURL').text)
-                urls.append(urlunparse(node_url._replace(path='')))
-        elif tree.tag.endswith('node'):
-            logger.info('[DataONE] Registering a single MN')
-            node_url = urlparse(tree.find('baseURL').text)
-            urls.append(urlunparse(node_url._replace(path='')))
-
-        urls += ADDITIONAL_LOCATIONS
-        logger.debug("[DataONE] Found following nodes: " + "; ".join(urls))
-        return re.compile("^" + "|".join(urls) + ".*$")
-
-    def setting_changed(self, event):
-        if not hasattr(event, "info") or \
-                event.info.get('key', '') != constants.PluginSettings.DATAONE_URL:
-            return
-        self._regex = None
+    def matches(self, entity: Entity) -> bool:
+        url = entity.getValue()
+        try:
+            package_pid = get_package_pid(url, entity['base_url'])
+        except RestException:
+            return False
+        return package_pid is not None
 
     def lookup(self, entity: Entity) -> DataMap:
         # just wrap D1_lookup for now
