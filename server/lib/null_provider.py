@@ -1,3 +1,4 @@
+from girder.exceptions import RestException
 from .entity import Entity
 from .data_map import DataMap
 from .file_map import FileMap
@@ -12,7 +13,7 @@ class NullImportProvider(ImportProvider):
         return True
 
     def lookup(self, entity: Entity) -> DataMap:
-        raise Exception('Failed to interpret "%s" in any meaningful way' % entity.getValue())
+        raise RestException('Failed to interpret "%s" in any meaningful way' % entity.getValue())
 
     def listFiles(self, entity: Entity) -> FileMap:
-        raise Exception('Failed to interpret "%s" in any meaningful way' % entity.getValue())
+        raise RestException('Failed to interpret "%s" in any meaningful way' % entity.getValue())
