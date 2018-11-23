@@ -12,17 +12,17 @@ interactions:
 
         <body><a href="https://dataverse.harvard.edu/citation?persistentId=doi:10.7910/DVN/RLMYMR">https://dataverse.harvard.edu/citation?persistentId=doi:10.7910/DVN/RLMYMR</a></body></html>'}
     headers:
-      CF-RAY: [47e4e0e2fd2ec53a-ORD]
+      CF-RAY: [47e5122aaabdc522-ORD]
       Connection: [close]
       Content-Length: ['233']
       Content-Type: [text/html;charset=utf-8]
-      Date: ['Fri, 23 Nov 2018 16:05:38 GMT']
+      Date: ['Fri, 23 Nov 2018 16:39:17 GMT']
       Expect-CT: ['max-age=604800, report-uri="https://report-uri.cloudflare.com/cdn-cgi/beacon/expect-ct"']
-      Expires: ['Fri, 23 Nov 2018 16:32:03 GMT']
+      Expires: ['Fri, 23 Nov 2018 17:26:40 GMT']
       Location: ['https://dataverse.harvard.edu/citation?persistentId=doi:10.7910/DVN/RLMYMR']
       Server: [cloudflare]
-      Set-Cookie: ['__cfduid=dbbde8be8a9c983cc21904e458755534b1542989138; expires=Sat,
-          23-Nov-19 16:05:38 GMT; path=/; domain=.doi.org; HttpOnly']
+      Set-Cookie: ['__cfduid=dd1f6471049150f548735a6e4fdfa72ca1542991156; expires=Sat,
+          23-Nov-19 16:39:16 GMT; path=/; domain=.doi.org; HttpOnly']
       Vary: [Accept]
     status: {code: 302, message: ''}
 - request:
@@ -35,7 +35,7 @@ interactions:
     method: GET
     uri: https://cn.dataone.org/cn/v2/query/solr/?q=identifier:%22doi%3A10.7910%2FDVN%2FRLMYMR%22&fl=identifier,formatType,formatId,resourceMap&rows=1000&start=0&wt=json
   response:
-    body: {string: '{"responseHeader":{"status":0,"QTime":4,"params":{"q":"identifier:\"doi:10.7910/DVN/RLMYMR\"","fl":"identifier,formatType,formatId,resourceMap","start":"0","rows":"1000","wt":"json"}},"response":{"numFound":0,"start":0,"docs":[]}}
+    body: {string: '{"responseHeader":{"status":0,"QTime":2,"params":{"q":"identifier:\"doi:10.7910/DVN/RLMYMR\"","fl":"identifier,formatType,formatId,resourceMap","start":"0","rows":"1000","wt":"json"}},"response":{"numFound":0,"start":0,"docs":[]}}
 
 '}
     headers:
@@ -47,7 +47,7 @@ interactions:
       Access-Control-Expose-Headers: ['Content-Length, Content-Type, Location']
       Connection: [Keep-Alive]
       Content-Type: [application/json; charset=UTF-8]
-      Date: ['Fri, 23 Nov 2018 16:05:38 GMT']
+      Date: ['Fri, 23 Nov 2018 16:39:17 GMT']
       Keep-Alive: ['timeout=5, max=100']
       Server: [Apache/2.4.7 (Ubuntu)]
       Transfer-Encoding: [chunked]
@@ -276,7 +276,7 @@ interactions:
       Connection: [Close]
       Content-Length: ['17374']
       Content-Type: [application/json]
-      Date: ['Fri, 23 Nov 2018 16:05:39 GMT']
+      Date: ['Fri, 23 Nov 2018 16:39:18 GMT']
       Expires: ['Fri, 23 Nov 2018 17:54:29 GMT']
       Last-Modified: ['Fri, 23 Nov 2018 15:54:29 GMT']
       Server: [Apache/2.4.6 (Red Hat Enterprise Linux) OpenSSL/1.0.2k-fips mod_wsgi/3.4
@@ -354,9 +354,9 @@ interactions:
       Connection: [Close]
       Content-Length: ['10088']
       Content-Type: [application/json]
-      Date: ['Fri, 23 Nov 2018 16:05:39 GMT']
+      Date: ['Fri, 23 Nov 2018 16:39:18 GMT']
       Server: [Apache/2.4.6 (Red Hat Enterprise Linux) OpenSSL/1.0.2k-fips]
-      Set-Cookie: [AWSELB=EB1179591E49E298C6825A3028F74991071DEE12D3BAFE6DCC623DFD9C0ECBC077EB23E90FDBD3EC37C4E69D8B958E3FBF8CF81403222DF6AABE0F6509EF79AB1D548B7265;PATH=/;MAX-AGE=28800]
+      Set-Cookie: [AWSELB=EB1179591E49E298C6825A3028F74991071DEE12D3003932193CF2C36310550FD24D4C34ECDBD3EC37C4E69D8B958E3FBF8CF814030B5CB9749AB70FE33A8BB5BB36A149CB;PATH=/;MAX-AGE=28800]
     status: {code: 200, message: OK}
 - request:
     body: null
@@ -371,17 +371,17 @@ interactions:
 
         <body><a href="https://dataverse.harvard.edu/file.xhtml?persistentId=doi:10.7910/DVN/RLMYMR/WNKD3W">https://dataverse.harvard.edu/file.xhtml?persistentId=doi:10.7910/DVN/RLMYMR/WNKD3W</a></body></html>'}
     headers:
-      CF-RAY: [47e4e0ef4b91c50e-ORD]
+      CF-RAY: [47e5123869ebc50e-ORD]
       Connection: [close]
       Content-Length: ['251']
       Content-Type: [text/html;charset=utf-8]
-      Date: ['Fri, 23 Nov 2018 16:05:40 GMT']
+      Date: ['Fri, 23 Nov 2018 16:39:19 GMT']
       Expect-CT: ['max-age=604800, report-uri="https://report-uri.cloudflare.com/cdn-cgi/beacon/expect-ct"']
-      Expires: ['Fri, 23 Nov 2018 16:26:30 GMT']
+      Expires: ['Fri, 23 Nov 2018 17:32:05 GMT']
       Location: ['https://dataverse.harvard.edu/file.xhtml?persistentId=doi:10.7910/DVN/RLMYMR/WNKD3W']
       Server: [cloudflare]
-      Set-Cookie: ['__cfduid=d665e36a15aac1ca4e6c6646f200c42c51542989140; expires=Sat,
-          23-Nov-19 16:05:40 GMT; path=/; domain=.doi.org; HttpOnly']
+      Set-Cookie: ['__cfduid=d828fa18f23a27fe0e3458dedad7f51ae1542991159; expires=Sat,
+          23-Nov-19 16:39:19 GMT; path=/; domain=.doi.org; HttpOnly']
       Vary: [Accept]
     status: {code: 302, message: ''}
 - request:
@@ -394,7 +394,7 @@ interactions:
     method: GET
     uri: https://cn.dataone.org/cn/v2/query/solr/?q=identifier:%22doi%3A10.7910%2FDVN%2FRLMYMR%2FWNKD3W%22&fl=identifier,formatType,formatId,resourceMap&rows=1000&start=0&wt=json
   response:
-    body: {string: '{"responseHeader":{"status":0,"QTime":3,"params":{"q":"identifier:\"doi:10.7910/DVN/RLMYMR/WNKD3W\"","fl":"identifier,formatType,formatId,resourceMap","start":"0","rows":"1000","wt":"json"}},"response":{"numFound":0,"start":0,"docs":[]}}
+    body: {string: '{"responseHeader":{"status":0,"QTime":2,"params":{"q":"identifier:\"doi:10.7910/DVN/RLMYMR/WNKD3W\"","fl":"identifier,formatType,formatId,resourceMap","start":"0","rows":"1000","wt":"json"}},"response":{"numFound":0,"start":0,"docs":[]}}
 
 '}
     headers:
@@ -406,7 +406,7 @@ interactions:
       Access-Control-Expose-Headers: ['Content-Length, Content-Type, Location']
       Connection: [Keep-Alive]
       Content-Type: [application/json; charset=UTF-8]
-      Date: ['Fri, 23 Nov 2018 16:05:40 GMT']
+      Date: ['Fri, 23 Nov 2018 16:39:19 GMT']
       Keep-Alive: ['timeout=5, max=100']
       Server: [Apache/2.4.7 (Ubuntu)]
       Transfer-Encoding: [chunked]
@@ -431,7 +431,56 @@ interactions:
       Connection: [Close]
       Content-Length: ['881']
       Content-Type: [application/json]
-      Date: ['Fri, 23 Nov 2018 16:05:41 GMT']
+      Date: ['Fri, 23 Nov 2018 16:39:19 GMT']
+      Server: [Apache/2.4.6 (Red Hat Enterprise Linux) OpenSSL/1.0.2k-fips]
+      Set-Cookie: [AWSELB=EB1179591E49E298C6825A3028F74991071DEE12D3003932193CF2C36310550FD24D4C34ECDBD3EC37C4E69D8B958E3FBF8CF814030B5CB9749AB70FE33A8BB5BB36A149CB;PATH=/;MAX-AGE=28800]
+    status: {code: 200, message: OK}
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Connection: [keep-alive]
+      User-Agent: [python-requests/2.19.1]
+    method: GET
+    uri: https://cn.dataone.org/cn/v2/query/solr/?q=identifier:%22https%3A%2F%2Fdataverse.harvard.edu%2Fapi%2Faccess%2Fdatafile%2F3040230%22&fl=identifier,formatType,formatId,resourceMap&rows=1000&start=0&wt=json
+  response:
+    body: {string: '{"responseHeader":{"status":0,"QTime":2,"params":{"q":"identifier:\"https://dataverse.harvard.edu/api/access/datafile/3040230\"","fl":"identifier,formatType,formatId,resourceMap","start":"0","rows":"1000","wt":"json"}},"response":{"numFound":0,"start":0,"docs":[]}}
+
+'}
+    headers:
+      Access-Control-Allow-Credentials: ['true']
+      Access-Control-Allow-Headers: ['Authorization, Content-Type, Location, Content-Length,
+          x-annotator-auth-token']
+      Access-Control-Allow-Methods: ['POST, GET, OPTIONS, PUT, DELETE']
+      Access-Control-Allow-Origin: ['']
+      Access-Control-Expose-Headers: ['Content-Length, Content-Type, Location']
+      Connection: [Keep-Alive]
+      Content-Type: [application/json; charset=UTF-8]
+      Date: ['Fri, 23 Nov 2018 16:39:20 GMT']
+      Keep-Alive: ['timeout=5, max=100']
+      Server: [Apache/2.4.7 (Ubuntu)]
+      Transfer-Encoding: [chunked]
+    status: {code: 200, message: OK}
+- request:
+    body: null
+    headers:
+      Connection: [close]
+      Host: [dataverse.harvard.edu]
+      User-Agent: [Python-urllib/3.6]
+    method: GET
+    uri: https://dataverse.harvard.edu/api/search?q=entityId:3040230
+  response:
+    body: {string: '{"status":"OK","data":{"q":"entityId:3040230","total_count":1,"start":0,"spelling_alternatives":{},"items":[{"name":"2017-07-31.tab","type":"file","url":"https://dataverse.harvard.edu/api/access/datafile/3040230","file_id":"3040230","published_at":"2017-07-31T22:27:23Z","file_type":"Tab-Delimited","file_content_type":"text/tab-separated-values","size_in_bytes":12025,"md5":"e7dd2f725941b978d45fed3f33ff640c","checksum":{"type":"MD5","value":"e7dd2f725941b978d45fed3f33ff640c"},"unf":"UNF:6:6wGE3C5ragT8A0qkpGaEaQ==","dataset_citation":"Durbin,
+        Philip, 2017, \"Open Source at Harvard\", https://doi.org/10.7910/DVN/TJCLKP,
+        Harvard Dataverse, V2, UNF:6:6wGE3C5ragT8A0qkpGaEaQ== [fileUNF]"}],"count_in_response":1}}'}
+    headers:
+      Access-Control-Allow-Origin: ['*']
+      Cache-control: [no-cache="set-cookie"]
+      Connection: [Close]
+      Content-Length: ['714']
+      Content-Type: [application/json]
+      Date: ['Fri, 23 Nov 2018 16:39:20 GMT']
       Server: [Apache/2.4.6 (Red Hat Enterprise Linux) OpenSSL/1.0.2k-fips]
       Set-Cookie: [AWSELB=EB1179591E49E298C6825A3028F74991071DEE12D3BAFE6DCC623DFD9C0ECBC077EB23E90FDBD3EC37C4E69D8B958E3FBF8CF81403222DF6AABE0F6509EF79AB1D548B7265;PATH=/;MAX-AGE=28800]
     status: {code: 200, message: OK}
@@ -448,17 +497,17 @@ interactions:
 
         <body><a href="https://dataverse.harvard.edu/citation?persistentId=doi:10.7910/DVN/RLMYMR">https://dataverse.harvard.edu/citation?persistentId=doi:10.7910/DVN/RLMYMR</a></body></html>'}
     headers:
-      CF-RAY: [47e4e0f6bd8455ac-ORD]
+      CF-RAY: [47e512456efa71d9-ORD]
       Connection: [close]
       Content-Length: ['233']
       Content-Type: [text/html;charset=utf-8]
-      Date: ['Fri, 23 Nov 2018 16:05:41 GMT']
+      Date: ['Fri, 23 Nov 2018 16:39:21 GMT']
       Expect-CT: ['max-age=604800, report-uri="https://report-uri.cloudflare.com/cdn-cgi/beacon/expect-ct"']
-      Expires: ['Fri, 23 Nov 2018 16:32:03 GMT']
+      Expires: ['Fri, 23 Nov 2018 17:26:40 GMT']
       Location: ['https://dataverse.harvard.edu/citation?persistentId=doi:10.7910/DVN/RLMYMR']
       Server: [cloudflare]
-      Set-Cookie: ['__cfduid=d3d37493d4122dc7cec730c2e2c0bca7d1542989141; expires=Sat,
-          23-Nov-19 16:05:41 GMT; path=/; domain=.doi.org; HttpOnly']
+      Set-Cookie: ['__cfduid=d41b0b38f30aa00287177f806410395191542991161; expires=Sat,
+          23-Nov-19 16:39:21 GMT; path=/; domain=.doi.org; HttpOnly']
       Vary: [Accept]
     status: {code: 302, message: ''}
 - request:
@@ -483,7 +532,7 @@ interactions:
       Access-Control-Expose-Headers: ['Content-Length, Content-Type, Location']
       Connection: [Keep-Alive]
       Content-Type: [application/json; charset=UTF-8]
-      Date: ['Fri, 23 Nov 2018 16:05:42 GMT']
+      Date: ['Fri, 23 Nov 2018 16:39:21 GMT']
       Keep-Alive: ['timeout=5, max=100']
       Server: [Apache/2.4.7 (Ubuntu)]
       Transfer-Encoding: [chunked]
@@ -559,7 +608,7 @@ interactions:
       Connection: [Close]
       Content-Length: ['10088']
       Content-Type: [application/json]
-      Date: ['Fri, 23 Nov 2018 16:05:42 GMT']
+      Date: ['Fri, 23 Nov 2018 16:39:21 GMT']
       Server: [Apache/2.4.6 (Red Hat Enterprise Linux) OpenSSL/1.0.2k-fips]
       Set-Cookie: [AWSELB=EB1179591E49E298C6825A3028F74991071DEE12D3BAFE6DCC623DFD9C0ECBC077EB23E90FDBD3EC37C4E69D8B958E3FBF8CF81403222DF6AABE0F6509EF79AB1D548B7265;PATH=/;MAX-AGE=28800]
     status: {code: 200, message: OK}
@@ -581,10 +630,10 @@ interactions:
       Content-Type: [application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;
           name="Karnataka_DD&FS_Data-1.xlsx"]
       Content-disposition: [attachment; filename="Karnataka_DD&FS_Data-1.xlsx"]
-      Date: ['Fri, 23 Nov 2018 16:05:43 GMT']
+      Date: ['Fri, 23 Nov 2018 16:39:22 GMT']
       Server: [Apache/2.4.6 (Red Hat Enterprise Linux) OpenSSL/1.0.2k-fips]
-      Set-Cookie: [JSESSIONID=151dd885753faeb2b7fc995944ee; Path=/; Secure; HttpOnly,
-        AWSELB=EB1179591E49E298C6825A3028F74991071DEE12D3BAFE6DCC623DFD9C0ECBC077EB23E90FDBD3EC37C4E69D8B958E3FBF8CF81403222DF6AABE0F6509EF79AB1D548B7265;PATH=/;MAX-AGE=28800]
+      Set-Cookie: [JSESSIONID=170ae34e7612e2d4b882f8fc4d9c; Path=/; Secure; HttpOnly,
+        AWSELB=EB1179591E49E298C6825A3028F74991071DEE12D3003932193CF2C36310550FD24D4C34ECDBD3EC37C4E69D8B958E3FBF8CF814030B5CB9749AB70FE33A8BB5BB36A149CB;PATH=/;MAX-AGE=28800]
     status: {code: 200, message: OK}
 - request:
     body: null
@@ -603,9 +652,9 @@ interactions:
       Content-Length: ['2408']
       Content-Type: [text/tab-separated-values; name="Karnataka_DD&FS_Data-1.tab"]
       Content-disposition: [attachment; filename="Karnataka_DD&FS_Data-1.tab"]
-      Date: ['Fri, 23 Nov 2018 16:05:43 GMT']
+      Date: ['Fri, 23 Nov 2018 16:39:23 GMT']
       Server: [Apache/2.4.6 (Red Hat Enterprise Linux) OpenSSL/1.0.2k-fips]
-      Set-Cookie: [JSESSIONID=151dff5d001dcdaa0e2c2db92574; Path=/; Secure; HttpOnly,
+      Set-Cookie: [JSESSIONID=170b0cc95bb3a993250285f51fa3; Path=/; Secure; HttpOnly,
         AWSELB=EB1179591E49E298C6825A3028F74991071DEE12D3BAFE6DCC623DFD9C0ECBC077EB23E90FDBD3EC37C4E69D8B958E3FBF8CF81403222DF6AABE0F6509EF79AB1D548B7265;PATH=/;MAX-AGE=28800]
     status: {code: 200, message: OK}
 - request:
@@ -621,17 +670,17 @@ interactions:
 
         <body><a href="https://dataverse.harvard.edu/file.xhtml?persistentId=doi:10.7910/DVN/RLMYMR/WNKD3W">https://dataverse.harvard.edu/file.xhtml?persistentId=doi:10.7910/DVN/RLMYMR/WNKD3W</a></body></html>'}
     headers:
-      CF-RAY: [47e4e107dce5c526-ORD]
+      CF-RAY: [47e51256cabf71c7-ORD]
       Connection: [close]
       Content-Length: ['251']
       Content-Type: [text/html;charset=utf-8]
-      Date: ['Fri, 23 Nov 2018 16:05:44 GMT']
+      Date: ['Fri, 23 Nov 2018 16:39:23 GMT']
       Expect-CT: ['max-age=604800, report-uri="https://report-uri.cloudflare.com/cdn-cgi/beacon/expect-ct"']
-      Expires: ['Fri, 23 Nov 2018 16:32:03 GMT']
+      Expires: ['Fri, 23 Nov 2018 17:26:40 GMT']
       Location: ['https://dataverse.harvard.edu/file.xhtml?persistentId=doi:10.7910/DVN/RLMYMR/WNKD3W']
       Server: [cloudflare]
-      Set-Cookie: ['__cfduid=d3f0df275c28815dac66b349d33c326c31542989144; expires=Sat,
-          23-Nov-19 16:05:44 GMT; path=/; domain=.doi.org; HttpOnly']
+      Set-Cookie: ['__cfduid=d1dab04ef42b590f6da6f26599758aae51542991163; expires=Sat,
+          23-Nov-19 16:39:23 GMT; path=/; domain=.doi.org; HttpOnly']
       Vary: [Accept]
     status: {code: 302, message: ''}
 - request:
@@ -656,7 +705,7 @@ interactions:
       Access-Control-Expose-Headers: ['Content-Length, Content-Type, Location']
       Connection: [Keep-Alive]
       Content-Type: [application/json; charset=UTF-8]
-      Date: ['Fri, 23 Nov 2018 16:05:44 GMT']
+      Date: ['Fri, 23 Nov 2018 16:39:24 GMT']
       Keep-Alive: ['timeout=5, max=100']
       Server: [Apache/2.4.7 (Ubuntu)]
       Transfer-Encoding: [chunked]
@@ -681,7 +730,7 @@ interactions:
       Connection: [Close]
       Content-Length: ['881']
       Content-Type: [application/json]
-      Date: ['Fri, 23 Nov 2018 16:05:45 GMT']
+      Date: ['Fri, 23 Nov 2018 16:39:24 GMT']
       Server: [Apache/2.4.6 (Red Hat Enterprise Linux) OpenSSL/1.0.2k-fips]
       Set-Cookie: [AWSELB=EB1179591E49E298C6825A3028F74991071DEE12D3BAFE6DCC623DFD9C0ECBC077EB23E90FDBD3EC37C4E69D8B958E3FBF8CF81403222DF6AABE0F6509EF79AB1D548B7265;PATH=/;MAX-AGE=28800]
     status: {code: 200, message: OK}
@@ -703,9 +752,9 @@ interactions:
       Content-Type: [application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;
           name="Karnataka_DD&FS_Data-1.xlsx"]
       Content-disposition: [attachment; filename="Karnataka_DD&FS_Data-1.xlsx"]
-      Date: ['Fri, 23 Nov 2018 16:05:45 GMT']
+      Date: ['Fri, 23 Nov 2018 16:39:25 GMT']
       Server: [Apache/2.4.6 (Red Hat Enterprise Linux) OpenSSL/1.0.2k-fips]
-      Set-Cookie: [JSESSIONID=151e60e48630a793f86546ce8e03; Path=/; Secure; HttpOnly,
+      Set-Cookie: [JSESSIONID=170b729fe4fb4a242c977a3ccfcb; Path=/; Secure; HttpOnly,
         AWSELB=EB1179591E49E298C6825A3028F74991071DEE12D3BAFE6DCC623DFD9C0ECBC077EB23E90FDBD3EC37C4E69D8B958E3FBF8CF81403222DF6AABE0F6509EF79AB1D548B7265;PATH=/;MAX-AGE=28800]
     status: {code: 200, message: OK}
 - request:
@@ -725,9 +774,102 @@ interactions:
       Content-Length: ['2408']
       Content-Type: [text/tab-separated-values; name="Karnataka_DD&FS_Data-1.tab"]
       Content-disposition: [attachment; filename="Karnataka_DD&FS_Data-1.tab"]
-      Date: ['Fri, 23 Nov 2018 16:05:46 GMT']
+      Date: ['Fri, 23 Nov 2018 16:39:25 GMT']
       Server: [Apache/2.4.6 (Red Hat Enterprise Linux) OpenSSL/1.0.2k-fips]
-      Set-Cookie: [JSESSIONID=151e80989b971cf3c5f17278e4f3; Path=/; Secure; HttpOnly,
+      Set-Cookie: [JSESSIONID=170b9cc80565eb5f0d4160083d80; Path=/; Secure; HttpOnly,
+        AWSELB=EB1179591E49E298C6825A3028F74991071DEE12D3BAFE6DCC623DFD9C0ECBC077EB23E90FDBD3EC37C4E69D8B958E3FBF8CF81403222DF6AABE0F6509EF79AB1D548B7265;PATH=/;MAX-AGE=28800]
+    status: {code: 200, message: OK}
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Connection: [keep-alive]
+      User-Agent: [python-requests/2.19.1]
+    method: GET
+    uri: https://cn.dataone.org/cn/v2/query/solr/?q=identifier:%22https%3A%2F%2Fdataverse.harvard.edu%2Fapi%2Faccess%2Fdatafile%2F3040230%22&fl=identifier,formatType,formatId,resourceMap&rows=1000&start=0&wt=json
+  response:
+    body: {string: '{"responseHeader":{"status":0,"QTime":2,"params":{"q":"identifier:\"https://dataverse.harvard.edu/api/access/datafile/3040230\"","fl":"identifier,formatType,formatId,resourceMap","start":"0","rows":"1000","wt":"json"}},"response":{"numFound":0,"start":0,"docs":[]}}
+
+'}
+    headers:
+      Access-Control-Allow-Credentials: ['true']
+      Access-Control-Allow-Headers: ['Authorization, Content-Type, Location, Content-Length,
+          x-annotator-auth-token']
+      Access-Control-Allow-Methods: ['POST, GET, OPTIONS, PUT, DELETE']
+      Access-Control-Allow-Origin: ['']
+      Access-Control-Expose-Headers: ['Content-Length, Content-Type, Location']
+      Connection: [Keep-Alive]
+      Content-Type: [application/json; charset=UTF-8]
+      Date: ['Fri, 23 Nov 2018 16:39:26 GMT']
+      Keep-Alive: ['timeout=5, max=100']
+      Server: [Apache/2.4.7 (Ubuntu)]
+      Transfer-Encoding: [chunked]
+    status: {code: 200, message: OK}
+- request:
+    body: null
+    headers:
+      Connection: [close]
+      Host: [dataverse.harvard.edu]
+      User-Agent: [Python-urllib/3.6]
+    method: GET
+    uri: https://dataverse.harvard.edu/api/search?q=entityId:3040230
+  response:
+    body: {string: '{"status":"OK","data":{"q":"entityId:3040230","total_count":1,"start":0,"spelling_alternatives":{},"items":[{"name":"2017-07-31.tab","type":"file","url":"https://dataverse.harvard.edu/api/access/datafile/3040230","file_id":"3040230","published_at":"2017-07-31T22:27:23Z","file_type":"Tab-Delimited","file_content_type":"text/tab-separated-values","size_in_bytes":12025,"md5":"e7dd2f725941b978d45fed3f33ff640c","checksum":{"type":"MD5","value":"e7dd2f725941b978d45fed3f33ff640c"},"unf":"UNF:6:6wGE3C5ragT8A0qkpGaEaQ==","dataset_citation":"Durbin,
+        Philip, 2017, \"Open Source at Harvard\", https://doi.org/10.7910/DVN/TJCLKP,
+        Harvard Dataverse, V2, UNF:6:6wGE3C5ragT8A0qkpGaEaQ== [fileUNF]"}],"count_in_response":1}}'}
+    headers:
+      Access-Control-Allow-Origin: ['*']
+      Cache-control: [no-cache="set-cookie"]
+      Connection: [Close]
+      Content-Length: ['714']
+      Content-Type: [application/json]
+      Date: ['Fri, 23 Nov 2018 16:39:26 GMT']
+      Server: [Apache/2.4.6 (Red Hat Enterprise Linux) OpenSSL/1.0.2k-fips]
+      Set-Cookie: [AWSELB=EB1179591E49E298C6825A3028F74991071DEE12D3BAFE6DCC623DFD9C0ECBC077EB23E90FDBD3EC37C4E69D8B958E3FBF8CF81403222DF6AABE0F6509EF79AB1D548B7265;PATH=/;MAX-AGE=28800]
+    status: {code: 200, message: OK}
+- request:
+    body: null
+    headers:
+      Connection: [close]
+      Host: [dataverse.harvard.edu]
+      User-Agent: [Python-urllib/3.6]
+    method: HEAD
+    uri: https://dataverse.harvard.edu/api/access/datafile/3040230?format=original
+  response:
+    body: {string: ''}
+    headers:
+      Access-Control-Allow-Origin: ['*']
+      Cache-control: [no-cache="set-cookie"]
+      Connection: [Close]
+      Content-Length: ['11684']
+      Content-Type: [text/csv; name="2017-07-31.csv"]
+      Content-disposition: [attachment; filename="2017-07-31.csv"]
+      Date: ['Fri, 23 Nov 2018 16:39:27 GMT']
+      Server: [Apache/2.4.6 (Red Hat Enterprise Linux) OpenSSL/1.0.2k-fips]
+      Set-Cookie: [JSESSIONID=170beee3fde953ac7cc0764a9fbd; Path=/; Secure; HttpOnly,
+        AWSELB=EB1179591E49E298C6825A3028F74991071DEE12D3BAFE6DCC623DFD9C0ECBC077EB23E90FDBD3EC37C4E69D8B958E3FBF8CF81403222DF6AABE0F6509EF79AB1D548B7265;PATH=/;MAX-AGE=28800]
+    status: {code: 200, message: OK}
+- request:
+    body: null
+    headers:
+      Connection: [close]
+      Host: [dataverse.harvard.edu]
+      User-Agent: [Python-urllib/3.6]
+    method: HEAD
+    uri: https://dataverse.harvard.edu/api/access/datafile/3040230
+  response:
+    body: {string: ''}
+    headers:
+      Access-Control-Allow-Origin: ['*']
+      Cache-control: [no-cache="set-cookie"]
+      Connection: [Close]
+      Content-Length: ['12100']
+      Content-Type: [text/tab-separated-values; name="2017-07-31.tab"]
+      Content-disposition: [attachment; filename="2017-07-31.tab"]
+      Date: ['Fri, 23 Nov 2018 16:39:27 GMT']
+      Server: [Apache/2.4.6 (Red Hat Enterprise Linux) OpenSSL/1.0.2k-fips]
+      Set-Cookie: [JSESSIONID=170c102e8933da48ab637f0e5454; Path=/; Secure; HttpOnly,
         AWSELB=EB1179591E49E298C6825A3028F74991071DEE12D3BAFE6DCC623DFD9C0ECBC077EB23E90FDBD3EC37C4E69D8B958E3FBF8CF81403222DF6AABE0F6509EF79AB1D548B7265;PATH=/;MAX-AGE=28800]
     status: {code: 200, message: OK}
 version: 1

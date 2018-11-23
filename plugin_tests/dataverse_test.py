@@ -44,7 +44,8 @@ class DataverseHarversterTestCase(base.TestCase):
             path='/repository/lookup', method='GET', user=self.user,
             params={'dataId': json.dumps([
                 'https://doi.org/10.7910/DVN/RLMYMR',
-                'https://doi.org/10.7910/DVN/RLMYMR/WNKD3W'
+                'https://doi.org/10.7910/DVN/RLMYMR/WNKD3W',
+                'https://dataverse.harvard.edu/api/access/datafile/3040230'
             ])}
         )
         self.assertStatus(resp, 200)
@@ -62,14 +63,22 @@ class DataverseHarversterTestCase(base.TestCase):
 		"name": "Karnataka Diet Diversity and Food Security for Agricultural Biodiversity Assessment",
 		"repository": "Dataverse",
 		"size": 2321
-	    }
+	    },
+            {
+                "dataId": "https://dataverse.harvard.edu/api/access/datafile/3040230",
+                "doi": "10.7910/DVN/TJCLKP",
+                "name": "Open Source at Harvard",
+                "repository": "Dataverse",
+                "size": 12025
+            }
         ])
 
         resp = self.request(
             path='/repository/listFiles', method='GET', user=self.user,
             params={'dataId': json.dumps([
                 'https://doi.org/10.7910/DVN/RLMYMR',
-                'https://doi.org/10.7910/DVN/RLMYMR/WNKD3W'
+                'https://doi.org/10.7910/DVN/RLMYMR/WNKD3W',
+                'https://dataverse.harvard.edu/api/access/datafile/3040230'
             ])}
         )
         self.assertStatus(resp, 200)
@@ -90,6 +99,14 @@ class DataverseHarversterTestCase(base.TestCase):
                     "fileList": [
                         {"Karnataka_DD&FS_Data-1.tab": {"size": 2408}},
                         {"Karnataka_DD&FS_Data-1.xlsx": {"size": 700840}}
+                    ]
+                }
+            },
+            {
+                "Open Source at Harvard": {
+                    "fileList": [
+                        {"2017-07-31.csv": {"size": 11684}},
+                        {"2017-07-31.tab": {"size": 12100}}
                     ]
                 }
             }
