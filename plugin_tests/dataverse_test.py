@@ -95,6 +95,34 @@ class DataverseHarversterTestCase(base.TestCase):
             }
         ])
 
+    def testConfigValidators(self):
+        from girder.plugins.wholetale.constants import PluginSettings, SettingDefault
+        resp = self.request('/system/setting', user=self.admin, method='PUT',
+                            params={'key': PluginSettings.DATAVERSE_URL,
+                                    'value': ''})
+        self.assertStatus(resp, 400)
+        self.assertEqual(resp.json, {
+            'field': 'value',
+            'type': 'validation',
+            'message': 'Dataverse Instances list URL must not be empty.'
+        })
+
+        resp = self.request('/system/setting', user=self.admin, method='PUT',
+                            params={'key': PluginSettings.DATAVERSE_URL,
+                                    'value': 'random_string'})
+        self.assertStatus(resp, 400)
+        self.assertEqual(resp.json, {
+            'field': 'value',
+            'type': 'validation',
+            'message': 'Invalid Dataverse URL'
+        })
+
+        resp = self.request(
+            '/system/setting', user=self.admin, method='PUT',
+            params={'key': PluginSettings.DATAVERSE_URL,
+                    'value': SettingDefault.defaults[PluginSettings.DATAVERSE_URL]})
+        self.assertStatusOk(resp)
+
     def tearDown(self):
         self.model('user').remove(self.user)
         self.model('user').remove(self.admin)
