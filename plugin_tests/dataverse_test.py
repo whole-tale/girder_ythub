@@ -50,20 +50,24 @@ class DataverseHarversterTestCase(base.TestCase):
         )
         self.assertStatus(resp, 200)
         self.assertEqual(resp.json, [
-	    {
-		"dataId": "https://dataverse.harvard.edu/citation?persistentId=doi:10.7910/DVN/RLMYMR",
-		"doi": "10.7910/DVN/RLMYMR",
-		"name": "Karnataka Diet Diversity and Food Security for Agricultural Biodiversity Assessment",
-		"repository": "Dataverse",
-		"size": 495885
-	    },
-	    {
-		"dataId": "https://dataverse.harvard.edu/file.xhtml?persistentId=doi:10.7910/DVN/RLMYMR/WNKD3W",
-		"doi": "10.7910/DVN/RLMYMR",
-		"name": "Karnataka Diet Diversity and Food Security for Agricultural Biodiversity Assessment",
-		"repository": "Dataverse",
-		"size": 2321
-	    },
+            {
+                "dataId": "https://dataverse.harvard.edu/citation"
+                          "?persistentId=doi:10.7910/DVN/RLMYMR",
+                "doi": "10.7910/DVN/RLMYMR",
+                "name": "Karnataka Diet Diversity and Food Security for "
+                        "Agricultural Biodiversity Assessment",
+                "repository": "Dataverse",
+                "size": 495885
+            },
+            {
+                "dataId": "https://dataverse.harvard.edu/file.xhtml"
+                          "?persistentId=doi:10.7910/DVN/RLMYMR/WNKD3W",
+                "doi": "10.7910/DVN/RLMYMR",
+                "name": "Karnataka Diet Diversity and Food Security for "
+                        "Agricultural Biodiversity Assessment",
+                "repository": "Dataverse",
+                "size": 2321
+            },
             {
                 "dataId": "https://dataverse.harvard.edu/api/access/datafile/3040230",
                 "doi": "10.7910/DVN/TJCLKP",
@@ -133,6 +137,55 @@ class DataverseHarversterTestCase(base.TestCase):
             'type': 'validation',
             'message': 'Invalid Dataverse URL'
         })
+
+        resp = self.request(
+            '/system/setting', user=self.admin, method='PUT',
+            params={'key': PluginSettings.DATAVERSE_URL,
+                    'value': SettingDefault.defaults[PluginSettings.DATAVERSE_URL]})
+        self.assertStatusOk(resp)
+
+    @vcr.use_cassette(os.path.join(DATA_PATH, 'dataverse_single.txt'))
+    def testSingleDataverseInstance(self):
+        from girder.plugins.wholetale.constants import PluginSettings, SettingDefault
+        resp = self.request('/system/setting', user=self.admin, method='PUT',
+                            params={'key': PluginSettings.DATAVERSE_URL,
+                                    'value': 'https://demo.dataverse.org/'})
+        self.assertStatusOk(resp)
+
+        resp = self.request(
+            path='/repository/lookup', method='GET', user=self.user,
+            params={'dataId': json.dumps([
+                'https://demo.dataverse.org/api/access/datafile/300662'
+            ])}
+        )
+        self.assertStatus(resp, 200)
+        self.assertEqual(resp.json, [
+            {
+                "dataId": "https://demo.dataverse.org/api/access/datafile/300662",
+                "doi": "10.5072/FK2/N7YHEY",
+                "name": "Variable-level metadata always accessible",
+                "repository": "Dataverse",
+                "size": 36843
+            }
+        ])
+
+        resp = self.request(
+            path='/repository/listFiles', method='GET', user=self.user,
+            params={'dataId': json.dumps([
+                'https://demo.dataverse.org/api/access/datafile/300662'
+            ])}
+        )
+        self.assertStatus(resp, 200)
+        self.assertEqual(resp.json, [
+            {
+                "Variable-level metadata always accessible": {
+                    "fileList": [
+                        {"citation.tab": {"size": 36920}},
+                        {"citation.xlsx": {"size": 26465}}
+                    ]
+                }
+            }
+        ])
 
         resp = self.request(
             '/system/setting', user=self.admin, method='PUT',

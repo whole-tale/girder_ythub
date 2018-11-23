@@ -86,10 +86,23 @@ class DataverseImportProvider(ImportProvider):
         return Setting().get(constants.PluginSettings.DATAVERSE_URL)
 
     def create_dataverse_regex(self):
-        resp = urlopen(self.get_base_url_setting())
-        resp_body = resp.read()
-        data = json.loads(resp_body.decode('utf-8'))
-        urls = [_['url'] for _ in data['installations']]
+        url = self.get_base_url_setting()
+        if not url.endswith('installations-json'):
+            url = urlunparse(
+                urlparse(url)._replace(path='/api/info/version')
+            )
+        try:
+            resp = urlopen(url)
+            resp_body = resp.read()
+            data = json.loads(resp_body.decode('utf-8'))
+        except Exception:
+            logger.warn('[dataverse] failed to generate regex')
+            return re.compile(r"^$")
+
+        if 'installations' in data:
+            urls = [_['url'] for _ in data['installations']]
+        else:
+            urls = [self.get_base_url_setting()]
         return re.compile("^" + "|".join(urls) + ".*$")
 
     def setting_changed(self, event):
