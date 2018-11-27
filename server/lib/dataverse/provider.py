@@ -145,7 +145,9 @@ class DataverseImportProvider(ImportProvider):
     def _parse_file_url(url):
         """Extract title, file, doi from Dataverse resource.
 
-        Handles: {siteURL}/file.xhtml?persistentId={persistentId}&...
+        Handles:
+            {siteURL}/file.xhtml?persistentId={persistentId}&...
+            {siteURL}/api/access/datafile/:persistentId/?persistentId={persistentId}
         """
         qs = parse_qs(url.query)
         try:
@@ -211,7 +213,8 @@ class DataverseImportProvider(ImportProvider):
 
     def parse_pid(self, pid: str, sanitize: bool = False):
         url = urlparse(pid)
-        if url.path.endswith('file.xhtml'):
+        if url.path.endswith('file.xhtml') or \
+                url.path.startswith('/api/access/datafile/:persistentId'):
             parse_method = self._parse_file_url
         elif url.path.startswith('/api/access/datafile'):
             parse_method = self._parse_access_url
