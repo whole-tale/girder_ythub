@@ -31,7 +31,7 @@ def _query_dataverse(search_url):
         'mimeType': item['file_content_type'],
         'filesize': item['size_in_bytes'],
         'id': item['file_id'],
-        'doi': 'fixme'
+        'doi': item.get('filePersistentId')  # https://github.com/IQSS/dataverse/issues/5339
     }]
     title = item['name']
     title_search = _QUOTES_REGEX.search(item['dataset_citation'])
@@ -250,13 +250,14 @@ class DataverseImportProvider(ImportProvider):
 
     def _listRecursive(self, user, pid: str, name: str, base_url: str = None,
                        progress=None):
-        title, files, _ = self.parse_pid(pid, sanitize=True)
-        yield ImportItem(ImportItem.FOLDER, name=title)
+        title, files, doi = self.parse_pid(pid, sanitize=True)
+        yield ImportItem(ImportItem.FOLDER, name=title, identifier=doi)
         for obj in files:
             yield ImportItem(
                 ImportItem.FILE, obj['filename'],
                 size=obj['filesize'],
                 mimeType=obj.get('mimeType', 'application/octet-stream'),
-                url=obj['url']
+                url=obj['url'],
+                identifier=obj.get('doi') or doi
             )
         yield ImportItem(ImportItem.END_FOLDER)
