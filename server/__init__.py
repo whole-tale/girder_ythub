@@ -5,6 +5,7 @@ from cryptography.exceptions import UnsupportedAlgorithm
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 import six
+import validators
 
 from girder import events, logprint, logger
 from girder.api import access
@@ -97,9 +98,23 @@ def validateInstanceCap(doc):
             'Instance Cap needs to be an integer.', 'value')
 
 
+@setting_utilities.validator(PluginSettings.DATAVERSE_URL)
+def validateDataverseURL(doc):
+    if not doc['value']:
+        raise ValidationException(
+            'Dataverse Instances list URL must not be empty.', 'value')
+    if not validators.url(doc['value']):
+        raise ValidationException('Invalid Dataverse URL', 'value')
+
+
 @setting_utilities.default(PluginSettings.INSTANCE_CAP)
 def defaultInstanceCap():
     return SettingDefault.defaults[PluginSettings.INSTANCE_CAP]
+
+
+@setting_utilities.default(PluginSettings.DATAVERSE_URL)
+def defaultDataverseURL():
+    return SettingDefault.defaults[PluginSettings.DATAVERSE_URL]
 
 
 @access.public(scope=TokenScope.DATA_READ)

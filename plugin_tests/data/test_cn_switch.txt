@@ -1,0 +1,102 @@
+interactions:
+- request:
+    body: null
+    headers:
+      Connection: [close]
+      Host: [dev.nceas.ucsb.edu]
+      User-Agent: [Python-urllib/3.6]
+    method: GET
+    uri: https://dev.nceas.ucsb.edu/knb/d1/mn/v2
+  response:
+    body: {string: "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n<ns3:node
+        xmlns:ns2=\"http://ns.dataone.org/service/types/v1\" xmlns:ns3=\"http://ns.dataone.org/service/types/v2.0\"
+        replicate=\"false\" synchronize=\"true\" type=\"mn\" state=\"up\">\n    <identifier>urn:node:mnTestKNB</identifier>\n
+        \   <name>KNB Test Node</name>\n    <description>A test metacat instance mimicing
+        the KNB.</description>\n    <baseURL>https://dev.nceas.ucsb.edu/knb/d1/mn</baseURL>\n
+        \   <services>\n        <service name=\"MNCore\" version=\"v1\" available=\"true\"/>\n
+        \       <service name=\"MNCore\" version=\"v2\" available=\"true\"/>\n        <service
+        name=\"MNRead\" version=\"v1\" available=\"true\"/>\n        <service name=\"MNRead\"
+        version=\"v2\" available=\"true\"/>\n        <service name=\"MNAuthorization\"
+        version=\"v1\" available=\"true\"/>\n        <service name=\"MNAuthorization\"
+        version=\"v2\" available=\"true\"/>\n        <service name=\"MNStorage\" version=\"v1\"
+        available=\"true\"/>\n        <service name=\"MNStorage\" version=\"v2\" available=\"true\"/>\n
+        \       <service name=\"MNReplication\" version=\"v1\" available=\"true\"/>\n
+        \       <service name=\"MNReplication\" version=\"v2\" available=\"true\"/>\n
+        \       <service name=\"MNPackage\" version=\"v1\" available=\"true\"/>\n
+        \       <service name=\"MNPackage\" version=\"v2\" available=\"true\"/>\n
+        \       <service name=\"MNView\" version=\"v2\" available=\"true\"/>\n    </services>\n
+        \   <synchronization>\n        <schedule hour=\"*\" mday=\"*\" min=\"0/3\"
+        mon=\"*\" sec=\"10\" wday=\"?\" year=\"*\"/>\n        <lastHarvested>2018-11-14T18:28:48.267+00:00</lastHarvested>\n
+        \       <lastCompleteHarvest>2018-11-14T18:28:48.267+00:00</lastCompleteHarvest>\n
+        \   </synchronization>\n    <ping success=\"true\" lastSuccess=\"2018-11-14T18:28:48.268+00:00\"/>\n
+        \   <subject>CN=urn:node:mnTestKNB,DC=dataone,DC=org</subject>\n    <contactSubject>CN=Christopher
+        Jones A2108,O=Google,C=US,DC=cilogon,DC=org</contactSubject>\n</ns3:node>\n"}
+    headers:
+      Access-Control-Allow-Credentials: ['true']
+      Access-Control-Allow-Headers: ['Authorization, Content-Type, Origin, Cache-Control']
+      Access-Control-Allow-Methods: ['GET, POST, PUT, OPTIONS']
+      Access-Control-Allow-Origin: ['']
+      Connection: [close]
+      Content-Length: ['1855']
+      Content-Type: [text/xml]
+      Date: ['Wed, 14 Nov 2018 18:28:48 GMT']
+      Server: [Apache/2.4.7 (Ubuntu)]
+      Set-Cookie: [JSESSIONID=928100D453ECA01C51841F981390798D; Path=/knb/; Secure]
+      Vary: ['User-Agent,Accept-Encoding']
+      X-Frame-Options: [SAMEORIGIN, sameorigin]
+    status: {code: 200, message: OK}
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Connection: [keep-alive]
+      User-Agent: [python-requests/2.19.1]
+    method: GET
+    uri: https://dev.nceas.ucsb.edu/knb/d1/mn/v2/query/solr/?q=identifier:%22urn%3Auuid%3Ae921cacb-8583-465a-bb65-60ffe6b994f6%22&fl=identifier,formatType,formatId,resourceMap&rows=1000&start=0&wt=json
+  response:
+    body: {string: '{"responseHeader":{"status":0,"QTime":17,"params":{"fq":"(readPermission:\"public\")OR(isPublic:true)","fl":"identifier,formatType,formatId,resourceMap","start":"0","q":"identifier:\"urn:uuid:e921cacb-8583-465a-bb65-60ffe6b994f6\"","wt":"json","rows":"1000"}},"response":{"numFound":1,"start":0,"docs":[{"identifier":"urn:uuid:e921cacb-8583-465a-bb65-60ffe6b994f6","formatId":"eml://ecoinformatics.org/eml-2.1.1","formatType":"METADATA","resourceMap":["urn:uuid:3f19ef84-e495-43b2-aaa0-102e917b2f5f"]}]}}'}
+    headers:
+      Access-Control-Allow-Credentials: ['true']
+      Access-Control-Allow-Headers: ['Authorization, Content-Type, Origin, Cache-Control']
+      Access-Control-Allow-Methods: ['GET, POST, PUT, OPTIONS']
+      Access-Control-Allow-Origin: ['']
+      Connection: [Keep-Alive]
+      Content-Length: ['504']
+      Content-Type: [text/json]
+      Date: ['Wed, 14 Nov 2018 18:28:48 GMT']
+      Keep-Alive: ['timeout=5, max=100']
+      Server: [Apache/2.4.7 (Ubuntu)]
+      Set-Cookie: [JSESSIONID=3ED79E0028E4D1D716243C9FEA537702; Path=/knb/; Secure]
+      Vary: [User-Agent]
+      X-Frame-Options: [SAMEORIGIN, sameorigin]
+    status: {code: 200, message: OK}
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Connection: [keep-alive]
+      User-Agent: [python-requests/2.19.1]
+    method: GET
+    uri: https://dev.nceas.ucsb.edu/knb/d1/mn/v2/query/solr/?q=resourceMap:%22urn%3Auuid%3A3f19ef84-e495-43b2-aaa0-102e917b2f5f%22&fl=identifier,formatType,title,size,formatId,fileName,documents&rows=1000&start=0&wt=json
+  response:
+    body: {string: '{"responseHeader":{"status":0,"QTime":15,"params":{"fq":"(readPermission:\"public\")OR(isPublic:true)","fl":"identifier,formatType,title,size,formatId,fileName,documents","start":"0","q":"resourceMap:\"urn:uuid:3f19ef84-e495-43b2-aaa0-102e917b2f5f\"","wt":"json","rows":"1000"}},"response":{"numFound":1,"start":0,"docs":[{"identifier":"urn:uuid:e921cacb-8583-465a-bb65-60ffe6b994f6","fileName":"Testing
+        rightsholder.xml","formatId":"eml://ecoinformatics.org/eml-2.1.1","formatType":"METADATA","size":2491,"title":"Testing
+        rightsholder","documents":["urn:uuid:e921cacb-8583-465a-bb65-60ffe6b994f6"]}]}}'}
+    headers:
+      Access-Control-Allow-Credentials: ['true']
+      Access-Control-Allow-Headers: ['Authorization, Content-Type, Origin, Cache-Control']
+      Access-Control-Allow-Methods: ['GET, POST, PUT, OPTIONS']
+      Access-Control-Allow-Origin: ['']
+      Connection: [Keep-Alive]
+      Content-Length: ['602']
+      Content-Type: [text/json]
+      Date: ['Wed, 14 Nov 2018 18:28:49 GMT']
+      Keep-Alive: ['timeout=5, max=100']
+      Server: [Apache/2.4.7 (Ubuntu)]
+      Set-Cookie: [JSESSIONID=50D23E6E44EE26712C892C744BE69F6A; Path=/knb/; Secure]
+      Vary: [User-Agent]
+      X-Frame-Options: [SAMEORIGIN, sameorigin]
+    status: {code: 200, message: OK}
+version: 1
