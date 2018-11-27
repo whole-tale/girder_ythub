@@ -25,6 +25,7 @@ from .constants import PluginSettings, SettingDefault
 from .rest.dataset import Dataset
 from .rest.recipe import Recipe
 from .rest.image import Image
+from .rest.integration import Integration
 from .rest.repository import Repository
 from .rest.publish import Publish
 from .rest.harvester import listImportedData
@@ -374,6 +375,7 @@ def load(info):
     events.bind('model.user.save.created', 'wholetale', addDefaultFolders)
     info['apiRoot'].repository = Repository()
     info['apiRoot'].publish = Publish()
+    info['apiRoot'].integration = Integration()
     info['apiRoot'].folder.route('GET', ('registered',), listImportedData)
     info['apiRoot'].folder.route('GET', (':id', 'listing'), listFolder)
     info['apiRoot'].folder.route('GET', (':id', 'dataset'), getDataSet)
