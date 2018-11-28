@@ -4,9 +4,12 @@ import os
 import cherrypy
 import validators
 from urllib.parse import urlparse, urlunparse, urlencode
+from urllib.error import HTTPError, URLError
 from girder.api import access
 from girder.api.describe import Description, autoDescribeRoute
 from girder.api.rest import Resource, RestException, setResponseHeader
+
+from ..lib.dataverse.provider import DataverseImportProvider
 
 
 class Integration(Resource):
@@ -40,13 +43,20 @@ class Integration(Resource):
         url = '{scheme}://{netloc}/api/access/datafile/{fileId}'.format(
             scheme=site.scheme, netloc=site.netloc, fileId=fileId
         )
+        query = {'uri': url}
+        try:
+            title, _, _ = DataverseImportProvider._parse_access_url(urlparse(url))
+            query['name'] = title
+        except (HTTPError, URLError):
+            # This doesn't bode well, but let's fail later when tale import happens
+            pass
 
         # TODO: Make base url a plugin setting, defaulting to dashboard.<domain>
         dashboard_url = os.environ.get('DASHBOARD_URL', 'https://dashboard.wholetale.org')
         location = urlunparse(
             urlparse(dashboard_url)._replace(
                 path='/compose',
-                query=urlencode({'uri': url}))
+                query=urlencode(query))
         )
         setResponseHeader('Location', location)
         cherrypy.response.status = 303
