@@ -85,6 +85,10 @@ class DataverseImportProvider(ImportProvider):
     def get_base_url_setting():
         return Setting().get(constants.PluginSettings.DATAVERSE_URL)
 
+    @staticmethod
+    def get_extra_hosts_setting():
+        return Setting().get(constants.PluginSettings.DATAVERSE_EXTRA_HOSTS)
+
     def create_dataverse_regex(self):
         url = self.get_base_url_setting()
         if not url.endswith('installations-json'):
@@ -103,11 +107,14 @@ class DataverseImportProvider(ImportProvider):
             urls = [_['url'] for _ in data['installations']]
         else:
             urls = [self.get_base_url_setting()]
+        urls += self.get_extra_hosts_setting()
         return re.compile("^" + "|".join(urls) + ".*$")
 
     def setting_changed(self, event):
-        if not hasattr(event, "info") or \
-                event.info.get('key', '') != constants.PluginSettings.DATAVERSE_URL:
+        triggers = {
+            constants.PluginSettings.DATAVERSE_URL, constants.PluginSettings.DATAVERSE_EXTRA_HOSTS
+        }
+        if not hasattr(event, "info") or event.info.get('key', '') not in triggers:
             return
         self._dataverse_regex = None
 

@@ -193,6 +193,52 @@ class DataverseHarversterTestCase(base.TestCase):
                     'value': SettingDefault.defaults[PluginSettings.DATAVERSE_URL]})
         self.assertStatusOk(resp)
 
+    def testExtraHosts(self):
+        from girder.plugins.wholetale.constants import PluginSettings, SettingDefault
+        resp = self.request('/system/setting', user=self.admin, method='PUT',
+                            params={'key': PluginSettings.DATAVERSE_EXTRA_HOSTS,
+                                    'value': 'https://dataverse.org/'})
+        self.assertStatus(resp, 400)
+        self.assertEqual(resp.json, {
+            'field': 'value',
+            'type': 'validation',
+            'message': 'Dataverse extra hosts setting must be a list.'
+        })
+
+        resp = self.request('/system/setting', user=self.admin, method='PUT',
+                            params={'key': PluginSettings.DATAVERSE_EXTRA_HOSTS,
+                                    'value': json.dumps(['not a url'])})
+        self.assertStatus(resp, 400)
+        self.assertEqual(resp.json, {
+            'field': 'value',
+            'type': 'validation',
+            'message': 'Invalid URL in Dataverse extra hosts'
+        })
+
+        resp = self.request(
+            '/system/setting', user=self.admin, method='PUT',
+            params={'list': json.dumps([
+                {
+                    'key': PluginSettings.DATAVERSE_EXTRA_HOSTS,
+                    'value': ['https://random.d.org', 'https://random2.d.org']
+                },
+                {
+                    'key': PluginSettings.DATAVERSE_URL,
+                    'value': 'https://demo.dataverse.org'
+                }
+            ])}
+        )
+        self.assertStatusOk(resp)
+        from girder.plugins.wholetale.lib.dataverse.provider import DataverseImportProvider
+        self.assertEqual(
+            '^https://demo.dataverse.org|https://random.d.org|https://random2.d.org.*$',
+            DataverseImportProvider().dataverse_regex.pattern
+        )
+        resp = self.request(
+            '/system/setting', user=self.admin, method='PUT',
+            params={'key': PluginSettings.DATAVERSE_URL,
+                    'value': SettingDefault.defaults[PluginSettings.DATAVERSE_URL]})
+
     def tearDown(self):
         self.model('user').remove(self.user)
         self.model('user').remove(self.admin)
