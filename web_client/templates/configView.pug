@@ -1,4 +1,6 @@
 .g-config-breadcrumb-container
+p.g-wholetale-description
+  | Configure Whole Tale plugin
 form#g-wholetale-config-form(role="form")
   .form-group
     label.control-label(for="wholetale_tmpnb") tmpnb URL
@@ -21,6 +23,10 @@ form#g-wholetale-config-form(role="form")
       type="text", value=settings['wholetale.dataverse_url'] || '',
       placeholder=`Default: ${defaults['wholetale.dataverse_url'] || 'none'}`,
       title="Location of a map of dataverse installations.")
+    label.control-label(for="wholetale_extra_hosts") Extra Dataverse Installations
+    textarea#wholetale_extra_hosts.form-control(
+      placeholder=`Default: ${defaults['wholetale.dataverse_extra_hosts'] || '[]'}`,
+      title="Additional supported Dataverse installations.")= extraHosts
   p#g-wholetale-error-message.g-validation-failed-message
   button.g-generate-key.btn.btn-small.btn-primary(title="Generate Key")
     | Generate Key

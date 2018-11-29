@@ -29,6 +29,9 @@ var ConfigView = View.extend({
             }, {
                 key: 'wholetale.instance_cap',
                 value: this.$('#wholetale_instance_cap').val()
+            }, {
+                key: 'wholetale.dataverse_extra_hosts',
+                value: this.$('#wholetale_extra_hosts').val().trim()
             }]);
         },
         'click .g-generate-key': function (event) {
@@ -56,7 +59,8 @@ var ConfigView = View.extend({
             'wholetale.priv_key',
             'wholetale.pub_key',
             'wholetale.dataverse_url',
-            'wholetale.instance_cap'
+            'wholetale.instance_cap',
+            'wholetale.dataverse_extra_hosts'
         ];
 
         restRequest({
@@ -85,7 +89,8 @@ var ConfigView = View.extend({
     render: function () {
         this.$el.html(ConfigViewTemplate({
             settings: this.settings,
-            defaults: this.defaults
+            defaults: this.defaults,
+            extraHosts: JSON.stringify(this.settings['wholetale.dataverse_extra_hosts'], null, 4)
         }));
         this.breadcrumb.setElement(this.$('.g-config-breadcrumb-container')).render();
         return this;
