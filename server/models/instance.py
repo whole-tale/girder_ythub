@@ -2,7 +2,11 @@
 # -*- coding: utf-8 -*-
 
 import datetime
+import ssl
+import time
+from tornado.httpclient import HTTPRequest, HTTPError, HTTPClient
 
+from girder import logger
 from girder.constants import AccessType, SortDir
 from girder.exceptions import ValidationException
 from girder.models.model_base import AccessControlledModel
@@ -138,6 +142,28 @@ class Instance(AccessControlledModel):
         return self.save(instance)
 
 
+def _wait_for_server(url, timeout=30, wait_time=0.5):
+    """Wait for a server to show up within a newly launched instance."""
+    tic = time.time()
+    http_client = HTTPClient()
+    req = HTTPRequest(url)
+
+    while time.time() - tic < timeout:
+        try:
+            http_client.fetch(req)
+        except HTTPError as http_error:
+            code = http_error.code
+            logger.info(
+                'Booting server at [%s], getting HTTP status [%s]', url, code)
+            time.sleep(wait_time)
+        except ssl.SSLError:
+            logger.info(
+                'Booting server at [%s], getting SSLError', url)
+            time.sleep(wait_time)
+        else:
+            break
+
+
 def finalizeInstance(event):
     job = event.info['job']
     if job['title'] == 'Spawn Instance' and job.get('status') is not None:
@@ -148,8 +174,10 @@ def finalizeInstance(event):
             service = getCeleryApp().AsyncResult(job['celeryTaskId']).get()
             valid_keys = set(containerInfoSchema['properties'].keys())
             containerInfo = {key: service.get(key, '') for key in valid_keys}
+            url = service.get('url', 'https://google.com')
+            _wait_for_server(url)
             instance.update({
-                'url': service.get('url', 'http://unknown.com'),
+                'url': url,
                 'status': InstanceStatus.RUNNING,
                 'containerInfo': containerInfo,
                 'sessionId': service.get('sessionId')
