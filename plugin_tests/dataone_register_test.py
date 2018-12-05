@@ -4,7 +4,6 @@ import json
 import os
 from tests import base
 from girder.api.rest import RestException
-from girder.constants import ROOT_DIR
 
 '''Tests for the methods in dataone_register.py. Some of these tests use live requests,
 while others use mocked JSON responses/data structures.'''
@@ -16,6 +15,7 @@ DATA_PATH = os.path.join(
     os.path.dirname(os.environ['GIRDER_TEST_DATA_PREFIX']),
     'data_src', 'plugins', 'wholetale'
 )
+
 
 def setUpModule():
     base.enabledPlugins.append('wholetale')

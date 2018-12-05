@@ -80,6 +80,16 @@ def validateHubPubKey(doc):
             "PUB_KEY's type is not supported.")
 
 
+@setting_utilities.validator(PluginSettings.DATAVERSE_EXTRA_HOSTS)
+def validateDataverseExtraHosts(doc):
+    val = doc['value']
+    if not isinstance(val, list):
+        raise ValidationException('Dataverse extra hosts setting must be a list.', 'value')
+    for url in val:
+        if not validators.url(url):
+            raise ValidationException('Invalid URL in Dataverse extra hosts', 'value')
+
+
 @setting_utilities.validator(PluginSettings.TMPNB_URL)
 def validateTmpNbUrl(doc):
     if not doc['value']:
@@ -116,6 +126,11 @@ def defaultInstanceCap():
 @setting_utilities.default(PluginSettings.DATAVERSE_URL)
 def defaultDataverseURL():
     return SettingDefault.defaults[PluginSettings.DATAVERSE_URL]
+
+
+@setting_utilities.default(PluginSettings.DATAVERSE_EXTRA_HOSTS)
+def defaultDataverseExtraHosts():
+    return SettingDefault.defaults[PluginSettings.DATAVERSE_EXTRA_HOSTS]
 
 
 @access.public(scope=TokenScope.DATA_READ)

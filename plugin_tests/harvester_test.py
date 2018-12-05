@@ -7,7 +7,6 @@ import os
 import six
 import vcr
 from tests import base
-from girder.constants import ROOT_DIR
 from girder.api.rest import RestException
 
 
