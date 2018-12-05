@@ -132,9 +132,6 @@ class TaleTestCase(base.TestCase):
 
     def testInstanceCap(self):
         with six.assertRaisesRegex(self, ValidationException,
-                                   '^Instance Cap needs to be set.$'):
-            self.model('setting').set(PluginSettings.INSTANCE_CAP, '')
-        with six.assertRaisesRegex(self, ValidationException,
                                    '^Instance Cap needs to be an integer.$'):
             self.model('setting').set(PluginSettings.INSTANCE_CAP, 'a')
 

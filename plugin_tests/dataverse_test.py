@@ -120,16 +120,6 @@ class DataverseHarversterTestCase(base.TestCase):
         from girder.plugins.wholetale.constants import PluginSettings, SettingDefault
         resp = self.request('/system/setting', user=self.admin, method='PUT',
                             params={'key': PluginSettings.DATAVERSE_URL,
-                                    'value': ''})
-        self.assertStatus(resp, 400)
-        self.assertEqual(resp.json, {
-            'field': 'value',
-            'type': 'validation',
-            'message': 'Dataverse Instances list URL must not be empty.'
-        })
-
-        resp = self.request('/system/setting', user=self.admin, method='PUT',
-                            params={'key': PluginSettings.DATAVERSE_URL,
                                     'value': 'random_string'})
         self.assertStatus(resp, 400)
         self.assertEqual(resp.json, {

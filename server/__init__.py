@@ -34,10 +34,11 @@ from .models.instance import finalizeInstance
 
 @setting_utilities.validator(PluginSettings.DATAVERSE_EXTRA_HOSTS)
 def validateDataverseExtraHosts(doc):
-    val = doc['value']
-    if not isinstance(val, list):
+    if not doc['value']:
+        doc['value'] = defaultDataverseExtraHosts()
+    if not isinstance(doc['value'], list):
         raise ValidationException('Dataverse extra hosts setting must be a list.', 'value')
-    for url in val:
+    for url in doc['value']:
         if not validators.url(url):
             raise ValidationException('Invalid URL in Dataverse extra hosts', 'value')
 
@@ -45,8 +46,7 @@ def validateDataverseExtraHosts(doc):
 @setting_utilities.validator(PluginSettings.INSTANCE_CAP)
 def validateInstanceCap(doc):
     if not doc['value']:
-        raise ValidationException(
-            'Instance Cap needs to be set.', 'value')
+        doc['value'] = defaultInstanceCap()
     try:
         int(doc['value'])
     except ValueError:
@@ -57,8 +57,7 @@ def validateInstanceCap(doc):
 @setting_utilities.validator(PluginSettings.DATAVERSE_URL)
 def validateDataverseURL(doc):
     if not doc['value']:
-        raise ValidationException(
-            'Dataverse Instances list URL must not be empty.', 'value')
+        doc['value'] = defaultDataverseURL()
     if not validators.url(doc['value']):
         raise ValidationException('Invalid Dataverse URL', 'value')
 

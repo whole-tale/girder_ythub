@@ -5,12 +5,12 @@ form#g-wholetale-config-form(role="form")
   .form-group
     label.control-label(for="wholetale_instance_cap") Instance Cap
     input.input-sm.form-control#wholetale_instance_cap(
-      type="text", value=settings['wholetale.instance_cap'] || '',
+      type="text", value=settings['wholetale.instance_cap'] || null,
       placeholder=`Default: ${defaults['wholetale.instance_cap'] || 'none'}`,
       title="Number of instances that user can run concurrently.")
     label.control-label(for="wholetale_dataverse_url") Dataverse Installations Map
     input.input-sm.form-control#wholetale_dataverse_url(
-      type="text", value=settings['wholetale.dataverse_url'] || '',
+      type="text", value=settings['wholetale.dataverse_url'] || null,
       placeholder=`Default: ${defaults['wholetale.dataverse_url'] || 'none'}`,
       title="Location of a map of dataverse installations.")
     label.control-label(for="wholetale_extra_hosts") Extra Dataverse Installations
