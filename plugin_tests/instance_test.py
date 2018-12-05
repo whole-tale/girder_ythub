@@ -131,11 +131,25 @@ class TaleTestCase(base.TestCase):
             self.assertStatusOk(resp)
 
     def testInstanceCap(self):
+        from girder.plugins.wholetale.constants import PluginSettings, SettingDefault
         with six.assertRaisesRegex(self, ValidationException,
                                    '^Instance Cap needs to be an integer.$'):
             self.model('setting').set(PluginSettings.INSTANCE_CAP, 'a')
 
         setting = self.model('setting')
+
+        resp = self.request(
+            '/system/setting', user=self.admin, method='PUT',
+            params={'key': PluginSettings.INSTANCE_CAP,
+                    'value': ''})
+        self.assertStatusOk(resp)
+        resp = self.request(
+            '/system/setting', user=self.admin, method='GET',
+            params={'key': PluginSettings.INSTANCE_CAP})
+        self.assertStatusOk(resp)
+        self.assertEqual(
+            resp.body[0].decode(),
+            str(SettingDefault.defaults[PluginSettings.INSTANCE_CAP]))
 
         with mock.patch('celery.Celery') as celeryMock:
             with mock.patch('tornado.httpclient.HTTPClient') as tornadoMock:
