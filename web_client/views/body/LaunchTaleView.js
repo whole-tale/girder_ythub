@@ -77,7 +77,7 @@ var LaunchTaleView = View.extend({
                         }
                     }, this));
                     this.$('.g-job-progress>.progress-bar').css('width', '100%')
-                      .removeClass('progress-bar-info').addClass('progress-bar-success');
+                        .removeClass('progress-bar-info').addClass('progress-bar-success');
                 } else if (this.job.get('status') === JobStatus.ERROR) {
                     restRequest({
                         url: 'job/' + this.job.id + '/result',
@@ -87,7 +87,7 @@ var LaunchTaleView = View.extend({
                         this.$('.g-validation-failed-message').text(resp);
                     }, this));
                     this.$('.g-job-progress>.progress-bar').css('width', '100%')
-                      .removeClass('progress-bar-info').addClass('progress-bar-danger');
+                        .removeClass('progress-bar-info').addClass('progress-bar-danger');
                 }
             }
         });

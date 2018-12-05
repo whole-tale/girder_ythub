@@ -100,7 +100,7 @@ var InstanceListWidget = View.extend({
 
         if (this.columns & this.columnEnum.COLUMN_STATUS_ICON) {
             tr.find('td.g-status-icon-container').attr('status', instance.status)
-              .find('i').removeClass().addClass(InstanceStatus.icon(instance.status));
+                .find('i').removeClass().addClass(InstanceStatus.icon(instance.status));
         }
         if (this.columns & this.columnEnum.COLUMN_STATUS) {
             tr.find('td.g-instance-status-cell').text(InstanceStatus.text(instance.status));
