@@ -51,8 +51,6 @@ class TaleTestCase(base.TestCase):
         from girder.plugins.wholetale.constants import PluginSettings
         from girder.plugins.wholetale.rest.instance import instanceCapErrMsg
         self.model('setting').set(
-            PluginSettings.TMPNB_URL, 'https://tmpnb.null')
-        self.model('setting').set(
             PluginSettings.INSTANCE_CAP, '2')
         users = ({
             'email': 'root@dev.null',
