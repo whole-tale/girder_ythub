@@ -2,7 +2,8 @@ rdflib
 cryptography
 tornado
 celery[redis]
-requests
+idna==2.7  # pin for requests
+requests==2.20.1  # https://github.com/requests/requests/issues/4890
 redis
 git+https://github.com/whole-tale/gwvolman#egg=gwvolman
 dataone.common
