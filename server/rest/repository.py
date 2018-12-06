@@ -53,7 +53,8 @@ class Repository(Resource):
         # also, why is size required at this point?
         results = []
         for pid in dataId:
-            entity = Repository._buildAndResolveEntity(pid, base_url, self.getCurrentUser())
+            entity = Repository._buildAndResolveEntity(
+                pid.strip(), base_url, self.getCurrentUser())
             provider = IMPORT_PROVIDERS.getProvider(entity)
             results.append(provider.lookup(entity))
 
@@ -77,7 +78,8 @@ class Repository(Resource):
     def listFiles(self, dataId, base_url):
         results = []
         for pid in dataId:
-            entity = Repository._buildAndResolveEntity(pid, base_url, self.getCurrentUser())
+            entity = Repository._buildAndResolveEntity(
+                pid.strip(), base_url, self.getCurrentUser())
             provider = IMPORT_PROVIDERS.getProvider(entity)
             results.append(provider.listFiles(entity))
         return sorted([x.toDict() for x in results], key=lambda k: list(k))
