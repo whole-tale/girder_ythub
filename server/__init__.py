@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from cryptography.exceptions import UnsupportedAlgorithm
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import serialization
 import six
 import validators
 
@@ -35,73 +32,21 @@ from .rest.wholetale import wholeTale
 from .models.instance import finalizeInstance
 
 
-@setting_utilities.validator(PluginSettings.HUB_PRIV_KEY)
-def validateHubPrivKey(doc):
-    if not doc['value']:
-        raise ValidationException(
-            'PRIV_KEY must not be empty.', 'value')
-    try:
-        key = doc['value'].encode('utf8')
-    except AttributeError:
-        key = doc['value']
-    try:
-        serialization.load_pem_private_key(
-            key, password=None, backend=default_backend()
-        )
-    except ValueError:
-        raise ValidationException(
-            "PRIV_KEY's data structure could not be decoded.")
-    except TypeError:
-        raise ValidationException(
-            "PRIV_KEY is password encrypted, yet no password provided.")
-    except UnsupportedAlgorithm:
-        raise ValidationException(
-            "PRIV_KEY's type is not supported.")
-
-
-@setting_utilities.validator(PluginSettings.HUB_PUB_KEY)
-def validateHubPubKey(doc):
-    if not doc['value']:
-        raise ValidationException(
-            'PUB_KEY must not be empty.', 'value')
-    try:
-        key = doc['value'].encode('utf8')
-    except AttributeError:
-        key = doc['value']
-    try:
-        serialization.load_pem_public_key(
-            key, backend=default_backend()
-        )
-    except ValueError:
-        raise ValidationException(
-            "PUB_KEY's data structure could not be decoded.")
-    except UnsupportedAlgorithm:
-        raise ValidationException(
-            "PUB_KEY's type is not supported.")
-
-
 @setting_utilities.validator(PluginSettings.DATAVERSE_EXTRA_HOSTS)
 def validateDataverseExtraHosts(doc):
-    val = doc['value']
-    if not isinstance(val, list):
+    if not doc['value']:
+        doc['value'] = defaultDataverseExtraHosts()
+    if not isinstance(doc['value'], list):
         raise ValidationException('Dataverse extra hosts setting must be a list.', 'value')
-    for url in val:
+    for url in doc['value']:
         if not validators.url(url):
             raise ValidationException('Invalid URL in Dataverse extra hosts', 'value')
-
-
-@setting_utilities.validator(PluginSettings.TMPNB_URL)
-def validateTmpNbUrl(doc):
-    if not doc['value']:
-        raise ValidationException(
-            'TmpNB URL must not be empty.', 'value')
 
 
 @setting_utilities.validator(PluginSettings.INSTANCE_CAP)
 def validateInstanceCap(doc):
     if not doc['value']:
-        raise ValidationException(
-            'Instance Cap needs to be set.', 'value')
+        doc['value'] = defaultInstanceCap()
     try:
         int(doc['value'])
     except ValueError:
@@ -112,8 +57,7 @@ def validateInstanceCap(doc):
 @setting_utilities.validator(PluginSettings.DATAVERSE_URL)
 def validateDataverseURL(doc):
     if not doc['value']:
-        raise ValidationException(
-            'Dataverse Instances list URL must not be empty.', 'value')
+        doc['value'] = defaultDataverseURL()
     if not validators.url(doc['value']):
         raise ValidationException('Invalid Dataverse URL', 'value')
 

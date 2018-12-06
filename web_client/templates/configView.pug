@@ -3,31 +3,20 @@ p.g-wholetale-description
   | Configure Whole Tale plugin
 form#g-wholetale-config-form(role="form")
   .form-group
-    label.control-label(for="wholetale_tmpnb") tmpnb URL
-    input.input-sm.form-control#wholetale_tmpnb(
-      type="text", placeholder="Temporary instance server's URL",
-      value=settings['wholetale.tmpnb_url'] || '')
-    label.control-label(for="wholetale_priv_key") yt Hub's private RSA key
-    textarea#wholetale_priv_key.form-control(
-      placeholder='Private RSA key')= settings['wholetale.priv_key'] || ''
-    label.control-label(for="wholetale_pub_key") yt Hub's public RSA key
-    textarea#wholetale_pub_key.form-control(
-      placeholder='Public RSA key')= settings['wholetale.pub_key'] || ''
     label.control-label(for="wholetale_instance_cap") Instance Cap
     input.input-sm.form-control#wholetale_instance_cap(
-      type="text", value=settings['wholetale.instance_cap'] || '',
+      type="text", value=settings['wholetale.instance_cap'] || null,
       placeholder=`Default: ${defaults['wholetale.instance_cap'] || 'none'}`,
       title="Number of instances that user can run concurrently.")
     label.control-label(for="wholetale_dataverse_url") Dataverse Installations Map
     input.input-sm.form-control#wholetale_dataverse_url(
-      type="text", value=settings['wholetale.dataverse_url'] || '',
+      type="text", value=settings['wholetale.dataverse_url'] || null,
       placeholder=`Default: ${defaults['wholetale.dataverse_url'] || 'none'}`,
       title="Location of a map of dataverse installations.")
     label.control-label(for="wholetale_extra_hosts") Extra Dataverse Installations
     textarea#wholetale_extra_hosts.form-control(
       placeholder=`Default: ${defaults['wholetale.dataverse_extra_hosts'] || '[]'}`,
-      title="Additional supported Dataverse installations.")= extraHosts
+      title="Additional supported Dataverse installations. (JSON array [\"data1\", \"data2\", ...])")
+        = JSON.stringify(settings['wholetale.dataverse_extra_hosts'] || defaults['wholetale.dataverse_extra_hosts'], 4)
   p#g-wholetale-error-message.g-validation-failed-message
-  button.g-generate-key.btn.btn-small.btn-primary(title="Generate Key")
-    | Generate Key
   input.btn.btn-sm.btn-primary(type="submit", value="Save")

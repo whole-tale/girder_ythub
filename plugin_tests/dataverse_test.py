@@ -120,16 +120,6 @@ class DataverseHarversterTestCase(base.TestCase):
         from girder.plugins.wholetale.constants import PluginSettings, SettingDefault
         resp = self.request('/system/setting', user=self.admin, method='PUT',
                             params={'key': PluginSettings.DATAVERSE_URL,
-                                    'value': ''})
-        self.assertStatus(resp, 400)
-        self.assertEqual(resp.json, {
-            'field': 'value',
-            'type': 'validation',
-            'message': 'Dataverse Instances list URL must not be empty.'
-        })
-
-        resp = self.request('/system/setting', user=self.admin, method='PUT',
-                            params={'key': PluginSettings.DATAVERSE_URL,
                                     'value': 'random_string'})
         self.assertStatus(resp, 400)
         self.assertEqual(resp.json, {
@@ -143,6 +133,19 @@ class DataverseHarversterTestCase(base.TestCase):
             params={'key': PluginSettings.DATAVERSE_URL,
                     'value': SettingDefault.defaults[PluginSettings.DATAVERSE_URL]})
         self.assertStatusOk(resp)
+
+        resp = self.request(
+            '/system/setting', user=self.admin, method='PUT',
+            params={'key': PluginSettings.DATAVERSE_URL,
+                    'value': ''})
+        self.assertStatusOk(resp)
+        resp = self.request(
+            '/system/setting', user=self.admin, method='GET',
+            params={'key': PluginSettings.DATAVERSE_URL})
+        self.assertStatusOk(resp)
+        self.assertEqual(
+            resp.body[0].decode(),
+            '"{}"'.format(SettingDefault.defaults[PluginSettings.DATAVERSE_URL]))
 
     @vcr.use_cassette(os.path.join(DATA_PATH, 'dataverse_single.txt'))
     def testSingleDataverseInstance(self):
@@ -214,6 +217,20 @@ class DataverseHarversterTestCase(base.TestCase):
             'type': 'validation',
             'message': 'Invalid URL in Dataverse extra hosts'
         })
+
+        # defaults
+        resp = self.request(
+            '/system/setting', user=self.admin, method='PUT',
+            params={'key': PluginSettings.DATAVERSE_EXTRA_HOSTS,
+                    'value': ''})
+        self.assertStatusOk(resp)
+        resp = self.request(
+            '/system/setting', user=self.admin, method='GET',
+            params={'key': PluginSettings.DATAVERSE_EXTRA_HOSTS})
+        self.assertStatusOk(resp)
+        self.assertEqual(
+            resp.body[0].decode(),
+            str(SettingDefault.defaults[PluginSettings.DATAVERSE_EXTRA_HOSTS]))
 
         resp = self.request(
             '/system/setting', user=self.admin, method='PUT',

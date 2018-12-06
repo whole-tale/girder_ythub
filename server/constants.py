@@ -19,9 +19,6 @@ class HarvesterType:
 
 
 class PluginSettings:
-    TMPNB_URL = 'wholetale.tmpnb_url'
-    HUB_PRIV_KEY = 'wholetale.priv_key'
-    HUB_PUB_KEY = 'wholetale.pub_key'
     INSTANCE_CAP = 'wholetale.instance_cap'
     DATAVERSE_URL = 'wholetale.dataverse_url'
     DATAVERSE_EXTRA_HOSTS = 'wholetale.dataverse_extra_hosts'

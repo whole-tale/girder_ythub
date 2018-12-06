@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 import json
-import six
 from tests import base
 
 
@@ -34,46 +33,6 @@ class WholeTaleTestCase(base.TestCase):
         })
         self.admin, self.user = [self.model('user').createUser(**user)
                                  for user in users]
-
-    def testConfigValidators(self):
-        from girder.plugins.wholetale.constants import PluginSettings
-        resp = self.request('/system/setting', user=self.admin, method='PUT',
-                            params={'key': PluginSettings.TMPNB_URL,
-                                    'value': ''})
-        self.assertStatus(resp, 400)
-        self.assertEqual(resp.json, {
-            'field': 'value',
-            'type': 'validation',
-            'message': 'TmpNB URL must not be empty.'
-        })
-
-        keys = {'PUB_KEY': PluginSettings.HUB_PUB_KEY,
-                'PRIV_KEY': PluginSettings.HUB_PRIV_KEY}
-        for k, v in six.iteritems(keys):
-            params = {
-                'key': v,
-                'value': ''
-            }
-            resp = self.request('/system/setting', user=self.admin, method='PUT',
-                                params=params)
-            self.assertStatus(resp, 400)
-            self.assertEqual(resp.json, {
-                'field': 'value',
-                'type': 'validation',
-                'message': '%s must not be empty.' % k
-            })
-
-            params = {
-                'key': v,
-                'value': 'blah'
-            }
-            resp = self.request('/system/setting', user=self.admin, method='PUT',
-                                params=params)
-            self.assertStatus(resp, 400)
-            self.assertEqual(resp.json, {
-                'type': 'validation',
-                'message': "%s's data structure could not be decoded." % k
-            })
 
     def testListing(self):
         user = self.user
@@ -113,22 +72,10 @@ class WholeTaleTestCase(base.TestCase):
                          set((str(fl1['_id']), str(fl2['_id']))))
 
     def testHubRoutes(self):
-        from girder.plugins.wholetale.constants import PluginSettings
-        self.model('setting').set(
-            PluginSettings.TMPNB_URL, 'https://tmpnb.null')
-
-        resp = self.request(path='/wholetale/genkey', user=self.admin,
-                            method='POST')
-        self.assertStatusOk(resp)
-        self.assertIn(PluginSettings.HUB_PUB_KEY, resp.json)
-        self.assertIn(PluginSettings.HUB_PRIV_KEY, resp.json)
-
-        pubkey = resp.json[PluginSettings.HUB_PUB_KEY]
-
+        from girder.plugins.wholetale.constants import API_VERSION
         resp = self.request(path='/wholetale', method='GET')
         self.assertStatusOk(resp)
-        self.assertEqual(resp.json['url'], 'https://tmpnb.null')
-        self.assertEqual(resp.json['pubkey'], pubkey)
+        self.assertEqual(resp.json['api_version'], API_VERSION)
 
     def testUserSettings(self):
         resp = self.request(path='/user/settings', method='GET')

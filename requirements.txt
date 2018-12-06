@@ -1,5 +1,4 @@
 rdflib
-cryptography
 tornado
 celery[redis]
 idna==2.7  # pin for requests
