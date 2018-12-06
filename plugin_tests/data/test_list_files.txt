@@ -5,52 +5,49 @@ interactions:
       Connection: [close]
       Host: [doi.org]
       User-Agent: [Python-urllib/3.6]
-    method: GET
+    method: HEAD
     uri: https://doi.org/10.5065/D6862DM8
   response:
-    body: {string: '<html><head><title>Handle Redirect</title></head>
-
-        <body><a href="https://arcticdata.io/catalog/#view/doi:10.5065/D6862DM8">https://arcticdata.io/catalog/#view/doi:10.5065/D6862DM8</a></body></html>'}
+    body: {string: ''}
     headers:
-      CF-RAY: [47d5600178f854e6-ORD]
+      CF-RAY: [484f05c8dafcb9e2-ATL]
       Connection: [close]
       Content-Length: ['197']
       Content-Type: [text/html;charset=utf-8]
-      Date: ['Wed, 21 Nov 2018 18:56:13 GMT']
+      Date: ['Thu, 06 Dec 2018 13:15:40 GMT']
       Expect-CT: ['max-age=604800, report-uri="https://report-uri.cloudflare.com/cdn-cgi/beacon/expect-ct"']
-      Expires: ['Wed, 21 Nov 2018 19:23:53 GMT']
+      Expires: ['Thu, 06 Dec 2018 14:02:04 GMT']
       Location: ['https://arcticdata.io/catalog/#view/doi:10.5065/D6862DM8']
       Server: [cloudflare]
-      Set-Cookie: ['__cfduid=d81e22e42d94738ad7002a59365a3cb191542826573; expires=Thu,
-          21-Nov-19 18:56:13 GMT; path=/; domain=.doi.org; HttpOnly']
+      Set-Cookie: ['__cfduid=daabd294564f29fa1084b8e3f5648736c1544102140; expires=Fri,
+          06-Dec-19 13:15:40 GMT; path=/; domain=.doi.org; HttpOnly']
       Vary: [Accept]
     status: {code: 302, message: ''}
 - request:
     body: null
     headers:
-      Accept: ['*/*']
-      Accept-Encoding: ['gzip, deflate']
-      Connection: [keep-alive]
-      User-Agent: [python-requests/2.19.1]
-    method: GET
-    uri: https://cn.dataone.org/cn/v2/query/solr/?q=identifier:%22doi%3A10.5065%2FD6862DM8%22&fl=identifier,formatType,formatId,resourceMap&rows=1000&start=0&wt=json
+      Connection: [close]
+      Host: [arcticdata.io]
+      User-Agent: [Python-urllib/3.6]
+    method: HEAD
+    uri: https://arcticdata.io/catalog/
   response:
-    body: {string: '{"responseHeader":{"status":0,"QTime":4,"params":{"q":"identifier:\"doi:10.5065/D6862DM8\"","fl":"identifier,formatType,formatId,resourceMap","start":"0","rows":"1000","wt":"json"}},"response":{"numFound":1,"start":0,"docs":[{"identifier":"doi:10.5065/D6862DM8","formatId":"eml://ecoinformatics.org/eml-2.1.1","formatType":"METADATA","resourceMap":["resource_map_doi:10.5065/D6862DM8"]}]}}
-
-'}
+    body: {string: ''}
     headers:
+      Accept-Ranges: [bytes]
       Access-Control-Allow-Credentials: ['true']
-      Access-Control-Allow-Headers: ['Authorization, Content-Type, Location, Content-Length,
-          x-annotator-auth-token']
-      Access-Control-Allow-Methods: ['POST, GET, OPTIONS, PUT, DELETE']
+      Access-Control-Allow-Headers: ['Authorization, Content-Type, Origin, Cache-Control']
+      Access-Control-Allow-Methods: ['GET, POST, PUT, OPTIONS']
       Access-Control-Allow-Origin: ['']
-      Access-Control-Expose-Headers: ['Content-Length, Content-Type, Location']
-      Connection: [Keep-Alive]
-      Content-Type: [application/json; charset=UTF-8]
-      Date: ['Wed, 21 Nov 2018 18:56:13 GMT']
-      Keep-Alive: ['timeout=5, max=100']
+      Connection: [close]
+      Content-Length: ['6275']
+      Content-Type: [text/html]
+      Date: ['Thu, 06 Dec 2018 13:15:40 GMT']
+      ETag: ['"1883-57bd2793823bf"']
+      Last-Modified: ['Thu, 29 Nov 2018 19:13:10 GMT']
       Server: [Apache/2.4.7 (Ubuntu)]
-      Transfer-Encoding: [chunked]
+      Vary: [Accept-Encoding]
+      X-Frame-Options: [SAMEORIGIN, sameorigin]
     status: {code: 200, message: OK}
 - request:
     body: null
@@ -74,7 +71,34 @@ interactions:
       Access-Control-Expose-Headers: ['Content-Length, Content-Type, Location']
       Connection: [Keep-Alive]
       Content-Type: [application/json; charset=UTF-8]
-      Date: ['Wed, 21 Nov 2018 18:56:13 GMT']
+      Date: ['Thu, 06 Dec 2018 13:15:41 GMT']
+      Keep-Alive: ['timeout=5, max=100']
+      Server: [Apache/2.4.7 (Ubuntu)]
+      Transfer-Encoding: [chunked]
+    status: {code: 200, message: OK}
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Connection: [keep-alive]
+      User-Agent: [python-requests/2.19.1]
+    method: GET
+    uri: https://cn.dataone.org/cn/v2/query/solr/?q=identifier:%22doi%3A10.5065%2FD6862DM8%22&fl=identifier,formatType,formatId,resourceMap&rows=1000&start=0&wt=json
+  response:
+    body: {string: '{"responseHeader":{"status":0,"QTime":2,"params":{"q":"identifier:\"doi:10.5065/D6862DM8\"","fl":"identifier,formatType,formatId,resourceMap","start":"0","rows":"1000","wt":"json"}},"response":{"numFound":1,"start":0,"docs":[{"identifier":"doi:10.5065/D6862DM8","formatId":"eml://ecoinformatics.org/eml-2.1.1","formatType":"METADATA","resourceMap":["resource_map_doi:10.5065/D6862DM8"]}]}}
+
+'}
+    headers:
+      Access-Control-Allow-Credentials: ['true']
+      Access-Control-Allow-Headers: ['Authorization, Content-Type, Location, Content-Length,
+          x-annotator-auth-token']
+      Access-Control-Allow-Methods: ['POST, GET, OPTIONS, PUT, DELETE']
+      Access-Control-Allow-Origin: ['']
+      Access-Control-Expose-Headers: ['Content-Length, Content-Type, Location']
+      Connection: [Keep-Alive]
+      Content-Type: [application/json; charset=UTF-8]
+      Date: ['Thu, 06 Dec 2018 13:15:41 GMT']
       Keep-Alive: ['timeout=5, max=100']
       Server: [Apache/2.4.7 (Ubuntu)]
       Transfer-Encoding: [chunked]
@@ -102,7 +126,7 @@ interactions:
       Access-Control-Expose-Headers: ['Content-Length, Content-Type, Location']
       Connection: [Keep-Alive]
       Content-Type: [application/json; charset=UTF-8]
-      Date: ['Wed, 21 Nov 2018 18:56:14 GMT']
+      Date: ['Thu, 06 Dec 2018 13:15:42 GMT']
       Keep-Alive: ['timeout=5, max=100']
       Server: [Apache/2.4.7 (Ubuntu)]
       Transfer-Encoding: [chunked]
