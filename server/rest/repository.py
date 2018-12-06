@@ -3,11 +3,12 @@
 from girder.api import access
 from girder.api.describe import Description, autoDescribeRoute
 from girder.api.docs import addModel
-from girder.api.rest import Resource
+from girder.api.rest import Resource, RestException
 
 from girder.plugins.wholetale.lib.dataone import DataONELocations
 from ..lib import RESOLVERS, IMPORT_PROVIDERS
 from ..lib.entity import Entity
+from ..lib.resolvers import ResolutionException
 from ..lib.data_map import dataMapDoc
 from ..lib.file_map import fileMapDoc
 
@@ -52,11 +53,18 @@ class Repository(Resource):
         # delegate to the model/lib.
         # also, why is size required at this point?
         results = []
-        for pid in dataId:
-            entity = Repository._buildAndResolveEntity(
-                pid.strip(), base_url, self.getCurrentUser())
-            provider = IMPORT_PROVIDERS.getProvider(entity)
-            results.append(provider.lookup(entity))
+        try:
+            for pid in dataId:
+                entity = Repository._buildAndResolveEntity(
+                    pid.strip(), base_url, self.getCurrentUser())
+                provider = IMPORT_PROVIDERS.getProvider(entity)
+                results.append(provider.lookup(entity))
+        except ResolutionException:
+            raise RestException(
+                'Id "{}" was categorized as DOI, but its resolution failed.'.format(pid))
+        except Exception as exc:
+            raise RestException(
+                'Lookup for "{}" failed with: {}'.format(pid, str(exc)))
 
         results = [x.toDict() for x in results]
         return sorted(results, key=lambda k: k['name'])
@@ -77,9 +85,16 @@ class Repository(Resource):
         .responseClass('fileMap', array=True))
     def listFiles(self, dataId, base_url):
         results = []
-        for pid in dataId:
-            entity = Repository._buildAndResolveEntity(
-                pid.strip(), base_url, self.getCurrentUser())
-            provider = IMPORT_PROVIDERS.getProvider(entity)
-            results.append(provider.listFiles(entity))
+        try:
+            for pid in dataId:
+                entity = Repository._buildAndResolveEntity(
+                    pid.strip(), base_url, self.getCurrentUser())
+                provider = IMPORT_PROVIDERS.getProvider(entity)
+                results.append(provider.listFiles(entity))
+        except ResolutionException:
+            raise RestException(
+                'Id "{}" was categorized as DOI, but its resolution failed.'.format(pid))
+        except Exception as exc:
+            raise RestException(
+                'Listing files at "{}" failed with: {}'.format(pid, str(exc)))
         return sorted([x.toDict() for x in results], key=lambda k: list(k))
