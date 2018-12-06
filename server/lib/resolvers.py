@@ -1,6 +1,18 @@
 from .entity import Entity
-from urllib.request import OpenerDirector, HTTPHandler, HTTPSHandler
 from typing import Optional
+import contextlib
+from urllib.request import HTTPRedirectHandler, build_opener, Request
+
+
+class RedirectHandler(HTTPRedirectHandler):
+    last_url = None
+
+    def redirect_request(self, req, fp, code, msg, hdrs, newurl):
+        self.last_url = newurl
+        r = HTTPRedirectHandler.redirect_request(
+            self, req, fp, code, msg, hdrs, newurl)
+        r.get_method = lambda: 'HEAD'
+        return r
 
 
 class Resolver:
@@ -36,17 +48,24 @@ class ResolutionException(Exception):
 
 
 class DOIResolver(Resolver):
-    def __init__(self):
-        super().__init__()
-        od = OpenerDirector()
-        od.add_handler(HTTPHandler())
-        od.add_handler(HTTPSHandler())
-        self.od = od
+
+    @staticmethod
+    def follow_redirects(link):
+        """Follow redirects recursively."""
+        redirect_handler = RedirectHandler()
+        opener = build_opener(redirect_handler)
+        req = Request(link)
+        req.get_method = lambda: 'HEAD'
+        try:
+            with contextlib.closing(opener.open(req, timeout=5)) as site:
+                return site.url
+        except Exception:
+            return redirect_handler.last_url if redirect_handler.last_url else link
 
     @staticmethod
     def extractDOI(url: str):
         for prefix in ['doi:', 'http://dx.doi.org/doi:', 'https://dx.doi.org/doi:',
-                       'http://doi.org/', 'https://doi.org/']:
+                       'http://doi.org/', 'https://doi.org/', 'https://hdl.handle.net/']:
             if url.startswith(prefix):
                 return url[len(prefix):]
         return None
@@ -63,13 +82,10 @@ class DOIResolver(Resolver):
     def resolveDOI(self, entity: Entity, doi: str):
         # Expect a redirect. Basically, don't do anything fancy because I don't know
         # if I can correctly resolve a DOI using the structured record
-        with self.od.open('https://doi.org/%s' % doi) as resp:
-            if resp.status == 302:
-                # redirect
-                entity.setValue(resp.getheader('Location'))
-                entity['DOI'] = doi
-                return
-            elif resp.status == 404:
-                raise ResolutionException('DOI not found %s' % doi)
-            else:
-                raise ResolutionException('Could not resolve DOI %s: %s' % (doi, resp.read()))
+        url = 'https://doi.org/%s' % doi
+        resolved_url = self.follow_redirects(url)
+        if url == resolved_url:
+            raise ResolutionException('Could not resolve DOI %s' % (doi,))
+
+        entity.setValue(resolved_url)
+        entity['DOI'] = doi

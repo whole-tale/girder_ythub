@@ -51,7 +51,7 @@ class DataverseHarversterTestCase(base.TestCase):
         self.assertStatus(resp, 200)
         self.assertEqual(resp.json, [
             {
-                "dataId": "https://dataverse.harvard.edu/citation"
+                "dataId": "https://dataverse.harvard.edu/dataset.xhtml"
                           "?persistentId=doi:10.7910/DVN/RLMYMR",
                 "doi": "10.7910/DVN/RLMYMR",
                 "name": "Karnataka Diet Diversity and Food Security for "

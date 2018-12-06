@@ -5,26 +5,63 @@ interactions:
       Connection: [close]
       Host: [doi.org]
       User-Agent: [Python-urllib/3.6]
-    method: GET
+    method: HEAD
     uri: https://doi.org/10.7910/DVN/RLMYMR
   response:
-    body: {string: '<html><head><title>Handle Redirect</title></head>
-
-        <body><a href="https://dataverse.harvard.edu/citation?persistentId=doi:10.7910/DVN/RLMYMR">https://dataverse.harvard.edu/citation?persistentId=doi:10.7910/DVN/RLMYMR</a></body></html>'}
+    body: {string: ''}
     headers:
-      CF-RAY: [47e5122aaabdc522-ORD]
+      CF-RAY: [484f0a84e8c5ba18-ATL]
       Connection: [close]
       Content-Length: ['233']
       Content-Type: [text/html;charset=utf-8]
-      Date: ['Fri, 23 Nov 2018 16:39:17 GMT']
+      Date: ['Thu, 06 Dec 2018 13:18:54 GMT']
       Expect-CT: ['max-age=604800, report-uri="https://report-uri.cloudflare.com/cdn-cgi/beacon/expect-ct"']
-      Expires: ['Fri, 23 Nov 2018 17:26:40 GMT']
+      Expires: ['Thu, 06 Dec 2018 13:30:16 GMT']
       Location: ['https://dataverse.harvard.edu/citation?persistentId=doi:10.7910/DVN/RLMYMR']
       Server: [cloudflare]
-      Set-Cookie: ['__cfduid=dd1f6471049150f548735a6e4fdfa72ca1542991156; expires=Sat,
-          23-Nov-19 16:39:16 GMT; path=/; domain=.doi.org; HttpOnly']
+      Set-Cookie: ['__cfduid=d55013335cbd7e4c34c8ebd48732d46441544102334; expires=Fri,
+          06-Dec-19 13:18:54 GMT; path=/; domain=.doi.org; HttpOnly']
       Vary: [Accept]
     status: {code: 302, message: ''}
+- request:
+    body: null
+    headers:
+      Connection: [close]
+      Host: [dataverse.harvard.edu]
+      User-Agent: [Python-urllib/3.6]
+    method: HEAD
+    uri: https://dataverse.harvard.edu/citation?persistentId=doi:10.7910/DVN/RLMYMR
+  response:
+    body: {string: ''}
+    headers:
+      Cache-control: [no-cache="set-cookie"]
+      Connection: [Close]
+      Content-Language: [en-US]
+      Content-Type: [text/html;charset=ISO-8859-1]
+      Date: ['Thu, 06 Dec 2018 13:18:54 GMT']
+      Location: ['https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/RLMYMR']
+      Server: [Apache/2.4.6 (Red Hat Enterprise Linux) OpenSSL/1.0.2k-fips]
+      Set-Cookie: [AWSELB=EB1179591E49E298C6825A3028F74991071DEE12D3FE010BDBAE7AE7E438B31BFA0246B9F2DBD3EC37C4E69D8B958E3FBF8CF814030B5CB9749AB70FE33A8BB5BB36A149CB;PATH=/;MAX-AGE=28800]
+    status: {code: 302, message: Found}
+- request:
+    body: null
+    headers:
+      Connection: [close]
+      Host: [dataverse.harvard.edu]
+      User-Agent: [Python-urllib/3.6]
+    method: HEAD
+    uri: https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/RLMYMR
+  response:
+    body: {string: ''}
+    headers:
+      Cache-control: [no-cache="set-cookie"]
+      Connection: [Close]
+      Content-Type: [text/html;charset=UTF-8]
+      Date: ['Thu, 06 Dec 2018 13:18:54 GMT']
+      Server: [Apache/2.4.6 (Red Hat Enterprise Linux) OpenSSL/1.0.2k-fips]
+      Set-Cookie: [JSESSIONID=3abd12a238aa89fa605dc9730444; Path=/; Secure; HttpOnly,
+        AWSELB=EB1179591E49E298C6825A3028F74991071DEE12D3CF6A1B0A2CD5F2F144400DE0E06A10F0DBD3EC37C4E69D8B958E3FBF8CF81403222DF6AABE0F6509EF79AB1D548B7265;PATH=/;MAX-AGE=28800]
+    status: {code: 200, message: OK}
 - request:
     body: null
     headers:
@@ -35,7 +72,7 @@ interactions:
     method: GET
     uri: https://cn.dataone.org/cn/v2/query/solr/?q=identifier:%22doi%3A10.7910%2FDVN%2FRLMYMR%22&fl=identifier,formatType,formatId,resourceMap&rows=1000&start=0&wt=json
   response:
-    body: {string: '{"responseHeader":{"status":0,"QTime":2,"params":{"q":"identifier:\"doi:10.7910/DVN/RLMYMR\"","fl":"identifier,formatType,formatId,resourceMap","start":"0","rows":"1000","wt":"json"}},"response":{"numFound":0,"start":0,"docs":[]}}
+    body: {string: '{"responseHeader":{"status":0,"QTime":3,"params":{"q":"identifier:\"doi:10.7910/DVN/RLMYMR\"","fl":"identifier,formatType,formatId,resourceMap","start":"0","rows":"1000","wt":"json"}},"response":{"numFound":0,"start":0,"docs":[]}}
 
 '}
     headers:
@@ -47,7 +84,7 @@ interactions:
       Access-Control-Expose-Headers: ['Content-Length, Content-Type, Location']
       Connection: [Keep-Alive]
       Content-Type: [application/json; charset=UTF-8]
-      Date: ['Fri, 23 Nov 2018 16:39:17 GMT']
+      Date: ['Thu, 06 Dec 2018 13:18:56 GMT']
       Keep-Alive: ['timeout=5, max=100']
       Server: [Apache/2.4.7 (Ubuntu)]
       Transfer-Encoding: [chunked]
@@ -276,9 +313,9 @@ interactions:
       Connection: [Close]
       Content-Length: ['17374']
       Content-Type: [application/json]
-      Date: ['Fri, 23 Nov 2018 16:39:18 GMT']
-      Expires: ['Fri, 23 Nov 2018 17:54:29 GMT']
-      Last-Modified: ['Fri, 23 Nov 2018 15:54:29 GMT']
+      Date: ['Thu, 06 Dec 2018 13:18:57 GMT']
+      Expires: ['Thu, 06 Dec 2018 14:05:58 GMT']
+      Last-Modified: ['Thu, 06 Dec 2018 12:05:58 GMT']
       Server: [Apache/2.4.6 (Red Hat Enterprise Linux) OpenSSL/1.0.2k-fips mod_wsgi/3.4
           Python/2.7.5]
       X-Frame-Options: [SAMEORIGIN]
@@ -352,11 +389,11 @@ interactions:
       Access-Control-Allow-Origin: ['*']
       Cache-control: [no-cache="set-cookie"]
       Connection: [Close]
-      Content-Length: ['10088']
       Content-Type: [application/json]
-      Date: ['Fri, 23 Nov 2018 16:39:18 GMT']
+      Date: ['Thu, 06 Dec 2018 13:18:57 GMT']
       Server: [Apache/2.4.6 (Red Hat Enterprise Linux) OpenSSL/1.0.2k-fips]
-      Set-Cookie: [AWSELB=EB1179591E49E298C6825A3028F74991071DEE12D3003932193CF2C36310550FD24D4C34ECDBD3EC37C4E69D8B958E3FBF8CF814030B5CB9749AB70FE33A8BB5BB36A149CB;PATH=/;MAX-AGE=28800]
+      Set-Cookie: [AWSELB=EB1179591E49E298C6825A3028F74991071DEE12D3FE010BDBAE7AE7E438B31BFA0246B9F2DBD3EC37C4E69D8B958E3FBF8CF814030B5CB9749AB70FE33A8BB5BB36A149CB;PATH=/;MAX-AGE=28800]
+      transfer-encoding: [chunked]
     status: {code: 200, message: OK}
 - request:
     body: null
@@ -364,26 +401,43 @@ interactions:
       Connection: [close]
       Host: [doi.org]
       User-Agent: [Python-urllib/3.6]
-    method: GET
+    method: HEAD
     uri: https://doi.org/10.7910/DVN/RLMYMR/WNKD3W
   response:
-    body: {string: '<html><head><title>Handle Redirect</title></head>
-
-        <body><a href="https://dataverse.harvard.edu/file.xhtml?persistentId=doi:10.7910/DVN/RLMYMR/WNKD3W">https://dataverse.harvard.edu/file.xhtml?persistentId=doi:10.7910/DVN/RLMYMR/WNKD3W</a></body></html>'}
+    body: {string: ''}
     headers:
-      CF-RAY: [47e5123869ebc50e-ORD]
+      CF-RAY: [484f0a9f2fb3b9b8-ATL]
       Connection: [close]
       Content-Length: ['251']
       Content-Type: [text/html;charset=utf-8]
-      Date: ['Fri, 23 Nov 2018 16:39:19 GMT']
+      Date: ['Thu, 06 Dec 2018 13:18:58 GMT']
       Expect-CT: ['max-age=604800, report-uri="https://report-uri.cloudflare.com/cdn-cgi/beacon/expect-ct"']
-      Expires: ['Fri, 23 Nov 2018 17:32:05 GMT']
+      Expires: ['Thu, 06 Dec 2018 14:02:04 GMT']
       Location: ['https://dataverse.harvard.edu/file.xhtml?persistentId=doi:10.7910/DVN/RLMYMR/WNKD3W']
       Server: [cloudflare]
-      Set-Cookie: ['__cfduid=d828fa18f23a27fe0e3458dedad7f51ae1542991159; expires=Sat,
-          23-Nov-19 16:39:19 GMT; path=/; domain=.doi.org; HttpOnly']
+      Set-Cookie: ['__cfduid=d8bcd75b1098913be4b02225d908069181544102338; expires=Fri,
+          06-Dec-19 13:18:58 GMT; path=/; domain=.doi.org; HttpOnly']
       Vary: [Accept]
     status: {code: 302, message: ''}
+- request:
+    body: null
+    headers:
+      Connection: [close]
+      Host: [dataverse.harvard.edu]
+      User-Agent: [Python-urllib/3.6]
+    method: HEAD
+    uri: https://dataverse.harvard.edu/file.xhtml?persistentId=doi:10.7910/DVN/RLMYMR/WNKD3W
+  response:
+    body: {string: ''}
+    headers:
+      Cache-control: [no-cache="set-cookie"]
+      Connection: [Close]
+      Content-Type: [text/html;charset=UTF-8]
+      Date: ['Thu, 06 Dec 2018 13:18:58 GMT']
+      Server: [Apache/2.4.6 (Red Hat Enterprise Linux) OpenSSL/1.0.2k-fips]
+      Set-Cookie: [JSESSIONID=3abe0b30d09c8d49d974081d6c9a; Path=/; Secure; HttpOnly,
+        AWSELB=EB1179591E49E298C6825A3028F74991071DEE12D3FE010BDBAE7AE7E438B31BFA0246B9F2DBD3EC37C4E69D8B958E3FBF8CF814030B5CB9749AB70FE33A8BB5BB36A149CB;PATH=/;MAX-AGE=28800]
+    status: {code: 200, message: OK}
 - request:
     body: null
     headers:
@@ -406,7 +460,7 @@ interactions:
       Access-Control-Expose-Headers: ['Content-Length, Content-Type, Location']
       Connection: [Keep-Alive]
       Content-Type: [application/json; charset=UTF-8]
-      Date: ['Fri, 23 Nov 2018 16:39:19 GMT']
+      Date: ['Thu, 06 Dec 2018 13:18:59 GMT']
       Keep-Alive: ['timeout=5, max=100']
       Server: [Apache/2.4.7 (Ubuntu)]
       Transfer-Encoding: [chunked]
@@ -431,9 +485,9 @@ interactions:
       Connection: [Close]
       Content-Length: ['881']
       Content-Type: [application/json]
-      Date: ['Fri, 23 Nov 2018 16:39:19 GMT']
+      Date: ['Thu, 06 Dec 2018 13:19:00 GMT']
       Server: [Apache/2.4.6 (Red Hat Enterprise Linux) OpenSSL/1.0.2k-fips]
-      Set-Cookie: [AWSELB=EB1179591E49E298C6825A3028F74991071DEE12D3003932193CF2C36310550FD24D4C34ECDBD3EC37C4E69D8B958E3FBF8CF814030B5CB9749AB70FE33A8BB5BB36A149CB;PATH=/;MAX-AGE=28800]
+      Set-Cookie: [AWSELB=EB1179591E49E298C6825A3028F74991071DEE12D3FE010BDBAE7AE7E438B31BFA0246B9F2DBD3EC37C4E69D8B958E3FBF8CF814030B5CB9749AB70FE33A8BB5BB36A149CB;PATH=/;MAX-AGE=28800]
     status: {code: 200, message: OK}
 - request:
     body: null
@@ -445,7 +499,7 @@ interactions:
     method: GET
     uri: https://cn.dataone.org/cn/v2/query/solr/?q=identifier:%22https%3A%2F%2Fdataverse.harvard.edu%2Fapi%2Faccess%2Fdatafile%2F3040230%22&fl=identifier,formatType,formatId,resourceMap&rows=1000&start=0&wt=json
   response:
-    body: {string: '{"responseHeader":{"status":0,"QTime":2,"params":{"q":"identifier:\"https://dataverse.harvard.edu/api/access/datafile/3040230\"","fl":"identifier,formatType,formatId,resourceMap","start":"0","rows":"1000","wt":"json"}},"response":{"numFound":0,"start":0,"docs":[]}}
+    body: {string: '{"responseHeader":{"status":0,"QTime":3,"params":{"q":"identifier:\"https://dataverse.harvard.edu/api/access/datafile/3040230\"","fl":"identifier,formatType,formatId,resourceMap","start":"0","rows":"1000","wt":"json"}},"response":{"numFound":0,"start":0,"docs":[]}}
 
 '}
     headers:
@@ -457,7 +511,7 @@ interactions:
       Access-Control-Expose-Headers: ['Content-Length, Content-Type, Location']
       Connection: [Keep-Alive]
       Content-Type: [application/json; charset=UTF-8]
-      Date: ['Fri, 23 Nov 2018 16:39:20 GMT']
+      Date: ['Thu, 06 Dec 2018 13:19:00 GMT']
       Keep-Alive: ['timeout=5, max=100']
       Server: [Apache/2.4.7 (Ubuntu)]
       Transfer-Encoding: [chunked]
@@ -480,9 +534,9 @@ interactions:
       Connection: [Close]
       Content-Length: ['714']
       Content-Type: [application/json]
-      Date: ['Fri, 23 Nov 2018 16:39:20 GMT']
+      Date: ['Thu, 06 Dec 2018 13:19:01 GMT']
       Server: [Apache/2.4.6 (Red Hat Enterprise Linux) OpenSSL/1.0.2k-fips]
-      Set-Cookie: [AWSELB=EB1179591E49E298C6825A3028F74991071DEE12D3BAFE6DCC623DFD9C0ECBC077EB23E90FDBD3EC37C4E69D8B958E3FBF8CF81403222DF6AABE0F6509EF79AB1D548B7265;PATH=/;MAX-AGE=28800]
+      Set-Cookie: [AWSELB=EB1179591E49E298C6825A3028F74991071DEE12D3FE010BDBAE7AE7E438B31BFA0246B9F2DBD3EC37C4E69D8B958E3FBF8CF814030B5CB9749AB70FE33A8BB5BB36A149CB;PATH=/;MAX-AGE=28800]
     status: {code: 200, message: OK}
 - request:
     body: null
@@ -490,26 +544,63 @@ interactions:
       Connection: [close]
       Host: [doi.org]
       User-Agent: [Python-urllib/3.6]
-    method: GET
+    method: HEAD
     uri: https://doi.org/10.7910/DVN/RLMYMR
   response:
-    body: {string: '<html><head><title>Handle Redirect</title></head>
-
-        <body><a href="https://dataverse.harvard.edu/citation?persistentId=doi:10.7910/DVN/RLMYMR">https://dataverse.harvard.edu/citation?persistentId=doi:10.7910/DVN/RLMYMR</a></body></html>'}
+    body: {string: ''}
     headers:
-      CF-RAY: [47e512456efa71d9-ORD]
+      CF-RAY: [484f0ab2ba6142dc-ATL]
       Connection: [close]
       Content-Length: ['233']
       Content-Type: [text/html;charset=utf-8]
-      Date: ['Fri, 23 Nov 2018 16:39:21 GMT']
+      Date: ['Thu, 06 Dec 2018 13:19:01 GMT']
       Expect-CT: ['max-age=604800, report-uri="https://report-uri.cloudflare.com/cdn-cgi/beacon/expect-ct"']
-      Expires: ['Fri, 23 Nov 2018 17:26:40 GMT']
+      Expires: ['Thu, 06 Dec 2018 14:02:04 GMT']
       Location: ['https://dataverse.harvard.edu/citation?persistentId=doi:10.7910/DVN/RLMYMR']
       Server: [cloudflare]
-      Set-Cookie: ['__cfduid=d41b0b38f30aa00287177f806410395191542991161; expires=Sat,
-          23-Nov-19 16:39:21 GMT; path=/; domain=.doi.org; HttpOnly']
+      Set-Cookie: ['__cfduid=db337e099d540d05b2aa87699169176391544102341; expires=Fri,
+          06-Dec-19 13:19:01 GMT; path=/; domain=.doi.org; HttpOnly']
       Vary: [Accept]
     status: {code: 302, message: ''}
+- request:
+    body: null
+    headers:
+      Connection: [close]
+      Host: [dataverse.harvard.edu]
+      User-Agent: [Python-urllib/3.6]
+    method: HEAD
+    uri: https://dataverse.harvard.edu/citation?persistentId=doi:10.7910/DVN/RLMYMR
+  response:
+    body: {string: ''}
+    headers:
+      Cache-control: [no-cache="set-cookie"]
+      Connection: [Close]
+      Content-Language: [en-US]
+      Content-Type: [text/html;charset=ISO-8859-1]
+      Date: ['Thu, 06 Dec 2018 13:19:01 GMT']
+      Location: ['https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/RLMYMR']
+      Server: [Apache/2.4.6 (Red Hat Enterprise Linux) OpenSSL/1.0.2k-fips]
+      Set-Cookie: [AWSELB=EB1179591E49E298C6825A3028F74991071DEE12D3CF6A1B0A2CD5F2F144400DE0E06A10F0DBD3EC37C4E69D8B958E3FBF8CF81403222DF6AABE0F6509EF79AB1D548B7265;PATH=/;MAX-AGE=28800]
+    status: {code: 302, message: Found}
+- request:
+    body: null
+    headers:
+      Connection: [close]
+      Host: [dataverse.harvard.edu]
+      User-Agent: [Python-urllib/3.6]
+    method: HEAD
+    uri: https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/RLMYMR
+  response:
+    body: {string: ''}
+    headers:
+      Cache-control: [no-cache="set-cookie"]
+      Connection: [Close]
+      Content-Type: [text/html;charset=UTF-8]
+      Date: ['Thu, 06 Dec 2018 13:19:02 GMT']
+      Server: [Apache/2.4.6 (Red Hat Enterprise Linux) OpenSSL/1.0.2k-fips]
+      Set-Cookie: [JSESSIONID=3abed8b30aad9194827eda3c64f5; Path=/; Secure; HttpOnly,
+        AWSELB=EB1179591E49E298C6825A3028F74991071DEE12D3FE010BDBAE7AE7E438B31BFA0246B9F2DBD3EC37C4E69D8B958E3FBF8CF814030B5CB9749AB70FE33A8BB5BB36A149CB;PATH=/;MAX-AGE=28800]
+    status: {code: 200, message: OK}
 - request:
     body: null
     headers:
@@ -520,7 +611,7 @@ interactions:
     method: GET
     uri: https://cn.dataone.org/cn/v2/query/solr/?q=identifier:%22doi%3A10.7910%2FDVN%2FRLMYMR%22&fl=identifier,formatType,formatId,resourceMap&rows=1000&start=0&wt=json
   response:
-    body: {string: '{"responseHeader":{"status":0,"QTime":3,"params":{"q":"identifier:\"doi:10.7910/DVN/RLMYMR\"","fl":"identifier,formatType,formatId,resourceMap","start":"0","rows":"1000","wt":"json"}},"response":{"numFound":0,"start":0,"docs":[]}}
+    body: {string: '{"responseHeader":{"status":0,"QTime":2,"params":{"q":"identifier:\"doi:10.7910/DVN/RLMYMR\"","fl":"identifier,formatType,formatId,resourceMap","start":"0","rows":"1000","wt":"json"}},"response":{"numFound":0,"start":0,"docs":[]}}
 
 '}
     headers:
@@ -532,7 +623,7 @@ interactions:
       Access-Control-Expose-Headers: ['Content-Length, Content-Type, Location']
       Connection: [Keep-Alive]
       Content-Type: [application/json; charset=UTF-8]
-      Date: ['Fri, 23 Nov 2018 16:39:21 GMT']
+      Date: ['Thu, 06 Dec 2018 13:19:03 GMT']
       Keep-Alive: ['timeout=5, max=100']
       Server: [Apache/2.4.7 (Ubuntu)]
       Transfer-Encoding: [chunked]
@@ -606,11 +697,11 @@ interactions:
       Access-Control-Allow-Origin: ['*']
       Cache-control: [no-cache="set-cookie"]
       Connection: [Close]
-      Content-Length: ['10088']
       Content-Type: [application/json]
-      Date: ['Fri, 23 Nov 2018 16:39:21 GMT']
+      Date: ['Thu, 06 Dec 2018 13:19:04 GMT']
       Server: [Apache/2.4.6 (Red Hat Enterprise Linux) OpenSSL/1.0.2k-fips]
-      Set-Cookie: [AWSELB=EB1179591E49E298C6825A3028F74991071DEE12D3BAFE6DCC623DFD9C0ECBC077EB23E90FDBD3EC37C4E69D8B958E3FBF8CF81403222DF6AABE0F6509EF79AB1D548B7265;PATH=/;MAX-AGE=28800]
+      Set-Cookie: [AWSELB=EB1179591E49E298C6825A3028F74991071DEE12D3FE010BDBAE7AE7E438B31BFA0246B9F2DBD3EC37C4E69D8B958E3FBF8CF814030B5CB9749AB70FE33A8BB5BB36A149CB;PATH=/;MAX-AGE=28800]
+      transfer-encoding: [chunked]
     status: {code: 200, message: OK}
 - request:
     body: null
@@ -630,10 +721,10 @@ interactions:
       Content-Type: [application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;
           name="Karnataka_DD&FS_Data-1.xlsx"]
       Content-disposition: [attachment; filename="Karnataka_DD&FS_Data-1.xlsx"]
-      Date: ['Fri, 23 Nov 2018 16:39:22 GMT']
+      Date: ['Thu, 06 Dec 2018 13:19:05 GMT']
       Server: [Apache/2.4.6 (Red Hat Enterprise Linux) OpenSSL/1.0.2k-fips]
-      Set-Cookie: [JSESSIONID=170ae34e7612e2d4b882f8fc4d9c; Path=/; Secure; HttpOnly,
-        AWSELB=EB1179591E49E298C6825A3028F74991071DEE12D3003932193CF2C36310550FD24D4C34ECDBD3EC37C4E69D8B958E3FBF8CF814030B5CB9749AB70FE33A8BB5BB36A149CB;PATH=/;MAX-AGE=28800]
+      Set-Cookie: [JSESSIONID=3abfa60fc213432900ffa86c4d91; Path=/; Secure; HttpOnly,
+        AWSELB=EB1179591E49E298C6825A3028F74991071DEE12D3CF6A1B0A2CD5F2F144400DE0E06A10F0DBD3EC37C4E69D8B958E3FBF8CF81403222DF6AABE0F6509EF79AB1D548B7265;PATH=/;MAX-AGE=28800]
     status: {code: 200, message: OK}
 - request:
     body: null
@@ -652,10 +743,10 @@ interactions:
       Content-Length: ['2408']
       Content-Type: [text/tab-separated-values; name="Karnataka_DD&FS_Data-1.tab"]
       Content-disposition: [attachment; filename="Karnataka_DD&FS_Data-1.tab"]
-      Date: ['Fri, 23 Nov 2018 16:39:23 GMT']
+      Date: ['Thu, 06 Dec 2018 13:19:05 GMT']
       Server: [Apache/2.4.6 (Red Hat Enterprise Linux) OpenSSL/1.0.2k-fips]
-      Set-Cookie: [JSESSIONID=170b0cc95bb3a993250285f51fa3; Path=/; Secure; HttpOnly,
-        AWSELB=EB1179591E49E298C6825A3028F74991071DEE12D3BAFE6DCC623DFD9C0ECBC077EB23E90FDBD3EC37C4E69D8B958E3FBF8CF81403222DF6AABE0F6509EF79AB1D548B7265;PATH=/;MAX-AGE=28800]
+      Set-Cookie: [JSESSIONID=3abfcce6df61b79659943f6c8438; Path=/; Secure; HttpOnly,
+        AWSELB=EB1179591E49E298C6825A3028F74991071DEE12D3FE010BDBAE7AE7E438B31BFA0246B9F2DBD3EC37C4E69D8B958E3FBF8CF814030B5CB9749AB70FE33A8BB5BB36A149CB;PATH=/;MAX-AGE=28800]
     status: {code: 200, message: OK}
 - request:
     body: null
@@ -663,26 +754,43 @@ interactions:
       Connection: [close]
       Host: [doi.org]
       User-Agent: [Python-urllib/3.6]
-    method: GET
+    method: HEAD
     uri: https://doi.org/10.7910/DVN/RLMYMR/WNKD3W
   response:
-    body: {string: '<html><head><title>Handle Redirect</title></head>
-
-        <body><a href="https://dataverse.harvard.edu/file.xhtml?persistentId=doi:10.7910/DVN/RLMYMR/WNKD3W">https://dataverse.harvard.edu/file.xhtml?persistentId=doi:10.7910/DVN/RLMYMR/WNKD3W</a></body></html>'}
+    body: {string: ''}
     headers:
-      CF-RAY: [47e51256cabf71c7-ORD]
+      CF-RAY: [484f0ad04e41ba12-ATL]
       Connection: [close]
       Content-Length: ['251']
       Content-Type: [text/html;charset=utf-8]
-      Date: ['Fri, 23 Nov 2018 16:39:23 GMT']
+      Date: ['Thu, 06 Dec 2018 13:19:06 GMT']
       Expect-CT: ['max-age=604800, report-uri="https://report-uri.cloudflare.com/cdn-cgi/beacon/expect-ct"']
-      Expires: ['Fri, 23 Nov 2018 17:26:40 GMT']
+      Expires: ['Thu, 06 Dec 2018 14:02:04 GMT']
       Location: ['https://dataverse.harvard.edu/file.xhtml?persistentId=doi:10.7910/DVN/RLMYMR/WNKD3W']
       Server: [cloudflare]
-      Set-Cookie: ['__cfduid=d1dab04ef42b590f6da6f26599758aae51542991163; expires=Sat,
-          23-Nov-19 16:39:23 GMT; path=/; domain=.doi.org; HttpOnly']
+      Set-Cookie: ['__cfduid=de3a93d1fe3ea0a14986089303ede70a11544102346; expires=Fri,
+          06-Dec-19 13:19:06 GMT; path=/; domain=.doi.org; HttpOnly']
       Vary: [Accept]
     status: {code: 302, message: ''}
+- request:
+    body: null
+    headers:
+      Connection: [close]
+      Host: [dataverse.harvard.edu]
+      User-Agent: [Python-urllib/3.6]
+    method: HEAD
+    uri: https://dataverse.harvard.edu/file.xhtml?persistentId=doi:10.7910/DVN/RLMYMR/WNKD3W
+  response:
+    body: {string: ''}
+    headers:
+      Cache-control: [no-cache="set-cookie"]
+      Connection: [Close]
+      Content-Type: [text/html;charset=UTF-8]
+      Date: ['Thu, 06 Dec 2018 13:19:06 GMT']
+      Server: [Apache/2.4.6 (Red Hat Enterprise Linux) OpenSSL/1.0.2k-fips]
+      Set-Cookie: [JSESSIONID=3abff28b4f8cbdd6839a03156aef; Path=/; Secure; HttpOnly,
+        AWSELB=EB1179591E49E298C6825A3028F74991071DEE12D3FE010BDBAE7AE7E438B31BFA0246B9F2DBD3EC37C4E69D8B958E3FBF8CF814030B5CB9749AB70FE33A8BB5BB36A149CB;PATH=/;MAX-AGE=28800]
+    status: {code: 200, message: OK}
 - request:
     body: null
     headers:
@@ -693,7 +801,7 @@ interactions:
     method: GET
     uri: https://cn.dataone.org/cn/v2/query/solr/?q=identifier:%22doi%3A10.7910%2FDVN%2FRLMYMR%2FWNKD3W%22&fl=identifier,formatType,formatId,resourceMap&rows=1000&start=0&wt=json
   response:
-    body: {string: '{"responseHeader":{"status":0,"QTime":2,"params":{"q":"identifier:\"doi:10.7910/DVN/RLMYMR/WNKD3W\"","fl":"identifier,formatType,formatId,resourceMap","start":"0","rows":"1000","wt":"json"}},"response":{"numFound":0,"start":0,"docs":[]}}
+    body: {string: '{"responseHeader":{"status":0,"QTime":3,"params":{"q":"identifier:\"doi:10.7910/DVN/RLMYMR/WNKD3W\"","fl":"identifier,formatType,formatId,resourceMap","start":"0","rows":"1000","wt":"json"}},"response":{"numFound":0,"start":0,"docs":[]}}
 
 '}
     headers:
@@ -705,7 +813,7 @@ interactions:
       Access-Control-Expose-Headers: ['Content-Length, Content-Type, Location']
       Connection: [Keep-Alive]
       Content-Type: [application/json; charset=UTF-8]
-      Date: ['Fri, 23 Nov 2018 16:39:24 GMT']
+      Date: ['Thu, 06 Dec 2018 13:19:07 GMT']
       Keep-Alive: ['timeout=5, max=100']
       Server: [Apache/2.4.7 (Ubuntu)]
       Transfer-Encoding: [chunked]
@@ -730,9 +838,9 @@ interactions:
       Connection: [Close]
       Content-Length: ['881']
       Content-Type: [application/json]
-      Date: ['Fri, 23 Nov 2018 16:39:24 GMT']
+      Date: ['Thu, 06 Dec 2018 13:19:08 GMT']
       Server: [Apache/2.4.6 (Red Hat Enterprise Linux) OpenSSL/1.0.2k-fips]
-      Set-Cookie: [AWSELB=EB1179591E49E298C6825A3028F74991071DEE12D3BAFE6DCC623DFD9C0ECBC077EB23E90FDBD3EC37C4E69D8B958E3FBF8CF81403222DF6AABE0F6509EF79AB1D548B7265;PATH=/;MAX-AGE=28800]
+      Set-Cookie: [AWSELB=EB1179591E49E298C6825A3028F74991071DEE12D3CF6A1B0A2CD5F2F144400DE0E06A10F0DBD3EC37C4E69D8B958E3FBF8CF81403222DF6AABE0F6509EF79AB1D548B7265;PATH=/;MAX-AGE=28800]
     status: {code: 200, message: OK}
 - request:
     body: null
@@ -752,10 +860,10 @@ interactions:
       Content-Type: [application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;
           name="Karnataka_DD&FS_Data-1.xlsx"]
       Content-disposition: [attachment; filename="Karnataka_DD&FS_Data-1.xlsx"]
-      Date: ['Fri, 23 Nov 2018 16:39:25 GMT']
+      Date: ['Thu, 06 Dec 2018 13:19:08 GMT']
       Server: [Apache/2.4.6 (Red Hat Enterprise Linux) OpenSSL/1.0.2k-fips]
-      Set-Cookie: [JSESSIONID=170b729fe4fb4a242c977a3ccfcb; Path=/; Secure; HttpOnly,
-        AWSELB=EB1179591E49E298C6825A3028F74991071DEE12D3BAFE6DCC623DFD9C0ECBC077EB23E90FDBD3EC37C4E69D8B958E3FBF8CF81403222DF6AABE0F6509EF79AB1D548B7265;PATH=/;MAX-AGE=28800]
+      Set-Cookie: [JSESSIONID=3ac070742c2b0e47958144f26d00; Path=/; Secure; HttpOnly,
+        AWSELB=EB1179591E49E298C6825A3028F74991071DEE12D3FE010BDBAE7AE7E438B31BFA0246B9F2DBD3EC37C4E69D8B958E3FBF8CF814030B5CB9749AB70FE33A8BB5BB36A149CB;PATH=/;MAX-AGE=28800]
     status: {code: 200, message: OK}
 - request:
     body: null
@@ -774,10 +882,10 @@ interactions:
       Content-Length: ['2408']
       Content-Type: [text/tab-separated-values; name="Karnataka_DD&FS_Data-1.tab"]
       Content-disposition: [attachment; filename="Karnataka_DD&FS_Data-1.tab"]
-      Date: ['Fri, 23 Nov 2018 16:39:25 GMT']
+      Date: ['Thu, 06 Dec 2018 13:19:09 GMT']
       Server: [Apache/2.4.6 (Red Hat Enterprise Linux) OpenSSL/1.0.2k-fips]
-      Set-Cookie: [JSESSIONID=170b9cc80565eb5f0d4160083d80; Path=/; Secure; HttpOnly,
-        AWSELB=EB1179591E49E298C6825A3028F74991071DEE12D3BAFE6DCC623DFD9C0ECBC077EB23E90FDBD3EC37C4E69D8B958E3FBF8CF81403222DF6AABE0F6509EF79AB1D548B7265;PATH=/;MAX-AGE=28800]
+      Set-Cookie: [JSESSIONID=3ac09766d4c834a0e920f643c2ac; Path=/; Secure; HttpOnly,
+        AWSELB=EB1179591E49E298C6825A3028F74991071DEE12D3CF6A1B0A2CD5F2F144400DE0E06A10F0DBD3EC37C4E69D8B958E3FBF8CF81403222DF6AABE0F6509EF79AB1D548B7265;PATH=/;MAX-AGE=28800]
     status: {code: 200, message: OK}
 - request:
     body: null
@@ -789,7 +897,7 @@ interactions:
     method: GET
     uri: https://cn.dataone.org/cn/v2/query/solr/?q=identifier:%22https%3A%2F%2Fdataverse.harvard.edu%2Fapi%2Faccess%2Fdatafile%2F3040230%22&fl=identifier,formatType,formatId,resourceMap&rows=1000&start=0&wt=json
   response:
-    body: {string: '{"responseHeader":{"status":0,"QTime":2,"params":{"q":"identifier:\"https://dataverse.harvard.edu/api/access/datafile/3040230\"","fl":"identifier,formatType,formatId,resourceMap","start":"0","rows":"1000","wt":"json"}},"response":{"numFound":0,"start":0,"docs":[]}}
+    body: {string: '{"responseHeader":{"status":0,"QTime":3,"params":{"q":"identifier:\"https://dataverse.harvard.edu/api/access/datafile/3040230\"","fl":"identifier,formatType,formatId,resourceMap","start":"0","rows":"1000","wt":"json"}},"response":{"numFound":0,"start":0,"docs":[]}}
 
 '}
     headers:
@@ -801,7 +909,7 @@ interactions:
       Access-Control-Expose-Headers: ['Content-Length, Content-Type, Location']
       Connection: [Keep-Alive]
       Content-Type: [application/json; charset=UTF-8]
-      Date: ['Fri, 23 Nov 2018 16:39:26 GMT']
+      Date: ['Thu, 06 Dec 2018 13:19:09 GMT']
       Keep-Alive: ['timeout=5, max=100']
       Server: [Apache/2.4.7 (Ubuntu)]
       Transfer-Encoding: [chunked]
@@ -824,9 +932,9 @@ interactions:
       Connection: [Close]
       Content-Length: ['714']
       Content-Type: [application/json]
-      Date: ['Fri, 23 Nov 2018 16:39:26 GMT']
+      Date: ['Thu, 06 Dec 2018 13:19:09 GMT']
       Server: [Apache/2.4.6 (Red Hat Enterprise Linux) OpenSSL/1.0.2k-fips]
-      Set-Cookie: [AWSELB=EB1179591E49E298C6825A3028F74991071DEE12D3BAFE6DCC623DFD9C0ECBC077EB23E90FDBD3EC37C4E69D8B958E3FBF8CF81403222DF6AABE0F6509EF79AB1D548B7265;PATH=/;MAX-AGE=28800]
+      Set-Cookie: [AWSELB=EB1179591E49E298C6825A3028F74991071DEE12D3FE010BDBAE7AE7E438B31BFA0246B9F2DBD3EC37C4E69D8B958E3FBF8CF814030B5CB9749AB70FE33A8BB5BB36A149CB;PATH=/;MAX-AGE=28800]
     status: {code: 200, message: OK}
 - request:
     body: null
@@ -845,10 +953,10 @@ interactions:
       Content-Length: ['11684']
       Content-Type: [text/csv; name="2017-07-31.csv"]
       Content-disposition: [attachment; filename="2017-07-31.csv"]
-      Date: ['Fri, 23 Nov 2018 16:39:27 GMT']
+      Date: ['Thu, 06 Dec 2018 13:19:10 GMT']
       Server: [Apache/2.4.6 (Red Hat Enterprise Linux) OpenSSL/1.0.2k-fips]
-      Set-Cookie: [JSESSIONID=170beee3fde953ac7cc0764a9fbd; Path=/; Secure; HttpOnly,
-        AWSELB=EB1179591E49E298C6825A3028F74991071DEE12D3BAFE6DCC623DFD9C0ECBC077EB23E90FDBD3EC37C4E69D8B958E3FBF8CF81403222DF6AABE0F6509EF79AB1D548B7265;PATH=/;MAX-AGE=28800]
+      Set-Cookie: [JSESSIONID=3ac0e9ec9b71f3f2deeaff7ea1d7; Path=/; Secure; HttpOnly,
+        AWSELB=EB1179591E49E298C6825A3028F74991071DEE12D3CF6A1B0A2CD5F2F144400DE0E06A10F0DBD3EC37C4E69D8B958E3FBF8CF81403222DF6AABE0F6509EF79AB1D548B7265;PATH=/;MAX-AGE=28800]
     status: {code: 200, message: OK}
 - request:
     body: null
@@ -867,9 +975,9 @@ interactions:
       Content-Length: ['12100']
       Content-Type: [text/tab-separated-values; name="2017-07-31.tab"]
       Content-disposition: [attachment; filename="2017-07-31.tab"]
-      Date: ['Fri, 23 Nov 2018 16:39:27 GMT']
+      Date: ['Thu, 06 Dec 2018 13:19:10 GMT']
       Server: [Apache/2.4.6 (Red Hat Enterprise Linux) OpenSSL/1.0.2k-fips]
-      Set-Cookie: [JSESSIONID=170c102e8933da48ab637f0e5454; Path=/; Secure; HttpOnly,
-        AWSELB=EB1179591E49E298C6825A3028F74991071DEE12D3BAFE6DCC623DFD9C0ECBC077EB23E90FDBD3EC37C4E69D8B958E3FBF8CF81403222DF6AABE0F6509EF79AB1D548B7265;PATH=/;MAX-AGE=28800]
+      Set-Cookie: [JSESSIONID=3ac10d17a89af26e6f1deb61f395; Path=/; Secure; HttpOnly,
+        AWSELB=EB1179591E49E298C6825A3028F74991071DEE12D3FE010BDBAE7AE7E438B31BFA0246B9F2DBD3EC37C4E69D8B958E3FBF8CF814030B5CB9749AB70FE33A8BB5BB36A149CB;PATH=/;MAX-AGE=28800]
     status: {code: 200, message: OK}
 version: 1
