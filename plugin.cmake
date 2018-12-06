@@ -28,5 +28,8 @@ add_python_test(dataverse
   plugins/wholetale/dataverse_listFiles.json
 )
 add_python_test(integration PLUGIN wholetale)
+add_python_test(repository
+  PLUGIN wholetale
+)
 add_python_style_test(python_static_analysis_wholetale
                       "${PROJECT_SOURCE_DIR}/plugins/wholetale/server")
