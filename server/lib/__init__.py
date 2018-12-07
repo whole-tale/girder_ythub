@@ -14,9 +14,9 @@ RESOLVERS = Resolvers()
 RESOLVERS.add(DOIResolver())
 
 IMPORT_PROVIDERS = ImportProviders()
-IMPORT_PROVIDERS.addProvider(DataOneImportProvider())
-IMPORT_PROVIDERS.addProvider(GlobusImportProvider())
 IMPORT_PROVIDERS.addProvider(DataverseImportProvider())
+# IMPORT_PROVIDERS.addProvider(GlobusImportProvider())
+IMPORT_PROVIDERS.addProvider(DataOneImportProvider())
 # (almost) last resort
 IMPORT_PROVIDERS.addProvider(HTTPImportProvider())
 # just throws exceptions
