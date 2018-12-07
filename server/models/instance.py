@@ -160,6 +160,10 @@ def _wait_for_server(url, timeout=30, wait_time=0.5):
             logger.info(
                 'Booting server at [%s], getting SSLError', url)
             time.sleep(wait_time)
+        except ConnectionError:
+            logger.info(
+                'Booting server at [%s], getting ConnectionError', url)
+            time.sleep(wait_time)
         else:
             break
 
