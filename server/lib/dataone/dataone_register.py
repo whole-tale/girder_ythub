@@ -3,40 +3,46 @@ Code for querying DataONE and verifying query results. Specifically used for
  finding datasets based on the url and for listing package contents. Some of
   these methods are used elsewhere in the WholeTale plugin, specifically in  the harvester.
 """
-
 import re
 import json
-import six.moves.urllib as urllib
 import requests
-import rdflib
 
 from girder import logger
 from girder.api.rest import RestException
-
-# http://blog.crossref.org/2015/08/doi-regular-expressions.html
-_DOI_REGEX = re.compile('(10.\d{4,9}/[-._;()/:A-Z0-9]+)', re.IGNORECASE)
-D1_BASE = "https://cn.dataone.org/cn/v2"
-
-
-def esc(value):
-    """Escape a string so it can be used in a Solr query string"""
-
-    return urllib.parse.quote_plus(value)
+from . import DataONELocations
+from ...utils import esc
+from ..data_map import DataMap
 
 
-def unesc(value):
-    """Unescapes a string so it can uesd in URLS"""
-    return urllib.parse.unquote_plus(value)
+def query(q,
+          base_url=DataONELocations.prod_cn,
+          fields=["identifier"],
+          rows=1000,
+          start=0):
+    """
+    Query a DataONE Solr index.
+    :param q: The query
+    :param base_url: The URL to the coordinating node
+    :param fields: The field to search for
+    :param rows: Number of rows to return
+    :param start: Which row to start at
+    :return: The content of the response
+    """
 
-
-def query(q, fields=["identifier"], rows=1000, start=0):
-    """Query a DataONE Solr index."""
-
+    """
+    Create the query section of the url. Note that the DataONE Python library
+     has functionality for solr queries. If time permits or if errors occur
+     in this area, it is worth looking into refactoring with it.
+    """
     fl = ",".join(fields)
     query_url = "{}/query/solr/?q={}&fl={}&rows={}&start={}&wt=json".format(
-        D1_BASE, q, fl, rows, start)
+        base_url, q, fl, rows, start)
 
-    req = requests.get(query_url)
+    try:
+        req = requests.get(query_url)
+        req.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        raise RestException(e)
     content = json.loads(req.content.decode('utf8'))
 
     # Fail if the Solr query failed rather than fail later
@@ -55,29 +61,40 @@ def query(q, fields=["identifier"], rows=1000, start=0):
     return content
 
 
-def find_resource_pid(pid):
+def find_resource_pid(pid, base_url):
     """
-    Find the PID of the resource map for a given PID, which may be a resource map
+    Find the PID of the resource map for a given PID, which may be a resource map.
+    :param pid: The pid of the object on DataONE
+    :param base_url: The base url of the node endpoint that will be used for the search
+    :type pid: str
+    :type base_url: str
+    :return:
     """
 
     result = query(
-        "identifier:\"{}\"".format(esc(pid)),
+        q="identifier:\"{}\"".format(esc(pid)),
+        base_url=base_url,
         fields=["identifier", "formatType", "formatId", "resourceMap"])
     result_len = int(result['response']['numFound'])
 
     if result_len == 0:
-        raise RestException('No object was found in the index for {}.'.format(pid))
+        error_msg = 'No object was found in the index for {}.'.format(pid)
+        logger.warning(error_msg)
+        raise RestException(error_msg)
     elif result_len > 1:
-        raise RestException(
-            'More than one object was found in the index for the identifier '
-            '{} which is an unexpected state.'.format(pid))
+        error_msg = 'More than one object was found in the index for the identifier ' \
+                    '{} which is an unexpected state.'.format(pid)
+        logger.warning(error_msg)
+        raise RestException(error_msg)
 
     # Find out if the PID is an OAI-ORE PID and return early if so
     try:
         if result['response']['docs'][0]['formatType'] == 'RESOURCE':
             return result['response']['docs'][0]['identifier']
     except KeyError:
-        raise RestException('Unable to find a resource file in the data package')
+        error_msg = 'Unable to find a resource file in the data package'
+        logger.warning(error_msg)
+        raise RestException(error_msg)
 
     try:
         if len(result['response']['docs'][0]['resourceMap']) == 1:
@@ -93,8 +110,8 @@ def find_resource_pid(pid):
         # Flattening is required because the above 'resourceMap' field is a
         # Solr array type so the result is a list of lists
         nonobs = find_nonobsolete_resmaps(
-            [item for items in resmaps for item in items]
-        )
+            [item for items in resmaps for item in items],
+            base_url=base_url)
 
         # Only return of one non-obsolete Resource Map was found
         # If we find multiple, that implies the original PID we queried for
@@ -106,21 +123,33 @@ def find_resource_pid(pid):
     # still do here is determine the most likely resource map given the set.
     # Usually we do this by rejecting any obsoleted resource maps and that
     # usually leaves us with one.
+
+    # If I look up
+    # https://cn.dataone.org/cn/v2/resolve/urn:uuid:9266a118-78b3-48e3-a675-b3dfcc5d0fc4 the code
+    # gets here. Typing that in the browser correctly results in the file being downloaded.  The
+    # lookup above returns both the file
+    # ('resource_map_urn:uuid:7e4586c0-9812-4355-8f3b-1445b9a8ca53') and the parent dataset
+    # ('resource_map_doi:10.5063/F1JM27VG'). Shouldn't it be possible to look up single files?
+    # [Mihael]
     raise RestException(
         "Multiple resource maps were for the data package, which isn't supported.")
 
 
-def find_nonobsolete_resmaps(pids):
+def find_nonobsolete_resmaps(pids, base_url):
     """
     Given one or more resource map pids, returns the ones that are not obsoleted
     by any other Object.
     This is done by querying the Solr index with the -obsoletedBy:* query param
+
+    :param pids: The pids that are checked
+    :param base_url: A coordinating node that will be used to check
+    :return:
     """
 
     result = query(
         "identifier:(\"{}\")+AND+-obsoletedBy:*".format("\" OR \"".join(pids),
-                                                        fields="identifier")
-    )
+                                                        base_url=base_url,
+                                                        fields="identifier"))
     result_len = int(result['response']['numFound'])
 
     if result_len == 0:
@@ -131,97 +160,51 @@ def find_nonobsolete_resmaps(pids):
 
 def find_initial_pid(path):
     """
-    Given some arbitrary path, which may be a landing page, resolve URI or
-    something else, find the PID the user intended (the package PID).
+    Extracts the pid from an arbitrary path to a DataOne object.
+    Supports:
+       - HTTP & HTTPS
+       - The MetacatUI landing page (#view)
+       - The D1 v2 Object URI (/object)
+       - The D1 v2 Resolve URI (/resolve)
 
-    This can parse the PID out of the HTTP and HTTPS versions of...
-        - The MetacatUI landing page (#view)
-        - The D1 v2 Object URI (/object)
-        - The D1 v2 Resolve URI (/resolve)
+    :param path:
+    :type path: str
+    :return: The object's pid, or the original path if one wasn't found
+    :rtype: str
     """
-
-    doi = _DOI_REGEX.search(path)
+    # http://blog.crossref.org/2015/08/doi-regular-expressions.html
+    doi_regex = re.compile(r'(10.\d{4,9}/[-._;()/:A-Z0-9]+)', re.IGNORECASE)
+    doi = doi_regex.search(path)
     if re.search(r'^http[s]?:\/\/search.dataone.org\/[#]?view\/', path):
         return re.sub(
             r'^http[s]?:\/\/search.dataone.org\/[#]?view\/', '', path)
-    elif re.search(r'^http[s]?://cn.dataone.org/cn/d1/v[\d]/\w+/', path):
+    elif re.search(r'\Ahttp[s]?:\/\/cn[a-z\-\d\.]*\.dataone\.org\/cn\/v\d\/[a-zA-Z]+\/.+\Z', path):
         return re.sub(
-            r'^http[s]?://cn.dataone.org/cn/d1/v[\d]/\w+/', '', path)
+            r'\Ahttp[s]?:\/\/cn[a-z\-\d\.]*\.dataone\.org\/cn\/v\d\/[a-zA-Z]+\/', '', path)
+    if re.search(r'^http[s]?:\/\/dev.nceas.ucsb.edu\/[#]?view\/', path):
+        return re.sub(
+            r'^http[s]?:\/\/dev.nceas.ucsb.edu\/[#]?view\/', '', path)
+    if re.search(r'resolve', path):
+        return path.split("resolve/", 1)[1]
     elif doi is not None:
         return 'doi:{}'.format(doi.group())
     else:
         return path
 
 
-def get_aggregated_identifiers(pid):
-    """Process an OAI-ORE aggregation into a set of aggregated identifiers."""
-
-    g = rdflib.Graph()
-
-    graph_url = "{}/resolve/{}".format(D1_BASE, esc(pid))
-    g.parse(graph_url, format='xml')
-
-    ore_aggregates = rdflib.term.URIRef(
-        'http://www.openarchives.org/ore/terms/aggregates')
-    dcterms_identifier = rdflib.term.URIRef(
-        'http://purl.org/dc/terms/identifier')
-
-    aggregated = g.objects(None, ore_aggregates)
-
-    pids = set()
-
-    # Get the PID of the aggregated Objects in the package
-    for object in aggregated:
-        identifiers = g.objects(object, dcterms_identifier)
-        [pids.add(unesc(id)) for id in identifiers]
-
-    return pids
-
-
-def verify_results(pid, docs):
-    aggregation = get_aggregated_identifiers(pid)
-    pids = set([unesc(doc['identifier']) for doc in docs])
-
-    if aggregation != pids:
-        raise RestException(
-            "The contents of the Resource Map don't match what's in the Solr "
-            "index. This is unexpected and unhandled.")
-
-
-def get_documenting_identifiers(pid):
+def get_package_pid(path, base_url):
     """
-    Find the set of identifiers in an OAI-ORE resource map documenting
-    other members of that resource map.
+    Get the pid of a package from its path.
+    :param path: The path to a DataONE object
+    :param base_url: The node endpoint that will be used to perform the search
+    :type path: str
+    :type base_url: str
+    :return: The package's pid
     """
-
-    g = rdflib.Graph()
-
-    graph_url = "{}/resolve/{}".format(D1_BASE, esc(pid))
-    g.parse(graph_url, format='xml')
-
-    cito_isDocumentedBy = rdflib.term.URIRef(
-        'http://purl.org/spar/cito/isDocumentedBy')
-    dcterms_identifier = rdflib.term.URIRef(
-        'http://purl.org/dc/terms/identifier')
-
-    documenting = g.objects(None, cito_isDocumentedBy)
-
-    pids = set()
-
-    # Get the PID of the documenting Objects in the package
-    for object in documenting:
-        identifiers = g.objects(object, dcterms_identifier)
-        [pids.add(unesc(id)) for id in identifiers]
-
-    return pids
-
-
-def get_package_pid(path):
-    """Get the pid of a package from its path."""
 
     initial_pid = find_initial_pid(path)
-    logger.debug('Parsed initial PID of {}.'.format(initial_pid))
-    return find_resource_pid(initial_pid)
+    pid = find_resource_pid(initial_pid, base_url)
+    return pid
 
 
 def extract_metadata_docs(docs):
@@ -232,27 +215,33 @@ def extract_metadata_docs(docs):
 
 
 def extract_data_docs(docs):
-    data = [doc for doc in docs if doc['formatType'] == 'DATA']
+    data = [doc for doc in docs if doc.get('formatType') == 'DATA']
 #    if not data:
 #        raise RestException('No data found.')
     return data
 
 
 def extract_resource_docs(docs):
-    resource = [doc for doc in docs if doc['formatType'] == 'RESOURCE']
+    resource = [doc for doc in docs if doc.get('formatType') == 'RESOURCE']
     return resource
 
 
-def D1_lookup(path):
-    """Lookup and return information about a package on the
+def D1_lookup(path, base_url):
+    """
+    Lookup and return information about a package on the
     DataONE network.
+    :param path: The path to a DataONE object
+    :param base_url: The patht to a node endpoint
+    :type path: str
+    :type base_url: str
+    :return:
     """
 
-    package_pid = get_package_pid(path)
-    logger.debug('Found package PID of {}.'.format(package_pid))
+    package_pid = get_package_pid(path, base_url)
+    docs = get_documents(package_pid, base_url)
 
-    docs = get_documents(package_pid)
-
+    if not docs:
+        raise RestException('Failed to find any documents in the provided package')
     # Filter the Solr result by TYPE so we can construct the package
     metadata = [doc for doc in docs if doc.get('formatType') == 'METADATA']
     if not metadata:
@@ -261,25 +250,21 @@ def D1_lookup(path):
     # Compute package size (sum of 'size' values)
     total_size = sum([int(doc.get('size', 0)) for doc in docs])
 
-    dataMap = {
-        'dataId': package_pid,
-        'size': total_size,
-        'name': metadata[0].get('title', 'no title'),
-        'doi': metadata[0].get('identifier', 'no DOI').split('doi:')[-1],
-        'repository': 'DataONE',
-    }
-    return dataMap
+    return DataMap(package_pid, total_size, name=metadata[0].get('title', 'no title'),
+                   doi=metadata[0].get('identifier', 'no DOI').split('doi:')[-1],
+                   repository='DataONE')
 
 
-def get_documents(package_pid):
+def get_documents(package_pid, base_url):
     """
     Retrieve a list of all the files in a data package. The metadata
     record providing information about the package is also in this list.
     """
 
-    result = query('resourceMap:"{}"'.format(esc(package_pid)),
-                   ["identifier", "formatType", "title", "size", "formatId",
-                    "fileName", "documents"])
+    result = query(q='resourceMap:"{}"'.format(esc(package_pid)),
+                   fields=["identifier", "formatType", "title", "size", "formatId",
+                           "fileName", "documents"],
+                   base_url=base_url)
 
     if 'response' not in result or 'docs' not in result['response']:
         raise RestException(
@@ -303,15 +288,22 @@ def check_multiple_metadata(metadata):
                             "This is unexpected and unhandled.")
 
 
-def get_package_list(path, package=None, isChild=False):
-    """"""
+def get_package_list(path, base_url, package=None, isChild=False):
+    """
+
+    :param path: The path to a package
+    :param base_url: The node endpoint
+    :param package: Holds the information about the package
+    :param isChild: A bool set when the package has a parent
+    :return:
+    """
+
     if package is None:
         package = {}
 
-    package_pid = get_package_pid(path)
-    logger.debug('Found package PID of {}.'.format(package_pid))
+    package_pid = get_package_pid(path, base_url)
 
-    docs = get_documents(package_pid)
+    docs = get_documents(package_pid, base_url)
 
     # Filter the Solr result by TYPE so we can construct the package
     metadata = extract_metadata_docs(docs)
@@ -338,7 +330,10 @@ def get_package_list(path, package=None, isChild=False):
     package[primary_metadata[0]['title']]['fileList'].append(fileList)
     if children is not None and len(children) > 0:
         for child in children:
-            get_package_list(child['identifier'], package[primary_metadata[0]['title']], True)
+            get_package_list(child['identifier'],
+                             base_url=base_url,
+                             package=package[primary_metadata[0]['title']],
+                             isChild=True)
     return package
 
 

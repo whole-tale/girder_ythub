@@ -17,3 +17,10 @@ router.route('instance/user/:id', 'instanceList', function (id) {
         filter: {userId: id}
     });
 });
+
+import LaunchTaleView from './views/body/LaunchTaleView';
+router.route('launch', 'launchTale', (params) => {
+    events.trigger('g:navigateTo', LaunchTaleView, {
+        url: params.url
+    });
+});

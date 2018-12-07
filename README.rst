@@ -18,6 +18,49 @@ Installing Girder
 -----------------
 There are a couple of different ways to install Girder which are outlined `here <http://girder.readthedocs.io/en/latest/installation.html#sources>`_. Note that this should be done in a Python 3 environment.
 
+To create the virtual environment, `install pyenv <https://github.com/pyenv/pyenv-installer>`_. Also see `this <https://gist.github.com/jmvrbanac/8793985>`_.
+
+Run 
+
+.. code-block:: shell
+
+    sudo apt-get install -y make build-essential libssl-dev zlib1g-dev libbz2-dev \
+    libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev libncursesw5-dev \
+    xz-utils tk-dev libffi-dev
+
+Install Python 3.5.3
+
+.. code-block:: shell
+    
+    pyenv install 3.5.3
+
+Set Python 3.5.3 to global
+
+.. code-block:: shell
+    
+    pyenv global 3.5.3
+    
+Install Girder
+
+.. code-block:: shell
+    
+    pip install girder
+    
+Install the web interface
+
+.. code-block:: shell
+    
+    girder-install web --all-plugins --dev
+
+Note: Make sure you are serving on `0.0.0.0`.
+Check the config files in ``site-package/girder/girder/conf``
+
+Start the server
+
+.. code-block:: shell
+    
+    girder-server
+
 Linking the plugin to Girder
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Once you have the repo cloned, you'll need to create a new folder named ``wholetale`` in the ``/grider/plugins/`` directory. The goal of the next step is to copy/link the contents of the cloned ``girder_wholetale`` directory into the ``wholetale`` directory.
@@ -29,11 +72,6 @@ To copy the contents  instead, run
 ``girder-install plugin /path/to/your/plugin``
 
 For more infomration visit the page on `Installing Third Party Plugins <http://girder.readthedocs.io/en/latest/installation.html#installing-third-party-plugins>`_
-
-Installing the Web Service
-^^^^^^^^^^^^^^^^^^^^^^^^^^
-To install the web service, run
-``girder-install web --all-plugins --dev``
 
 Enabling Plugins
 ^^^^^^^^^^^^^^^^

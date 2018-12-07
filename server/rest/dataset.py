@@ -9,11 +9,12 @@ from girder.models.model_base import ValidationException
 from girder.utility import path as path_util
 from girder.utility.progress import ProgressContext
 from ..constants import CATALOG_NAME
+
+from girder.plugins.wholetale.lib.dataone import DataONELocations
 from ..schema.misc import dataMapListSchema
 from ..utils import getOrCreateRootFolder
-from .harvester import \
-    register_http_resource, \
-    register_DataONE_resource
+from ..lib import IMPORT_PROVIDERS
+from ..lib.data_map import DataMap
 
 
 datasetModel = {
@@ -61,7 +62,7 @@ datasetModel = {
             "description": "Total size of the dataset in bytes."
         },
         "identifier": {
-            "type": "string",
+            "type": ["string", "null"],
             "description": "External, unique identifier"
         },
         "provider": {
@@ -196,9 +197,22 @@ class Dataset(Resource):
                required=False, dataType='boolean', default=True)
         .jsonParam('dataMap', 'A list of data mappings',
                    paramType='body', schema=dataMapListSchema)
+        .param('base_url', 'The node endpoint url. This can be used '
+                           'to register datasets from custom networks, '
+                           'such as the DataONE development network. This can '
+                           'be passed in as an ordinary string. Examples '
+                           'include https://dev.nceas.ucsb.edu/knb/d1/mn/v2 and '
+                           'https://cn.dataone.org/cn/v2',
+               required=False, dataType='string', default=DataONELocations.prod_cn)
         .errorResponse('Write access denied for parent collection.', 403)
     )
-    def importData(self, parentId, parentType, public, copyToHome, dataMap,
+    def importData(self,
+                   parentId,
+                   parentType,
+                   public,
+                   copyToHome,
+                   dataMap,
+                   base_url,
                    params):
         user = self.getCurrentUser()
 
@@ -209,22 +223,19 @@ class Dataset(Resource):
             parent = self.model(parentType).load(
                 parentId, user=user, level=AccessType.WRITE, exc=True)
 
+        dataMaps = DataMap.fromList(dataMap)
+
         progress = True
         importedData = dict(folder=[], item=[])
         with ProgressContext(progress, user=user,
                              title='Registering resources') as ctx:
-            for data in dataMap:
-                if data['repository'] == 'DataONE':
-                    importedData['folder'].append(
-                        register_DataONE_resource(
-                            parent, parentType, ctx, user,
-                            data['dataId'], name=data['name'])
-                    )
-                elif data['repository'] == 'HTTP':
-                    importedData['item'].append(
-                        register_http_resource(parent, parentType, ctx, user,
-                                               data['dataId'], data['name'])
-                    )
+            for dataMap in dataMaps:
+                # probably would be nicer if Entity kept all details and the dataMap
+                # would be merged into it
+                provider = IMPORT_PROVIDERS.getFromDataMap(dataMap)
+                objType, obj = provider.register(parent, parentType, ctx, user, dataMap,
+                                                 base_url=base_url)
+                importedData[objType].append(obj)
 
         if copyToHome:
             with ProgressContext(progress, user=user,

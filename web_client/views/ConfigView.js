@@ -15,31 +15,15 @@ var ConfigView = View.extend({
             this.$('#g-wholetale-error-message').empty();
 
             this._saveSettings([{
-                key: 'wholetale.tmpnb_url',
-                value: this.$('#wholetale_tmpnb').val().trim()
-            }, {
-                key: 'wholetale.priv_key',
-                value: this.$('#wholetale_priv_key').val()
-            }, {
-                key: 'wholetale.pub_key',
-                value: this.$('#wholetale_pub_key').val()
-            }, {
                 key: 'wholetale.instance_cap',
                 value: this.$('#wholetale_instance_cap').val()
+            }, {
+                key: 'wholetale.dataverse_url',
+                value: this.$('#wholetale_dataverse_url').val()
+            }, {
+                key: 'wholetale.dataverse_extra_hosts',
+                value: this.$('#wholetale_extra_hosts').val().trim()
             }]);
-        },
-        'click .g-generate-key': function (event) {
-            event.preventDefault();
-            restRequest({
-                type: 'POST',
-                url: 'wholetale/genkey',
-                data: {}
-            }).done(_.bind(function (resp) {
-                this.settings['wholetale.priv_key'] = resp['wholetale.priv_key'];
-                this.settings['wholetale.pub_key'] = resp['wholetale.pub_key'];
-                this.$('#wholetale_priv_key').val(resp['wholetale.priv_key']);
-                this.$('#wholetale_pub_key').val(resp['wholetale.pub_key']);
-            }, this));
         }
     },
     initialize: function () {
@@ -49,10 +33,9 @@ var ConfigView = View.extend({
         });
 
         var keys = [
-            'wholetale.tmpnb_url',
-            'wholetale.priv_key',
-            'wholetale.pub_key',
-            'wholetale.instance_cap'
+            'wholetale.instance_cap',
+            'wholetale.dataverse_url',
+            'wholetale.dataverse_extra_hosts'
         ];
 
         restRequest({
@@ -81,7 +64,8 @@ var ConfigView = View.extend({
     render: function () {
         this.$el.html(ConfigViewTemplate({
             settings: this.settings,
-            defaults: this.defaults
+            defaults: this.defaults,
+            JSON: window.JSON
         }));
         this.breadcrumb.setElement(this.$('.g-config-breadcrumb-container')).render();
         return this;

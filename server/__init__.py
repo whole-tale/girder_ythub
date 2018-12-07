@@ -1,12 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from cryptography.exceptions import UnsupportedAlgorithm
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import serialization
 import six
+import validators
 
-from girder import events, logprint
+from girder import events, logprint, logger
 from girder.api import access
 from girder.api.describe import Description, describeRoute, autoDescribeRoute
 from girder.api.rest import \
@@ -14,6 +12,9 @@ from girder.api.rest import \
 from girder.constants import AccessType, TokenScope, CoreEventHandler
 from girder.exceptions import GirderException
 from girder.models.model_base import ValidationException
+from girder.plugins.jobs.constants import JobStatus
+from girder.plugins.jobs.models.job import Job as JobModel
+from girder.plugins.worker import getCeleryApp
 from girder.utility import assetstore_utilities, setting_utilities
 from girder.utility.model_importer import ModelImporter
 
@@ -21,7 +22,9 @@ from .constants import PluginSettings, SettingDefault
 from .rest.dataset import Dataset
 from .rest.recipe import Recipe
 from .rest.image import Image
+from .rest.integration import Integration
 from .rest.repository import Repository
+from .rest.publish import Publish
 from .rest.harvester import listImportedData
 from .rest.tale import Tale
 from .rest.instance import Instance
@@ -29,56 +32,49 @@ from .rest.wholetale import wholeTale
 from .models.instance import finalizeInstance
 
 
-@setting_utilities.validator(PluginSettings.HUB_PRIV_KEY)
-def validateHubPrivKey(doc):
+@setting_utilities.validator(PluginSettings.DATAVERSE_EXTRA_HOSTS)
+def validateDataverseExtraHosts(doc):
     if not doc['value']:
-        raise ValidationException(
-            'PRIV_KEY must not be empty.', 'value')
+        doc['value'] = defaultDataverseExtraHosts()
+    if not isinstance(doc['value'], list):
+        raise ValidationException('Dataverse extra hosts setting must be a list.', 'value')
+    for url in doc['value']:
+        if not validators.url(url):
+            raise ValidationException('Invalid URL in Dataverse extra hosts', 'value')
+
+
+@setting_utilities.validator(PluginSettings.INSTANCE_CAP)
+def validateInstanceCap(doc):
+    if not doc['value']:
+        doc['value'] = defaultInstanceCap()
     try:
-        key = doc['value'].encode('utf8')
-    except AttributeError:
-        key = doc['value']
-    try:
-        serialization.load_pem_private_key(
-            key, password=None, backend=default_backend()
-        )
+        int(doc['value'])
     except ValueError:
         raise ValidationException(
-            "PRIV_KEY's data structure could not be decoded.")
-    except TypeError:
-        raise ValidationException(
-            "PRIV_KEY is password encrypted, yet no password provided.")
-    except UnsupportedAlgorithm:
-        raise ValidationException(
-            "PRIV_KEY's type is not supported.")
+            'Instance Cap needs to be an integer.', 'value')
 
 
-@setting_utilities.validator(PluginSettings.HUB_PUB_KEY)
-def validateHubPubKey(doc):
+@setting_utilities.validator(PluginSettings.DATAVERSE_URL)
+def validateDataverseURL(doc):
     if not doc['value']:
-        raise ValidationException(
-            'PUB_KEY must not be empty.', 'value')
-    try:
-        key = doc['value'].encode('utf8')
-    except AttributeError:
-        key = doc['value']
-    try:
-        serialization.load_pem_public_key(
-            key, backend=default_backend()
-        )
-    except ValueError:
-        raise ValidationException(
-            "PUB_KEY's data structure could not be decoded.")
-    except UnsupportedAlgorithm:
-        raise ValidationException(
-            "PUB_KEY's type is not supported.")
+        doc['value'] = defaultDataverseURL()
+    if not validators.url(doc['value']):
+        raise ValidationException('Invalid Dataverse URL', 'value')
 
 
-@setting_utilities.validator(PluginSettings.TMPNB_URL)
-def validateTmpNbUrl(doc):
-    if not doc['value']:
-        raise ValidationException(
-            'TmpNB URL must not be empty.', 'value')
+@setting_utilities.default(PluginSettings.INSTANCE_CAP)
+def defaultInstanceCap():
+    return SettingDefault.defaults[PluginSettings.INSTANCE_CAP]
+
+
+@setting_utilities.default(PluginSettings.DATAVERSE_URL)
+def defaultDataverseURL():
+    return SettingDefault.defaults[PluginSettings.DATAVERSE_URL]
+
+
+@setting_utilities.default(PluginSettings.DATAVERSE_EXTRA_HOSTS)
+def defaultDataverseExtraHosts():
+    return SettingDefault.defaults[PluginSettings.DATAVERSE_EXTRA_HOSTS]
 
 
 @setting_utilities.validator(PluginSettings.INSTANCE_CAP)
@@ -273,6 +269,59 @@ def addDefaultFolders(event):
         folderModel.setUserAccess(folder, user, AccessType.ADMIN, save=True)
 
 
+def validateFileLink(event):
+    # allow globus URLs
+    doc = event.info
+    if doc.get('assetstoreId') is None:
+        if 'linkUrl' not in doc:
+            raise ValidationException(
+                'File must have either an assetstore ID or a link URL.',
+                'linkUrl')
+            doc['linkUrl'] = doc['linkUrl'].strip()
+
+        if not doc['linkUrl'].startswith(('http:', 'https:', 'globus:')):
+            raise ValidationException(
+                'Linked file URL must start with http: or https: or globus:.',
+                'linkUrl')
+    if 'name' not in doc or not doc['name']:
+        raise ValidationException('File name must not be empty.', 'name')
+
+    doc['exts'] = [ext.lower() for ext in doc['name'].split('.')[1:]]
+    event.preventDefault().addResponse(doc)
+
+
+@access.user
+@autoDescribeRoute(
+    Description('Get output from celery job.')
+    .modelParam('id', 'The ID of the job.', model=JobModel, force=True, includeLog=True)
+    .errorResponse('ID was invalid.')
+    .errorResponse('Read access was denied for the job.', 403)
+)
+@boundHandler()
+def getJobResult(self, job):
+    user = self.getCurrentUser()
+    if not job.get('public', False):
+        if user:
+            JobModel().requireAccess(job, user, level=AccessType.READ)
+        else:
+            self.ensureTokenScopes('jobs.job_' + str(job['_id']))
+
+    celeryTaskId = job.get('celeryTaskId')
+    if celeryTaskId is None:
+        logger.warn(
+            "Job '{}' doesn't have a Celery task id.".format(job['_id']))
+        return
+    if job['status'] != JobStatus.SUCCESS:
+        logger.warn(
+            "Job '{}' hasn't completed sucessfully.".format(job['_id']))
+    asyncResult = getCeleryApp().AsyncResult(celeryTaskId)
+    try:
+        result = asyncResult.get()
+    except Exception as ex:
+        result = str(ex)
+    return result
+
+
 def load(info):
     info['apiRoot'].wholetale = wholeTale()
     info['apiRoot'].instance = Instance()
@@ -297,12 +346,16 @@ def load(info):
     info['apiRoot'].image = image
     events.bind('jobs.job.update.after', 'wholetale', image.updateImageStatus)
     events.bind('jobs.job.update.after', 'wholetale', finalizeInstance)
+    events.bind('model.file.validate', 'wholetale', validateFileLink)
     events.unbind('model.user.save.created', CoreEventHandler.USER_DEFAULT_FOLDERS)
     events.bind('model.user.save.created', 'wholetale', addDefaultFolders)
     info['apiRoot'].repository = Repository()
+    info['apiRoot'].publish = Publish()
+    info['apiRoot'].integration = Integration()
     info['apiRoot'].folder.route('GET', ('registered',), listImportedData)
     info['apiRoot'].folder.route('GET', (':id', 'listing'), listFolder)
     info['apiRoot'].folder.route('GET', (':id', 'dataset'), getDataSet)
+    info['apiRoot'].job.route('GET', (':id', 'result'), getJobResult)
     info['apiRoot'].item.route('GET', (':id', 'listing'), listItem)
     info['apiRoot'].resource.route('GET', (), listResources)
 

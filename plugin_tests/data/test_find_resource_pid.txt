@@ -1,0 +1,29 @@
+interactions:
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Connection: [keep-alive]
+      User-Agent: [python-requests/2.19.1]
+    method: GET
+    uri: https://cn.dataone.org/cn/v2/query/solr/?q=identifier:%22localhost_01%22&fl=identifier,formatType,formatId,resourceMap&rows=1000&start=0&wt=json
+  response:
+    body: {string: '{"responseHeader":{"status":0,"QTime":3,"params":{"q":"identifier:\"localhost_01\"","fl":"identifier,formatType,formatId,resourceMap","start":"0","rows":"1000","wt":"json"}},"response":{"numFound":0,"start":0,"docs":[]}}
+
+'}
+    headers:
+      Access-Control-Allow-Credentials: ['true']
+      Access-Control-Allow-Headers: ['Authorization, Content-Type, Location, Content-Length,
+          x-annotator-auth-token']
+      Access-Control-Allow-Methods: ['POST, GET, OPTIONS, PUT, DELETE']
+      Access-Control-Allow-Origin: ['']
+      Access-Control-Expose-Headers: ['Content-Length, Content-Type, Location']
+      Connection: [Keep-Alive]
+      Content-Type: [application/json; charset=UTF-8]
+      Date: ['Wed, 21 Nov 2018 18:56:59 GMT']
+      Keep-Alive: ['timeout=5, max=100']
+      Server: [Apache/2.4.7 (Ubuntu)]
+      Transfer-Encoding: [chunked]
+    status: {code: 200, message: OK}
+version: 1

@@ -1,7 +1,7 @@
 import InstanceModel from './InstanceModel';
-import FrontendModel from './FrontendModel';
+import ImageModel from './ImageModel';
 
 export {
-  InstanceModel,
-  FrontendModel
+    InstanceModel,
+    ImageModel
 };
