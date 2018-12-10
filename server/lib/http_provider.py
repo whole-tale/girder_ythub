@@ -27,7 +27,8 @@ class HTTPImportProvider(ImportProvider):
             # returns True, which, various errors aside, signifies a commitment
             # to the entity being legitimate from the perspective of this provider
             raise Exception('Unknown scheme %s' % url.scheme)
-        headers = requests.head(pid).headers
+        headers = requests.head(
+            pid, headers={'Accept-Encoding': 'identity'}).headers
 
         valid_target = headers.get('Content-Type') is not None
         valid_target = valid_target and \
@@ -61,7 +62,8 @@ class HTTPImportProvider(ImportProvider):
                  base_url: str = None):
         url = dataMap.getDataId()
         progress.update(increment=1, message='Processing file {}.'.format(url))
-        headers = requests.head(url).headers
+        headers = requests.head(
+            url, headers={'Accept-Encoding': 'identity'}).headers
         size = headers.get('Content-Length') or \
             headers.get('Content-Range').split('/')[-1]
         fileModel = ModelImporter.model('file')
