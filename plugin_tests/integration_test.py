@@ -52,6 +52,6 @@ class IntegrationTestCase(base.TestCase):
         self.assertStatus(resp, 303)
         self.assertEqual(
             resp.headers['Location'],
-            'https://dashboard.wholetale.org/compose?environment=rstudio'
-            '%26name%3Ddataset%2Btitle%26uri=urn%253Auuid%253A12345.6789'
+            'https://dashboard.wholetale.org/compose?name=dataset+title&'
+            'uri=urn%3Auuid%3A12345.6789&environment=rstudio'
         )
