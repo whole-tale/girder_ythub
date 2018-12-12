@@ -7,7 +7,7 @@ from .http_provider import HTTPImportProvider
 from .null_provider import NullImportProvider
 from .dataone.dataone_provider import DataOneImportProvider
 from .dataverse.provider import DataverseImportProvider
-from .globus.globus_provider import GlobusImportProvider
+# from .globus.globus_provider import GlobusImportProvider
 
 
 RESOLVERS = Resolvers()
