@@ -35,7 +35,7 @@ def dataoneDataImport(self, uri, title, environment, api, apiToken):
         query['api'] = api
 
     # TODO: Make base url a plugin setting, defaulting to dashboard.<domain>
-    dashboard_url = os.environ.get('DASHBOARD_URL', 'https://dashboard.local.wholetale.org')
+    dashboard_url = os.environ.get('DASHBOARD_URL', 'https://dashboard.wholetale.org')
     location = urlunparse(
         urlparse(dashboard_url)._replace(
             path='/compose',
