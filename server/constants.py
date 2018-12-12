@@ -38,6 +38,7 @@ class InstanceStatus(object):
     LAUNCHING = 0
     RUNNING = 1
     ERROR = 2
+    DELETING = 3
 
     @staticmethod
     def isValid(status):

@@ -72,6 +72,10 @@ class Instance(AccessControlledModel):
             yield r
 
     def deleteInstance(self, instance, token):
+        # Mark Instance as pending deletion
+        instance['status'] = InstanceStatus.DELETING
+        self.save(instance)
+
         app = getCeleryApp()
         active_queues = list(app.control.inspect().active_queues().keys())
 
