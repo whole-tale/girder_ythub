@@ -164,6 +164,9 @@ def _wait_for_server(url, timeout=30, wait_time=0.5):
             logger.info(
                 'Booting server at [%s], getting ConnectionError', url)
             time.sleep(wait_time)
+        except Exception as ex:
+            logger.info(
+                'Booting server at [%s], getting "%s"', url, str(ex))
         else:
             break
 
