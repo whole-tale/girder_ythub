@@ -5,7 +5,7 @@ import os
 from tests import base
 from girder.api.rest import RestException
 
-'''Tests for the methods in dataone_register.py. Some of these tests use live requests,
+'''Tests for the methods in dataone.register.py. Some of these tests use live requests,
 while others use mocked JSON responses/data structures.'''
 
 # it should be
@@ -46,7 +46,7 @@ class TestDataONERegister(base.TestCase):
                                  for user in users]
 
     def test_find_initial_pid(self):
-        from server.lib.dataone.dataone_register import find_initial_pid
+        from server.lib.dataone.register import find_initial_pid
 
         # Test that the regex is working for search.dataone urls
         pid = 'https://search.dataone.org/#view/urn:uuid:7ec733c4-aa63-405a-a58d-1d773a9025a9'
@@ -85,7 +85,7 @@ class TestDataONERegister(base.TestCase):
 
     @vcr.use_cassette(os.path.join(DATA_PATH, 'test_find_resource_pid.txt'))
     def test_find_resource_pid(self):
-        from server.lib.dataone.dataone_register import find_resource_pid
+        from server.lib.dataone.register import find_resource_pid
         from server.lib.dataone import DataONELocations
 
         # Test the case where no data object could be located
@@ -95,7 +95,7 @@ class TestDataONERegister(base.TestCase):
 
     def test_get_package_files_metadata(self):
         """Test that the metadata in a package is getting added to the list of files"""
-        from server.lib.dataone.dataone_register import get_package_files
+        from server.lib.dataone.register import get_package_files
 
         full_meta_data = [{
             'identifier': 'urn:uuid:f438a8d5-7965-4ca2-aad6-88f694e5afe5',
@@ -123,7 +123,7 @@ class TestDataONERegister(base.TestCase):
         Test that the files in a package are getting correctly parsed. This is tested on
         https://search.dataone.org/#view/urn:uuid:15403304-6eb8-4ede-8a56-332a3e92bef8
         """
-        from server.lib.dataone.dataone_register import get_package_files
+        from server.lib.dataone.register import get_package_files
 
         data = [{'identifier': 'urn:uuid:4eb73500-fa9b-46c2-a517-94c1a8b4afbb',
                  'fileName': 'HumanFootprint.ipynb', 'formatId': 'text/plain',
@@ -156,7 +156,7 @@ class TestDataONERegister(base.TestCase):
 
     def test_check_multiple_maps_empty(self):
         """Test that we get an exception when no map was found."""
-        from server.lib.dataone.dataone_register import check_multiple_maps
+        from server.lib.dataone.register import check_multiple_maps
 
         with pytest.raises(RestException):
             metadata = set()
@@ -165,7 +165,7 @@ class TestDataONERegister(base.TestCase):
     @vcr.use_cassette(os.path.join(DATA_PATH, 'test_get_package_list_nested.txt'))
     def test_get_package_list_nested(self):
         # Test that we're getting all of the files in a nested package
-        from server.lib.dataone.dataone_register import get_package_list
+        from server.lib.dataone.register import get_package_list
         from server.lib.dataone import DataONELocations
 
         package = get_package_list(
@@ -182,7 +182,7 @@ class TestDataONERegister(base.TestCase):
     @vcr.use_cassette(os.path.join(DATA_PATH, 'test_get_package_list_flat.txt'))
     def test_get_package_list_flat(self):
         # Test that we're getting all of the files in a non-nested package
-        from server.lib.dataone.dataone_register import get_package_list
+        from server.lib.dataone.register import get_package_list
         from server.lib.dataone import DataONELocations
 
         package = get_package_list(

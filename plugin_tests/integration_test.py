@@ -42,3 +42,16 @@ class IntegrationTestCase(base.TestCase):
             'https://dashboard.wholetale.org/compose?uri='
             'https%3A%2F%2Fdataverse.someplace%2Fapi%2Faccess%2Fdatafile%2F1234'
         )
+
+    def testDataoneIntegration(self):
+        resp = self.request(
+            '/integration/dataone', method='GET',
+            params={'uri': 'urn:uuid:12345.6789',
+                    'title': 'dataset title',
+                    'environment': 'rstudio'})
+        self.assertStatus(resp, 303)
+        self.assertEqual(
+            resp.headers['Location'],
+            'https://dashboard.wholetale.org/compose?environment=rstudio'
+            '%26name%3Ddataset%2Btitle%26uri=urn%253Auuid%253A12345.6789'
+        )

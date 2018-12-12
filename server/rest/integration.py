@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 from girder.api.rest import Resource
 from ..lib.dataverse.integration import dataverseExternalTools
+from ..lib.dataone.integration import dataoneDataImport
 
 
 class Integration(Resource):
@@ -11,3 +12,4 @@ class Integration(Resource):
         self.resourceName = 'integration'
 
         self.route('GET', ('dataverse',), dataverseExternalTools)
+        self.route('GET', ('dataone',), dataoneDataImport)

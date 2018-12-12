@@ -7,7 +7,7 @@ from ..data_map import DataMap
 from ..file_map import FileMap
 from ..import_item import ImportItem
 from ..entity import Entity
-from .dataone_register import \
+from .register import \
     D1_lookup, \
     extract_metadata_docs, \
     get_documents, \
