@@ -39,7 +39,7 @@ class Instance(AccessControlledModel):
             fields={'_id', 'created', 'creatorId', 'iframe', 'name', 'taleId'})
         self.exposeFields(
             level=AccessType.WRITE,
-            fields={'containerInfo', 'lastActivity', 'status', 'url'})
+            fields={'containerInfo', 'lastActivity', 'status', 'url', 'sessionId'})
 
     def validate(self, instance):
         if not InstanceStatus.isValid(instance['status']):
