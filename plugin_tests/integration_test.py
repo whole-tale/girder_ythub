@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from tests import base
+from urllib.parse import urlparse, parse_qs
 
 
 def setUpModule():
@@ -50,8 +51,7 @@ class IntegrationTestCase(base.TestCase):
                     'title': 'dataset title',
                     'environment': 'rstudio'})
         self.assertStatus(resp, 303)
-        self.assertEqual(
-            resp.headers['Location'],
-            'https://dashboard.wholetale.org/compose?name=dataset+title&'
-            'uri=urn%3Auuid%3A12345.6789&environment=rstudio'
-        )
+        query = parse_qs(urlparse(resp.headers['Location']).query)
+        self.assertEqual(query['name'][0], 'dataset title')
+        self.assertEqual(query['uri'][0], 'urn:uuid:12345.6789')
+        self.assertEqual(query['environment'][0], 'rstudio')
