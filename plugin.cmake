@@ -20,6 +20,7 @@ add_python_test(dataone_register
   plugins/wholetale/test_get_package_list_nested.txt
   plugins/wholetale/test_cn_switch.txt
   plugins/wholetale/dataone_register_test01.json
+  plugins/wholetale/DataONE_register_nested.txt
 )
 add_python_test(dataverse
   PLUGIN wholetale

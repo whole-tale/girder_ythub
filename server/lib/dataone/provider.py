@@ -98,7 +98,8 @@ class DataOneImportProvider(ImportProvider):
         if children is not None and len(children) > 0:
             for child in children:
                 logger.debug('Registering child package, {}'.format(child['identifier']))
-                yield from self._listRecursive(progress, user, child['identifier'], base_url)
+                yield from self._listRecursive(
+                    user, child['identifier'], None, base_url=base_url, progress=progress)
 
         yield ImportItem(ImportItem.END_FOLDER)
         logger.debug('Finished registering dataset')

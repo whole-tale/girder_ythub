@@ -205,6 +205,54 @@ class TestDataONERegister(base.TestCase):
 
         self.assertDictEqual(package, expected_result)
 
+    @vcr.use_cassette(os.path.join(DATA_PATH, 'DataONE_register_nested.txt'))
+    def test_rest_register_nested(self):
+        dataMap = {
+            "dataId": "resource_map_doi:10.18739/A2FS85",
+            "doi": "10.18739/A2FS85",
+            "name": "Soil Moisture NIMS grid Barrow, Alaska 2012",
+            "repository": "DataONE",
+            "size": 71984
+        }
+        resp = self.request(
+            path='/dataset/register', method='POST',
+            params={'dataMap': json.dumps([dataMap])}, user=self.user)
+        self.assertStatusOk(resp)
+
+        resp = self.request(
+            path='/folder', method='GET', user=self.user, params={
+                'parentType': 'user',
+                'parentId': str(self.user['_id']),
+                'text': 'Data',
+                'sort': 'name',
+                'sortdir': -1
+            })
+        self.assertStatusOk(resp)
+        dataFolder = resp.json[0]
+
+        # Grab the default user Data folders
+        resp = self.request(
+            path='/folder', method='GET', user=self.user, params={
+                'parentType': 'folder',
+                'parentId': dataFolder['_id'],
+                'name': dataMap['name']
+            })
+        self.assertStatusOk(resp)
+        self.assertEqual(len(resp.json), 1)
+        folder = resp.json[0]
+        self.assertEqual(folder['meta']['identifier'], 'doi:' + dataMap['doi'])
+
+        resp = self.request(
+            path='/folder', method='GET', user=self.user, params={
+                'parentType': 'folder',
+                'parentId': folder['_id'],
+                'name': 'Water Table Depth (WTD) NIMS grid Atqasuk, Alaska 2012'
+            })
+        self.assertStatusOk(resp)
+        self.assertEqual(len(resp.json), 1)
+        child_folder = resp.json[0]
+        self.assertEqual(child_folder['meta']['identifier'], 'doi:10.18739/A2KH0M')
+
     def tearDown(self):
         self.model('user').remove(self.user)
         self.model('user').remove(self.admin)

@@ -1,0 +1,142 @@
+interactions:
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Connection: [keep-alive]
+      User-Agent: [python-requests/2.19.1]
+    method: GET
+    uri: https://cn.dataone.org/cn/v2/query/solr/?q=resourceMap:%22resource_map_doi%3A10.18739%2FA2FS85%22&fl=identifier,formatType,title,size,formatId,fileName,documents&rows=1000&start=0&wt=json
+  response:
+    body: {string: '{"responseHeader":{"status":0,"QTime":3,"params":{"q":"resourceMap:\"resource_map_doi:10.18739/A2FS85\"","fl":"identifier,formatType,title,size,formatId,fileName,documents","start":"0","rows":"1000","wt":"json"}},"response":{"numFound":3,"start":0,"docs":[{"identifier":"doi:10.18739/A2FS85","fileName":"science_metadata.xml","formatId":"eml://ecoinformatics.org/eml-2.1.1","formatType":"METADATA","size":5739,"title":"Soil
+        Moisture NIMS grid Barrow, Alaska 2012","documents":["resource_map_doi:10.18739/A2KH0M","urn:uuid:eb1dd498-260a-4f1a-aae9-feb504b5db23","doi:10.18739/A2FS85"]},{"identifier":"urn:uuid:eb1dd498-260a-4f1a-aae9-feb504b5db23","fileName":"SoilMoistNimsBrw2012.xls","formatId":"application/vnd.ms-excel","formatType":"DATA","size":60928},{"identifier":"resource_map_doi:10.18739/A2KH0M","fileName":"resource_map_doi_10.18739/A2KH0M.xml","formatId":"http://www.openarchives.org/ore/terms","formatType":"RESOURCE","size":5317}]}}
+
+'}
+    headers:
+      Access-Control-Allow-Credentials: ['true']
+      Access-Control-Allow-Headers: ['Authorization, Content-Type, Location, Content-Length,
+          x-annotator-auth-token']
+      Access-Control-Allow-Methods: ['POST, GET, OPTIONS, PUT, DELETE']
+      Access-Control-Allow-Origin: ['']
+      Access-Control-Expose-Headers: ['Content-Length, Content-Type, Location']
+      Connection: [Keep-Alive]
+      Content-Type: [application/json; charset=UTF-8]
+      Date: ['Mon, 17 Dec 2018 22:01:57 GMT']
+      Keep-Alive: ['timeout=5, max=100']
+      Server: [Apache/2.4.7 (Ubuntu)]
+      Transfer-Encoding: [chunked]
+    status: {code: 200, message: OK}
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Connection: [keep-alive]
+      User-Agent: [python-requests/2.19.1]
+    method: GET
+    uri: https://cn.dataone.org/cn/v2/query/solr/?q=resourceMap:%22resource_map_doi%3A10.18739%2FA2KH0M%22&fl=identifier,formatType,title,size,formatId,fileName,documents&rows=1000&start=0&wt=json
+  response:
+    body: {string: '{"responseHeader":{"status":0,"QTime":3,"params":{"q":"resourceMap:\"resource_map_doi:10.18739/A2KH0M\"","fl":"identifier,formatType,title,size,formatId,fileName,documents","start":"0","rows":"1000","wt":"json"}},"response":{"numFound":3,"start":0,"docs":[{"identifier":"resource_map_doi:10.18739/A2Q92J","fileName":"resource_map_doi_10.18739/A2Q92J.xml","formatId":"http://www.openarchives.org/ore/terms","formatType":"RESOURCE","size":5317},{"identifier":"doi:10.18739/A2KH0M","fileName":"science_metadata.xml","formatId":"eml://ecoinformatics.org/eml-2.1.1","formatType":"METADATA","size":6702,"title":"Water
+        Table Depth (WTD) NIMS grid Atqasuk, Alaska 2012","documents":["resource_map_doi:10.18739/A2Q92J","doi:10.18739/A2KH0M","urn:uuid:c7294026-6d6e-479c-824e-8ceee995073c"]},{"identifier":"urn:uuid:c7294026-6d6e-479c-824e-8ceee995073c","fileName":"WtdNimsAtq2012.xls","formatId":"application/vnd.ms-excel","formatType":"DATA","size":87040}]}}
+
+'}
+    headers:
+      Access-Control-Allow-Credentials: ['true']
+      Access-Control-Allow-Headers: ['Authorization, Content-Type, Location, Content-Length,
+          x-annotator-auth-token']
+      Access-Control-Allow-Methods: ['POST, GET, OPTIONS, PUT, DELETE']
+      Access-Control-Allow-Origin: ['']
+      Access-Control-Expose-Headers: ['Content-Length, Content-Type, Location']
+      Connection: [Keep-Alive]
+      Content-Type: [application/json; charset=UTF-8]
+      Date: ['Mon, 17 Dec 2018 22:01:58 GMT']
+      Keep-Alive: ['timeout=5, max=100']
+      Server: [Apache/2.4.7 (Ubuntu)]
+      Transfer-Encoding: [chunked]
+    status: {code: 200, message: OK}
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Connection: [keep-alive]
+      User-Agent: [python-requests/2.19.1]
+    method: GET
+    uri: https://cn.dataone.org/cn/v2/query/solr/?q=resourceMap:%22resource_map_doi%3A10.18739%2FA2Q92J%22&fl=identifier,formatType,title,size,formatId,fileName,documents&rows=1000&start=0&wt=json
+  response:
+    body: {string: '{"responseHeader":{"status":0,"QTime":4,"params":{"q":"resourceMap:\"resource_map_doi:10.18739/A2Q92J\"","fl":"identifier,formatType,title,size,formatId,fileName,documents","start":"0","rows":"1000","wt":"json"}},"response":{"numFound":3,"start":0,"docs":[{"identifier":"urn:uuid:79218237-7290-4b03-965a-70b5dd467910","fileName":"WtdNimsBrw2012.xls","formatId":"application/vnd.ms-excel","formatType":"DATA","size":106496},{"identifier":"doi:10.18739/A2Q92J","fileName":"science_metadata.xml","formatId":"eml://ecoinformatics.org/eml-2.1.1","formatType":"METADATA","size":6825,"title":"Water
+        Table Depth (WTD) NIMS grid Barrow, Alaska 2012","documents":["urn:uuid:79218237-7290-4b03-965a-70b5dd467910","resource_map_doi:10.18739/A2ZS8T","doi:10.18739/A2Q92J"]},{"identifier":"resource_map_doi:10.18739/A2ZS8T","fileName":"resource_map_doi_10.18739/A2ZS8T.xml","formatId":"http://www.openarchives.org/ore/terms","formatType":"RESOURCE","size":5317}]}}
+
+'}
+    headers:
+      Access-Control-Allow-Credentials: ['true']
+      Access-Control-Allow-Headers: ['Authorization, Content-Type, Location, Content-Length,
+          x-annotator-auth-token']
+      Access-Control-Allow-Methods: ['POST, GET, OPTIONS, PUT, DELETE']
+      Access-Control-Allow-Origin: ['']
+      Access-Control-Expose-Headers: ['Content-Length, Content-Type, Location']
+      Connection: [Keep-Alive]
+      Content-Type: [application/json; charset=UTF-8]
+      Date: ['Mon, 17 Dec 2018 22:01:59 GMT']
+      Keep-Alive: ['timeout=5, max=100']
+      Server: [Apache/2.4.7 (Ubuntu)]
+      Transfer-Encoding: [chunked]
+    status: {code: 200, message: OK}
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Connection: [keep-alive]
+      User-Agent: [python-requests/2.19.1]
+    method: GET
+    uri: https://cn.dataone.org/cn/v2/query/solr/?q=resourceMap:%22resource_map_doi%3A10.18739%2FA2ZS8T%22&fl=identifier,formatType,title,size,formatId,fileName,documents&rows=1000&start=0&wt=json
+  response:
+    body: {string: '{"responseHeader":{"status":0,"QTime":3,"params":{"q":"resourceMap:\"resource_map_doi:10.18739/A2ZS8T\"","fl":"identifier,formatType,title,size,formatId,fileName,documents","start":"0","rows":"1000","wt":"json"}},"response":{"numFound":3,"start":0,"docs":[{"identifier":"resource_map_doi:10.18739/A2V05T","fileName":"resource_map_doi_10.18739/A2V05T.xml","formatId":"http://www.openarchives.org/ore/terms","formatType":"RESOURCE","size":4098},{"identifier":"doi:10.18739/A2ZS8T","fileName":"science_metadata.xml","formatId":"eml://ecoinformatics.org/eml-2.1.1","formatType":"METADATA","size":5652,"title":"Soil
+        Temperature ARCSS grid Atqasuk, Alaska 2012","documents":["resource_map_doi:10.18739/A2V05T","doi:10.18739/A2ZS8T","urn:uuid:e1317da8-ae3b-4755-a465-4b684d3d97f6"]},{"identifier":"urn:uuid:e1317da8-ae3b-4755-a465-4b684d3d97f6","fileName":"SoilTemperatureAtqArcssGrid2012.xls","formatId":"application/vnd.ms-excel","formatType":"DATA","size":99328}]}}
+
+'}
+    headers:
+      Access-Control-Allow-Credentials: ['true']
+      Access-Control-Allow-Headers: ['Authorization, Content-Type, Location, Content-Length,
+          x-annotator-auth-token']
+      Access-Control-Allow-Methods: ['POST, GET, OPTIONS, PUT, DELETE']
+      Access-Control-Allow-Origin: ['']
+      Access-Control-Expose-Headers: ['Content-Length, Content-Type, Location']
+      Connection: [Keep-Alive]
+      Content-Type: [application/json; charset=UTF-8]
+      Date: ['Mon, 17 Dec 2018 22:01:59 GMT']
+      Keep-Alive: ['timeout=5, max=100']
+      Server: [Apache/2.4.7 (Ubuntu)]
+      Transfer-Encoding: [chunked]
+    status: {code: 200, message: OK}
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Connection: [keep-alive]
+      User-Agent: [python-requests/2.19.1]
+    method: GET
+    uri: https://cn.dataone.org/cn/v2/query/solr/?q=resourceMap:%22resource_map_doi%3A10.18739%2FA2V05T%22&fl=identifier,formatType,title,size,formatId,fileName,documents&rows=1000&start=0&wt=json
+  response:
+    body: {string: '{"responseHeader":{"status":0,"QTime":3,"params":{"q":"resourceMap:\"resource_map_doi:10.18739/A2V05T\"","fl":"identifier,formatType,title,size,formatId,fileName,documents","start":"0","rows":"1000","wt":"json"}},"response":{"numFound":2,"start":0,"docs":[{"identifier":"doi:10.18739/A2V05T","fileName":"science_metadata.xml","formatId":"eml://ecoinformatics.org/eml-2.1.1","formatType":"METADATA","size":5812,"title":"Soil
+        Temperature ARCSS grid Barrow, Alaska 2012","documents":["urn:uuid:53e8a6e6-8c81-4200-a187-445893c2b832","doi:10.18739/A2V05T"]},{"identifier":"urn:uuid:53e8a6e6-8c81-4200-a187-445893c2b832","fileName":"SoilTemperatureBrwArcssGrid2012.xls","formatId":"application/vnd.ms-excel","formatType":"DATA","size":88576}]}}
+
+'}
+    headers:
+      Access-Control-Allow-Credentials: ['true']
+      Access-Control-Allow-Headers: ['Authorization, Content-Type, Location, Content-Length,
+          x-annotator-auth-token']
+      Access-Control-Allow-Methods: ['POST, GET, OPTIONS, PUT, DELETE']
+      Access-Control-Allow-Origin: ['']
+      Access-Control-Expose-Headers: ['Content-Length, Content-Type, Location']
+      Connection: [Keep-Alive]
+      Content-Type: [application/json; charset=UTF-8]
+      Date: ['Mon, 17 Dec 2018 22:02:00 GMT']
+      Keep-Alive: ['timeout=5, max=100']
+      Server: [Apache/2.4.7 (Ubuntu)]
+      Transfer-Encoding: [chunked]
+    status: {code: 200, message: OK}
+version: 1
