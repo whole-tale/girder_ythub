@@ -152,22 +152,18 @@ class TaleTestCase(base.TestCase):
             str(SettingDefault.defaults[PluginSettings.INSTANCE_CAP]))
 
         with mock.patch('celery.Celery') as celeryMock:
-            with mock.patch('tornado.httpclient.HTTPClient') as tornadoMock:
-                instance = celeryMock.return_value
-                instance.send_task.return_value = FakeAsyncResult()
+            instance = celeryMock.return_value
+            instance.send_task.return_value = FakeAsyncResult()
 
-                req = tornadoMock.return_value
-                req.fetch.return_value = {}
-
-                current_cap = setting.get(PluginSettings.INSTANCE_CAP)
-                setting.set(PluginSettings.INSTANCE_CAP, '0')
-                resp = self.request(
-                    path='/instance', method='POST', user=self.user,
-                    params={'imageId': str(self.image['_id'])})
-                self.assertStatus(resp, 400)
-                self.assertEqual(
-                    resp.json['message'], instanceCapErrMsg.format('0'))
-                setting.set(PluginSettings.INSTANCE_CAP, current_cap)
+            current_cap = setting.get(PluginSettings.INSTANCE_CAP)
+            setting.set(PluginSettings.INSTANCE_CAP, '0')
+            resp = self.request(
+                path='/instance', method='POST', user=self.user,
+                params={'imageId': str(self.image['_id'])})
+            self.assertStatus(resp, 400)
+            self.assertEqual(
+                resp.json['message'], instanceCapErrMsg.format('0'))
+            setting.set(PluginSettings.INSTANCE_CAP, current_cap)
 
     @mock.patch('gwvolman.tasks.create_volume')
     @mock.patch('gwvolman.tasks.launch_container')
