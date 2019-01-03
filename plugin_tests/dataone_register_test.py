@@ -232,14 +232,12 @@ class TestDataONERegister(base.TestCase):
 
         # Grab the default user Data folders
         resp = self.request(
-            path='/folder', method='GET', user=self.user, params={
-                'parentType': 'folder',
-                'parentId': dataFolder['_id'],
-                'name': dataMap['name']
-            })
+            path='/dataset', method='GET', user=self.user, params={'myData': True})
         self.assertStatusOk(resp)
-        self.assertEqual(len(resp.json), 1)
-        folder = resp.json[0]
+        datasets = resp.json
+        ds_folder = next((_ for _ in datasets if _['_modelType'] == 'folder'), None)
+        self.assertNotEqual(ds_folder, None)
+        folder = self.model('folder').load(ds_folder['_id'], user=self.user)
         self.assertEqual(folder['meta']['identifier'], 'doi:' + dataMap['doi'])
 
         resp = self.request(
