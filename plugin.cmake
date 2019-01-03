@@ -35,5 +35,10 @@ add_python_test(repository
 add_python_test(workspace
   PLUGIN wholetale
 )
+add_python_test(dataset
+  PLUGIN wholetale
+  EXTERNAL_DATA
+  plugins/wholetale/dataset_register.txt
+)
 add_python_style_test(python_static_analysis_wholetale
                       "${PROJECT_SOURCE_DIR}/plugins/wholetale/server")
