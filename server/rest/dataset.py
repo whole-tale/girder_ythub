@@ -5,9 +5,8 @@ from girder.api.docs import addModel
 from girder.api.describe import Description, autoDescribeRoute
 from girder.api.rest import Resource
 from girder.constants import AccessType, SortDir, TokenScope
-from girder.models.model_base import ValidationException
+from girder.exceptions import ValidationException
 from girder.models.user import User
-from girder.utility import path as path_util
 from girder.utility.progress import ProgressContext
 from ..constants import CATALOG_NAME
 
@@ -96,7 +95,6 @@ class Dataset(Resource):
 
         self.route('GET', (), self.listDatasets)
         self.route('GET', (':id',), self.getDataset)
-        self.route('PUT', (':id',), self.copyDatasetToHome)
         self.route('POST', ('register',), self.importData)
 
     @access.public
@@ -155,32 +153,6 @@ class Dataset(Resource):
         if 'meta' not in doc or 'provider' not in doc['meta']:
             raise ValidationException('No such item: %s' % str(doc['_id']), 'id')
         return _itemOrFolderToDataset(doc)
-
-    @access.user(scope=TokenScope.DATA_WRITE)
-    @autoDescribeRoute(
-        Description("Copy the dataset into User's Data folder")
-        .param('id', 'The ID of the Dataset.', paramType='path')
-        .jsonParam('dataset', 'Dataset being copied.',
-                   paramType='body', schema=datasetModel, dataType='dataset')
-        .errorResponse('Write access denied for parent collection.', 403)
-    )
-    def copyDatasetToHome(self, id, dataset, params):
-        user = self.getCurrentUser()
-        modelType = dataset['_modelType']
-        user_target_resource = path_util.lookUpPath(
-            '/user/%s/Data' % user['login'], user)
-        user_folder = user_target_resource['document']
-        source_object = self.model(modelType).load(
-            dataset['_id'], user=user, level=AccessType.READ, exc=True)
-
-        if modelType == 'folder':
-            self.model('folder').copyFolder(
-                source_object, parent=user_folder, parentType='folder',
-                public='original', creator=user)
-        elif modelType == 'item':
-            self.model('item').copyItem(
-                source_object, user, folder=user_folder)
-        return dataset  # Wrong, but I cannot set it to 204, or 201
 
     @access.user(scope=TokenScope.DATA_WRITE)
     @autoDescribeRoute(
