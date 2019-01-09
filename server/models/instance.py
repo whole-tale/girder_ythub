@@ -15,7 +15,7 @@ from girder.models.token import Token
 from girder.plugins.worker import getCeleryApp
 from girder.plugins.jobs.constants import JobStatus, REST_CREATE_JOB_TOKEN_SCOPE
 from gwvolman.tasks import \
-    create_volume, launch_container, shutdown_container, remove_volume
+    create_volume, launch_container, update_container, shutdown_container, remove_volume
 
 from ..constants import InstanceStatus
 from ..schema.misc import containerInfoSchema
@@ -71,6 +71,28 @@ class Instance(AccessControlledModel):
                 cursor=cursor, user=currentUser, level=AccessType.READ,
                 limit=limit, offset=offset):
             yield r
+            
+    def updateInstance(self, instance, token, **kwargs):
+        """
+        Updates an instance.
+
+        :param image: The instance document to restart.
+        :type image: dict
+        :returns: The instance document that was edited.
+        """
+        
+        instanceTask = update_container.signature(
+            args=[str(instance['_id'])], queue='manager',
+            kwargs={
+                'girder_client_token': str(token['_id']),
+                'image': kwargs['image']
+            }
+        ).apply_async()
+        instanceTask.get(timeout=TASK_TIMEOUT)
+        
+        instance['updated'] = datetime.datetime.utcnow()
+        #instance['status'] = InstanceStatus.LAUNCHING
+        return self.save(instance)
 
     def deleteInstance(self, instance, token):
         app = getCeleryApp()

@@ -8,6 +8,11 @@ from girder.constants import AccessType, SortDir
 from girder.utility import path as path_util
 from ..constants import PluginSettings
 
+try:
+    from urlparse import urlparse
+except ImportError:
+    from urllib.parse import urlparse
+
 
 instanceModel = {
     'id': 'instance',
@@ -27,7 +32,9 @@ instanceModel = {
             'containerPath': 'user/.../login?token=...',
             'host': '172.17.0.1',
             'mountPoint': '/var/lib/docker/volumes/58caa69f9fcbde0001/_data',
-            'volumeName': '58ca9fcbde0001df4d26_foo'
+            'volumeName': '58ca9fcbde0001df4d26_foo',
+            'digest': 'she256:198246816212941281ab1243de09c9adbca92',
+            'imageId': '58caa69f00f4d26cbd9fe01d'
         },
         'created': '2017-04-07T17:04:04.777000+00:00',
         'creatorId': '57c099af86ed1d0001733722',
@@ -78,6 +85,7 @@ class Instance(Resource):
         self.route('POST', (), self.createInstance)
         self.route('GET', (':id',), self.getInstance)
         self.route('DELETE', (':id',), self.deleteInstance)
+        self.route('PUT', (':id',), self.updateInstance)
 
     @access.user
     @filtermodel(model='instance', plugin='wholetale')
@@ -120,6 +128,32 @@ class Instance(Resource):
     def getInstance(self, instance, params):
         return instance
 
+    @access.user
+    @autoDescribeRoute(
+        Description('Updates an existing instance.')
+        .modelParam('id', model='instance', plugin='wholetale', level=AccessType.WRITE)
+        .errorResponse('ID was invalid.')
+        .errorResponse('Write access was denied for the instance.', 403)
+    )
+    def updateInstance(self, instance):
+        currentUser = self.getCurrentUser()
+        
+        # TODO: Check if image has changed, noop if not
+        
+        taleId = instance['taleId']
+        if taleId:
+            tale = self.model('tale', 'wholetale').load(
+                taleId, user=currentUser, level=AccessType.READ)
+            imageId = tale['imageId']
+            if imageId:
+                image = self.model('image', 'wholetale').load(
+                    imageId, user=currentUser, level=AccessType.READ)
+                newImageName = str(image['fullName']) + '@' + str(image['digest'])
+                print(newImageName)
+                # TODO: How do we know which tag is running/should run?
+                self.model('instance', 'wholetale').updateInstance(instance, 
+                    self.getCurrentToken(), image=newImageName)
+            
     @access.user
     @autoDescribeRoute(
         Description('Delete an existing instance.')
