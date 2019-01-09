@@ -50,10 +50,6 @@ imageModel = {
             "type": "boolean",
             "description": "If 'true', the tale can be embedded in an iframe"
         },
-        "imageId": {
-            "type": "string",
-            "description": "A image used to build the image."
-        },
         "digest": {
             "type": "string",
             "description": ("Checksum of a successfully built image "
