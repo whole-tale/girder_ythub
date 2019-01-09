@@ -155,6 +155,16 @@ containerInfoSchema = {
         'name': {
             'type': 'string',
         },
+        'imageId': {
+            'type': 'string',
+            'description': ("Name of the successfully built image "
+                            "that was used to run this instance."),
+        },
+        'digest': {
+            'type': 'string',
+            'description': ("Checksum of the successfully built image "
+                            "that was used to run this instance."),
+        },
         'nodeId': {
             'type': 'string',
         },
