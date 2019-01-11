@@ -19,7 +19,7 @@ from girder.exceptions import \
 # Whenever the Tale object schema is modified (e.g. fields are added or
 # removed) increase `_currentTaleFormat` to retroactively apply those
 # changes to existing Tales.
-_currentTaleFormat = 3
+_currentTaleFormat = 4
 
 
 class Tale(AccessControlledModel):
@@ -74,6 +74,18 @@ class Tale(AccessControlledModel):
                 tale['narrativeId'] = default['_id']
             if 'narrative' not in tale:
                 tale['narrative'] = []
+        if tale.get('format', 0) < 4:
+            old_data = tale.pop('involatileData')
+            tale['involatileData'] = []
+            for entry in old_data:
+                if entry['type'] == 'folder':
+                    obj = Folder().load(entry['id'], force=True)
+                elif entry['type'] == 'item':
+                    obj = Item().load(entry['id'], force=True)
+                tale['involatileData'].append(
+                    {'itemId': obj['_id'], 'mountPath': '/' + obj['name']}
+                )
+
         tale['format'] = _currentTaleFormat
         return tale
 
@@ -161,16 +173,6 @@ class Tale(AccessControlledModel):
             self.createWorkspace(tale, creator=creator)
             data_folder = self.createDataMountpoint(tale, creator=creator)
             tale['folderId'] = data_folder['_id']
-            for obj in tale['involatileData']:
-                if obj['type'] == 'folder':
-                    folder = Folder().load(obj['id'], user=creator)
-                    Folder().copyFolder(
-                        folder, parent=data_folder, parentType='folder',
-                        creator=creator, progress=False)
-                elif obj['type'] == 'item':
-                    item = Item().load(obj['id'], user=creator)
-                    Item().copyItem(item, creator, folder=data_folder)
-
             narrative_folder = self.createNarrativeFolder(
                 tale, creator=creator, default=not bool(tale['narrative']))
             for obj_id in tale['narrative']:

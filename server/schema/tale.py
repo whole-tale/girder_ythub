@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from .misc import containerConfigSchema, dataResourceSchema
+from .misc import containerConfigSchema
+from girder.plugins.wt_data_manager.schema.dataset import dataSetSchema
 
 taleModel = {
     "definitions": {
-        'containerConfig': containerConfigSchema
+        "containerConfig": containerConfigSchema,
+        "dataSet": dataSetSchema
     },
     "description": "Object representing a Tale.",
     "required": [
@@ -38,9 +40,7 @@ taleModel = {
             "description": "ID of a folder containing copy of tale['narrative']"
         },
         "involatileData": {
-            "type": "array",
-            "items": dataResourceSchema,
-            "description": "Resources used to create Tale's data folder"
+            "$ref": "#/definitions/dataSet"
         },
         "narrative": {
             "type": "array",
