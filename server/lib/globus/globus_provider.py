@@ -11,7 +11,7 @@ from ..entity import Entity
 from ..data_map import DataMap
 from ..import_item import ImportItem
 
-from girder.plugins.wt_data_manager.lib.handlers._globus.clients import Clients
+from girder.plugins.globus_handler.clients import Clients
 
 
 class GlobusImportProvider(ImportProvider):
