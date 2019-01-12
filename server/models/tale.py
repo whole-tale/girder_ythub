@@ -38,7 +38,7 @@ class Tale(AccessControlledModel):
             level=AccessType.READ,
             fields=({'_id', 'folderId', 'imageId', 'creatorId', 'created',
                      'format', 'dataSet', 'narrative', 'narrativeId', 'licenseSPDX',
-                     'doi', 'publishedURI', 'workspaceId'} | self.modifiableFields))
+                     'imageInfo', 'doi', 'publishedURI', 'workspaceId'} | self.modifiableFields))
         self.exposeFields(level=AccessType.ADMIN, fields={'published'})
 
     def validate(self, tale):
@@ -261,3 +261,4 @@ class Tale(AccessControlledModel):
                     setPublic=setPublic, publicFlags=publicFlags)
 
         return doc
+
