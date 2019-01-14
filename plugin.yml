@@ -4,4 +4,4 @@ version: 0.6.0dev0
 dependencies:
     - jobs
     - worker
-    - wt_data_manager
+    - globus_handler
