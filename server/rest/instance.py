@@ -8,20 +8,15 @@ from girder.constants import AccessType, SortDir
 from girder.utility import path as path_util
 from ..constants import PluginSettings
 
-try:
-    from urlparse import urlparse
-except ImportError:
-    from urllib.parse import urlparse
-
 
 instanceModel = {
     'id': 'instance',
     'type': 'object',
     'required': [
         '_accessLevel', '_id', '_modelType', 'containerId',
-        'containerPath', 'created', 'folderId', 'frontendId',
-        'lastActivity', 'mountPoint', 'status', 'userId',
-        'when'
+        'containerPath', 'created', 'digest', 'folderId', 
+        'frontendId', 'imageId',  'lastActivity', 'mountPoint', 
+        'status', 'userId', 'when'
     ],
     'example': {
         '_accessLevel': 2,
@@ -33,7 +28,7 @@ instanceModel = {
             'host': '172.17.0.1',
             'mountPoint': '/var/lib/docker/volumes/58caa69f9fcbde0001/_data',
             'volumeName': '58ca9fcbde0001df4d26_foo',
-            'digest': 'she256:198246816212941281ab1243de09c9adbca92',
+            'digest': 'sha256:198246816212941281ab1243de09c9adbca92',
             'imageId': '58caa69f00f4d26cbd9fe01d'
         },
         'created': '2017-04-07T17:04:04.777000+00:00',
@@ -130,15 +125,13 @@ class Instance(Resource):
 
     @access.user
     @autoDescribeRoute(
-        Description('Updates an existing instance.')
+        Description('Updates and restarts an existing instance.')
         .modelParam('id', model='instance', plugin='wholetale', level=AccessType.WRITE)
         .errorResponse('ID was invalid.')
         .errorResponse('Write access was denied for the instance.', 403)
     )
     def updateInstance(self, instance):
         currentUser = self.getCurrentUser()
-        
-        # TODO: Check if image has changed, noop if not
         
         taleId = instance['taleId']
         if taleId:
@@ -148,11 +141,13 @@ class Instance(Resource):
             if imageId:
                 image = self.model('image', 'wholetale').load(
                     imageId, user=currentUser, level=AccessType.READ)
-                newImageName = str(image['fullName']) + '@' + str(image['digest'])
-                print(newImageName)
-                # TODO: How do we know which tag is running/should run?
-                self.model('instance', 'wholetale').updateInstance(instance, 
-                    self.getCurrentToken(), image=newImageName)
+ 
+                # TODO: Only continue if digest has changed
+                #if image['digest'] != instance['containerInfo']['digest']:
+ 
+                # Digest ensures that container runs from newest image version
+                self.model('instance', 'wholetale').updateAndRestartInstance(instance, 
+                    self.getCurrentToken(), imageId=image['_id'], digest=image['digest'])
             
     @access.user
     @autoDescribeRoute(

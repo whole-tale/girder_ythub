@@ -20,6 +20,9 @@ from gwvolman.tasks import \
 from ..constants import InstanceStatus
 from ..schema.misc import containerInfoSchema
 
+from girder.plugins.wholetale.models.tale import Tale
+from girder.plugins.wholetale.models.image import Image
+
 
 TASK_TIMEOUT = 15.0
 
@@ -72,9 +75,9 @@ class Instance(AccessControlledModel):
                 limit=limit, offset=offset):
             yield r
             
-    def updateInstance(self, instance, token, **kwargs):
+    def updateAndRestartInstance(self, instance, token, **kwargs):
         """
-        Updates an instance.
+        Updates and restarts an instance.
 
         :param image: The instance document to restart.
         :type image: dict
@@ -85,13 +88,24 @@ class Instance(AccessControlledModel):
             args=[str(instance['_id'])], queue='manager',
             kwargs={
                 'girder_client_token': str(token['_id']),
-                'image': kwargs['image']
+                'image': str(kwargs['imageId']) + '@' + str(kwargs['digest'])
             }
         ).apply_async()
         instanceTask.get(timeout=TASK_TIMEOUT)
+        instance['containerInfo']['digest'] = kwargs['digest']
+        instance['containerInfo']['imageId'] = kwargs['imageId']
+        return self.updateInstance(instance)
+        
+    def updateInstance(self, instance):
+        """
+        Updates an instance.
+
+        :param image: The instance document to restart.
+        :type image: dict
+        :returns: The instance document that was edited.
+        """
         
         instance['updated'] = datetime.datetime.utcnow()
-        #instance['status'] = InstanceStatus.LAUNCHING
         return self.save(instance)
 
     def deleteInstance(self, instance, token):
@@ -153,17 +167,6 @@ class Instance(AccessControlledModel):
             (volumeTask | serviceTask).apply_async()
         return instance
 
-    def updateInstance(self, instance):
-        """
-        Updates an instance.
-
-        :param image: The instance document to update.
-        :type image: dict
-        :returns: The instance document that was edited.
-        """
-        instance['updated'] = datetime.datetime.utcnow()
-        return self.save(instance)
-
 
 def _wait_for_server(url, timeout=30, wait_time=0.5):
     """Wait for a server to show up within a newly launched instance."""
@@ -206,6 +209,13 @@ def finalizeInstance(event):
             containerInfo = {key: service.get(key, '') for key in valid_keys}
             url = service.get('url', 'https://google.com')
             _wait_for_server(url)
+            
+            # Preserve the imageId / current digest in containerInfo
+            tale = Tale().load(instance['taleId'], force=True)
+            containerInfo['imageId'] = tale['imageId']
+            image = Image().load(tale['imageId'], force=True)
+            containerInfo['digest'] = image['digest']
+            
             instance.update({
                 'url': url,
                 'status': InstanceStatus.RUNNING,

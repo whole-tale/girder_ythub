@@ -157,7 +157,7 @@ containerInfoSchema = {
         },
         'imageId': {
             'type': 'string',
-            'description': ("Name of the successfully built image "
+            'description': ("ID of the successfully built image "
                             "that was used to run this instance."),
         },
         'digest': {
