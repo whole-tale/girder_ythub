@@ -114,7 +114,7 @@ class Tale(AccessControlledModel):
             creatorId = creator.get('_id', None)
 
         if title is None:
-            title = '{} with {}'.format(image['fullName'], DATADIRS_NAME)
+            title = '{} with {}'.format(image['name'], DATADIRS_NAME)
         # if illustration is None:
             # Get image from SILS
 
@@ -261,4 +261,3 @@ class Tale(AccessControlledModel):
                     setPublic=setPublic, publicFlags=publicFlags)
 
         return doc
-
