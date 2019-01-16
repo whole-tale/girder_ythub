@@ -4,7 +4,8 @@
 import datetime
 import ssl
 import time
-from tornado.httpclient import HTTPRequest, HTTPError, HTTPClient
+from urllib.request import urlopen
+from urllib.error import HTTPError, URLError
 
 from girder import logger
 from girder.constants import AccessType, SortDir
@@ -145,16 +146,16 @@ class Instance(AccessControlledModel):
 def _wait_for_server(url, timeout=30, wait_time=0.5):
     """Wait for a server to show up within a newly launched instance."""
     tic = time.time()
-    http_client = HTTPClient()
-    req = HTTPRequest(url)
-
     while time.time() - tic < timeout:
         try:
-            http_client.fetch(req)
-        except HTTPError as http_error:
-            code = http_error.code
+            urlopen(url, timeout=1)
+        except HTTPError as err:
             logger.info(
-                'Booting server at [%s], getting HTTP status [%s]', url, code)
+                'Booting server at [%s], getting HTTP status [%s]', url, err.code)
+            time.sleep(wait_time)
+        except URLError as err:
+            logger.info(
+                'Booting server at [%s], getting URLError due to [%s]', url, err.reason)
             time.sleep(wait_time)
         except ssl.SSLError:
             logger.info(
