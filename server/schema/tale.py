@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from .misc import containerConfigSchema
-from girder.plugins.wt_data_manager.schema.dataset import dataSetSchema
+from .misc import containerConfigSchema, dataSetSchema
 
 taleModel = {
     "definitions": {
