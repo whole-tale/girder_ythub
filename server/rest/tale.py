@@ -18,7 +18,6 @@ from girder import events
 from gwvolman.tasks import import_tale, build_tale_image
 
 from girder.plugins.jobs.constants import JobStatus
-from girder.plugins.jobs.models.job import Job
 
 from ..schema.tale import taleModel as taleSchema
 from ..models.tale import Tale as taleModel
@@ -359,12 +358,10 @@ class Tale(Resource):
         .errorResponse('Admin access was denied for the tale.', 403)
     )
     def buildImage(self, tale, params):
-        user = self.getCurrentUser()
-
         token = self.getCurrentToken()
 
         buildTask = build_tale_image.delay(
-            str(tale['_id']), 
+            str(tale['_id']),
             girder_client_token=str(token['_id'])
         )
         return buildTask.job
@@ -375,8 +372,6 @@ class Tale(Resource):
             status = int(job['status'])
             tale = self.model('tale', 'wholetale').load(
                 job['args'][0], force=True)
-            #tale = self.model('tale', 'wholetale').load(
-            #    job['kwargs']['tale_id'], force=True)
 
             if 'imageInfo' not in tale:
                 tale['imageInfo'] = {}
