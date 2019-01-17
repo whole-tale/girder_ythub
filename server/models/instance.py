@@ -74,8 +74,8 @@ class Instance(AccessControlledModel):
                 cursor=cursor, user=currentUser, level=AccessType.READ,
                 limit=limit, offset=offset):
             yield r
-            
-    def updateAndRestartInstance(self, instance, token, **kwargs):
+
+    def updateAndRestartInstance(self, instance, token, imageId, digest):
         """
         Updates and restarts an instance.
 
@@ -83,7 +83,7 @@ class Instance(AccessControlledModel):
         :type image: dict
         :returns: The instance document that was edited.
         """
-        
+
         instanceTask = update_container.signature(
             args=[str(instance['_id'])], queue='manager',
             kwargs={
@@ -92,10 +92,13 @@ class Instance(AccessControlledModel):
             }
         ).apply_async()
         instanceTask.get(timeout=TASK_TIMEOUT)
-        instance['containerInfo']['digest'] = kwargs['digest']
-        instance['containerInfo']['imageId'] = kwargs['imageId']
-        return self.updateInstance(instance)
         
+        # TODO: Ensure valid imageId / digest?
+        
+        instance['containerInfo']['digest'] = digest
+        instance['containerInfo']['imageId'] = imageId
+        return self.updateInstance(instance)
+
     def updateInstance(self, instance):
         """
         Updates an instance.
@@ -104,7 +107,7 @@ class Instance(AccessControlledModel):
         :type image: dict
         :returns: The instance document that was edited.
         """
-        
+
         instance['updated'] = datetime.datetime.utcnow()
         return self.save(instance)
 
@@ -209,13 +212,13 @@ def finalizeInstance(event):
             containerInfo = {key: service.get(key, '') for key in valid_keys}
             url = service.get('url', 'https://google.com')
             _wait_for_server(url)
-            
+
             # Preserve the imageId / current digest in containerInfo
             tale = Tale().load(instance['taleId'], force=True)
             containerInfo['imageId'] = tale['imageId']
             image = Image().load(tale['imageId'], force=True)
             containerInfo['digest'] = image['digest']
-            
+
             instance.update({
                 'url': url,
                 'status': InstanceStatus.RUNNING,

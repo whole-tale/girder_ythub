@@ -149,12 +149,14 @@ class Instance(Resource):
                 instanceModel = self.model('instance', 'wholetale')
                 instanceModel.updateAndRestartInstance(instance,
                                                        self.getCurrentToken(),
-                                                       imageId=image['_id'],
-                                                       digest=image['digest'])
-           else:
-               raise RestException('No imageId found for tale ' + str(taleId))
-       else:
-           raise RestException('No taleId found for instance ' + str(instance['_id']))
+                                                       image['_id'],
+                                                       image['digest'])
+            else:
+                raise RestException('No imageId found for tale ' + str(taleId))
+        else:
+            raise RestException('No taleId found for instance ' + str(instance['_id']))
+            
+        return instance
 
     @access.user
     @autoDescribeRoute(
