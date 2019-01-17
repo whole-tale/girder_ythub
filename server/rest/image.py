@@ -173,7 +173,7 @@ class Image(Resource):
             return list(imageModel.textSearch(
                 text, user=user, limit=limit, offset=offset, sort=sort))
         elif tag:
-            raise RestException('Can filter by tag. yet...')
+            raise RestException('Can\'t filter by tag. yet...')
         else:
             return list(imageModel.list(user=user, offset=offset, limit=limit,
                                         sort=sort))
@@ -311,8 +311,12 @@ class Image(Resource):
                 job['args'][0], force=True)
             if status == JobStatus.SUCCESS:
                 result = getCeleryApp().AsyncResult(job['celeryTaskId']).get()
-                image['digest'] = result['Id']
-                image['status'] = ImageStatus.AVAILABLE
+                if len(result['RepoDigests']) > 0:
+                    image['digest'] = result['RepoDigests'][0]
+                    image['status'] = ImageStatus.AVAILABLE
+                else:
+                    image['status'] = ImageStatus.INVALID
+                    print('ERROR: No image digest produced for ' + str(image['_id']))
             elif status == JobStatus.ERROR:
                 image['status'] = ImageStatus.INVALID
             elif status in (JobStatus.QUEUED, JobStatus.RUNNING):

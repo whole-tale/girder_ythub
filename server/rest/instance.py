@@ -14,8 +14,8 @@ instanceModel = {
     'type': 'object',
     'required': [
         '_accessLevel', '_id', '_modelType', 'containerId',
-        'containerPath', 'created', 'digest', 'folderId', 
-        'frontendId', 'imageId',  'lastActivity', 'mountPoint', 
+        'containerPath', 'created', 'digest', 'folderId',
+        'frontendId', 'imageId',  'lastActivity', 'mountPoint',
         'status', 'userId', 'when'
     ],
     'example': {
@@ -132,7 +132,7 @@ class Instance(Resource):
     )
     def updateInstance(self, instance):
         currentUser = self.getCurrentUser()
-        
+
         taleId = instance['taleId']
         if taleId:
             tale = self.model('tale', 'wholetale').load(
@@ -141,14 +141,21 @@ class Instance(Resource):
             if imageId:
                 image = self.model('image', 'wholetale').load(
                     imageId, user=currentUser, level=AccessType.READ)
- 
+
                 # TODO: Only continue if digest has changed
-                #if image['digest'] != instance['containerInfo']['digest']:
- 
+                # if image['digest'] != instance['containerInfo']['digest']:
+
                 # Digest ensures that container runs from newest image version
-                self.model('instance', 'wholetale').updateAndRestartInstance(instance, 
-                    self.getCurrentToken(), imageId=image['_id'], digest=image['digest'])
-            
+                instanceModel = self.model('instance', 'wholetale')
+                instanceModel.updateAndRestartInstance(instance,
+                                                       self.getCurrentToken(),
+                                                       imageId=image['_id'],
+                                                       digest=image['digest'])
+           else:
+               raise RestException('No imageId found for tale ' + str(taleId))
+       else:
+           raise RestException('No taleId found for instance ' + str(instance['_id']))
+
     @access.user
     @autoDescribeRoute(
         Description('Delete an existing instance.')
