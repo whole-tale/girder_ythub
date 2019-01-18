@@ -35,6 +35,8 @@ class FakeAsyncResult(object):
 
     def get(self, timeout=None):
         return dict(
+            digest='sha256:7a789bc20359dce987653',
+            imageId='5678901234567890',
             nodeId='123456',
             mountPoint='/foo/bar',
             volumeName='blah_volume',
@@ -43,7 +45,7 @@ class FakeAsyncResult(object):
         )
 
 
-class TaleTestCase(base.TestCase):
+class InstanceTestCase(base.TestCase):
 
     def setUp(self):
         super(TaleTestCase, self).setUp()
@@ -167,6 +169,7 @@ class TaleTestCase(base.TestCase):
 
     @mock.patch('gwvolman.tasks.create_volume')
     @mock.patch('gwvolman.tasks.launch_container')
+    @mock.patch('gwvolman.tasks.update_container')
     @mock.patch('gwvolman.tasks.shutdown_container')
     @mock.patch('gwvolman.tasks.remove_volume')
     def testInstanceFlow(self, lc, cv, sc, rv):
@@ -235,6 +238,8 @@ class TaleTestCase(base.TestCase):
         resp = self.request(
             path='/instance/{_id}'.format(**instance), method='GET', user=self.user
         )
+        self.assertEqual(resp.json['containerInfo']['imageId'], '5678901234567890')
+        self.assertEqual(resp.json['containerInfo']['digest'], 'sha256:7a789bc20359dce987653')
         self.assertEqual(resp.json['containerInfo']['nodeId'], '123456')
         self.assertEqual(resp.json['containerInfo']['volumeName'], 'blah_volume')
         self.assertEqual(resp.json['status'], InstanceStatus.RUNNING)

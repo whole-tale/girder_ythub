@@ -311,8 +311,10 @@ class Image(Resource):
                 job['args'][0], force=True)
             if status == JobStatus.SUCCESS:
                 result = getCeleryApp().AsyncResult(job['celeryTaskId']).get()
-                if len(result['RepoDigests']) > 0:
-                    image['digest'] = result['RepoDigests'][0]
+                digest = result['image_digest']
+                if digest and '@' in digest:
+                    # Grab just the SHA from the end of the digest
+                    image['digest'] = digest.split('@')[1]
                     image['status'] = ImageStatus.AVAILABLE
                 else:
                     image['status'] = ImageStatus.INVALID

@@ -3,7 +3,7 @@
 from girder.api import access
 from girder.api.describe import Description, autoDescribeRoute
 from girder.api.docs import addModel
-from girder.api.rest import Resource, filtermodel, RestException
+from girder.api.rest import Resource, filtermodel, RestException, ValidationException
 from girder.constants import AccessType, SortDir
 from girder.utility import path as path_util
 from ..constants import PluginSettings
@@ -134,11 +134,11 @@ class Instance(Resource):
         currentUser = self.getCurrentUser()
 
         taleId = instance['taleId']
-        if taleId:
+        try:
             tale = self.model('tale', 'wholetale').load(
                 taleId, user=currentUser, level=AccessType.READ)
             imageId = tale['imageId']
-            if imageId:
+            try:
                 image = self.model('image', 'wholetale').load(
                     imageId, user=currentUser, level=AccessType.READ)
 
@@ -151,9 +151,9 @@ class Instance(Resource):
                                                        self.getCurrentToken(),
                                                        image['_id'],
                                                        image['digest'])
-            else:
+            except ValidationException:
                 raise RestException('No imageId found for tale ' + str(taleId))
-        else:
+        except ValidationException:
             raise RestException('No taleId found for instance ' + str(instance['_id']))
             
         return instance
