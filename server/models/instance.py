@@ -88,7 +88,7 @@ class Instance(AccessControlledModel):
             args=[str(instance['_id'])], queue='manager',
             kwargs={
                 'girder_client_token': str(token['_id']),
-                'image': str(kwargs['imageId']) + '@' + str(kwargs['digest'])
+                'image': str(imageId) + '@' + str(digest)
             }
         ).apply_async()
         instanceTask.get(timeout=TASK_TIMEOUT)

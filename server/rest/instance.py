@@ -134,27 +134,22 @@ class Instance(Resource):
         currentUser = self.getCurrentUser()
 
         taleId = instance['taleId']
-        try:
-            tale = self.model('tale', 'wholetale').load(
-                taleId, user=currentUser, level=AccessType.READ)
-            imageId = tale['imageId']
-            try:
-                image = self.model('image', 'wholetale').load(
-                    imageId, user=currentUser, level=AccessType.READ)
+        tale = self.model('tale', 'wholetale').load(
+            taleId, user=currentUser, level=AccessType.READ)
+        imageId = tale['imageId']
+        image = self.model('image', 'wholetale').load(
+            imageId, user=currentUser, level=AccessType.READ)
 
-                # TODO: Only continue if digest has changed
-                # if image['digest'] != instance['containerInfo']['digest']:
+        # TODO: Only continue if digest has changed
+        # if image['digest'] != instance['containerInfo']['digest']:
 
-                # Digest ensures that container runs from newest image version
-                instanceModel = self.model('instance', 'wholetale')
-                instanceModel.updateAndRestartInstance(instance,
-                                                       self.getCurrentToken(),
-                                                       image['_id'],
-                                                       image['digest'])
-            except ValidationException:
-                raise RestException('No imageId found for tale ' + str(taleId))
-        except ValidationException:
-            raise RestException('No taleId found for instance ' + str(instance['_id']))
+        # Digest ensures that container runs from newest image version
+        instanceModel = self.model('instance', 'wholetale')
+        instanceModel.updateAndRestartInstance(
+            instance,
+            self.getCurrentToken(),
+            image['_id'],
+            image['digest'])
             
         return instance
 

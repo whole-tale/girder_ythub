@@ -312,13 +312,17 @@ class Image(Resource):
             if status == JobStatus.SUCCESS:
                 result = getCeleryApp().AsyncResult(job['celeryTaskId']).get()
                 digest = result['image_digest']
-                if digest and '@' in digest:
-                    # Grab just the SHA from the end of the digest
-                    image['digest'] = digest.split('@')[1]
-                    image['status'] = ImageStatus.AVAILABLE
+                if digest:
+                    if '@' in digest:
+                        # Grab just the SHA from the end of the digest
+                        image['digest'] = digest.split('@')[1]
+                        image['status'] = ImageStatus.AVAILABLE
+                    else:
+                        image['status'] = ImageStatus.INVALID
+                        raise RestException('Invalid image digest produced for ' + str(image['_id']) + ": " + digest)
                 else:
                     image['status'] = ImageStatus.INVALID
-                    print('ERROR: No image digest produced for ' + str(image['_id']))
+                    raise RestException('No image digest produced for ' + str(image['_id']))
             elif status == JobStatus.ERROR:
                 image['status'] = ImageStatus.INVALID
             elif status in (JobStatus.QUEUED, JobStatus.RUNNING):
