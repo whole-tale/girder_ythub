@@ -10,7 +10,7 @@ taleModel = {
     },
     "description": "Object representing a Tale.",
     "required": [
-        "involatileData",
+        "dataSet",
         "imageId"
     ],
     "properties": {
@@ -32,13 +32,13 @@ taleModel = {
         },
         "folderId": {
             "type": "string",
-            "description": "ID of a folder containing copy of tale['involatileData']"
+            "description": "ID of a folder containing copy of tale['dataSet']"
         },
         "narrativeId": {
             "type": "string",
             "description": "ID of a folder containing copy of tale['narrative']"
         },
-        "involatileData": {
+        "dataSet": {
             "$ref": "#/definitions/dataSet"
         },
         "narrative": {

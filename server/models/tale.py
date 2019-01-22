@@ -33,12 +33,12 @@ class Tale(AccessControlledModel):
         })
         self.modifiableFields = {
             'title', 'description', 'public', 'config', 'updated', 'authors',
-            'category', 'icon', 'iframe', 'illustration'
+            'category', 'icon', 'iframe', 'illustration', 'dataSet'
         }
         self.exposeFields(
             level=AccessType.READ,
             fields=({'_id', 'folderId', 'imageId', 'creatorId', 'created',
-                     'format', 'involatileData', 'narrative',
+                     'format', 'dataSet', 'narrative',
                      'narrativeId'} | self.modifiableFields))
         self.exposeFields(level=AccessType.ADMIN, fields={'published'})
 
@@ -76,13 +76,13 @@ class Tale(AccessControlledModel):
                 tale['narrative'] = []
         if tale.get('format', 0) < 4:
             old_data = tale.pop('involatileData')
-            tale['involatileData'] = []
+            tale['dataSet'] = []
             for entry in old_data:
                 if entry['type'] == 'folder':
                     obj = Folder().load(entry['id'], force=True)
                 elif entry['type'] == 'item':
                     obj = Item().load(entry['id'], force=True)
-                tale['involatileData'].append(
+                tale['dataSet'].append(
                     {'itemId': obj['_id'], 'mountPath': '/' + obj['name']}
                 )
 
@@ -116,7 +116,7 @@ class Tale(AccessControlledModel):
         if user is not None:
             cursor_def['creatorId'] = user['_id']
         if data is not None:
-            cursor_def['involatileData'] = data
+            cursor_def['dataSet'] = data
         if image is not None:
             cursor_def['imageId'] = image['_id']
 
@@ -146,7 +146,7 @@ class Tale(AccessControlledModel):
             'category': category,
             'config': config,
             'creatorId': creatorId,
-            'involatileData': data or [],
+            'dataSet': data or [],
             'description': description,
             'format': _currentTaleFormat,
             'created': now,

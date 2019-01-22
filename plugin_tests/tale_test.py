@@ -69,7 +69,7 @@ class TaleTestCase(base.TestCase):
         self.assertStatus(resp, 400)
         self.assertEqual(resp.json, {
             'message': ("Invalid JSON object for parameter tale: "
-                        "'involatileData' "
+                        "'dataSet' "
                         "is a required property"),
             'type': 'rest'
         })
@@ -100,7 +100,7 @@ class TaleTestCase(base.TestCase):
             type='application/json',
             body=json.dumps({
                 'imageId': str(self.image['_id']),
-                'involatileData': [
+                'dataSet': [
                     {'mountPath': '/' + publicFolder['name'], 'itemId': publicFolder['_id']}
                 ]
             })
@@ -132,7 +132,7 @@ class TaleTestCase(base.TestCase):
             type='application/json',
             user=self.user, body=json.dumps({
                 'folderId': tale['folderId'],
-                'involatileData': tale['involatileData'],
+                'dataSet': tale['dataSet'],
                 'imageId': tale['imageId'],
                 'title': 'new name',
                 'description': 'new description',
@@ -150,7 +150,7 @@ class TaleTestCase(base.TestCase):
             type='application/json',
             body=json.dumps({
                 'imageId': str(self.image['_id']),
-                'involatileData': [{
+                'dataSet': [{
                     'mountPath': '/' + privateFolder['name'],
                     'itemId': privateFolder['_id']
                 }]
@@ -164,7 +164,7 @@ class TaleTestCase(base.TestCase):
             type='application/json',
             body=json.dumps({
                 'imageId': str(self.image['_id']),
-                'involatileData': [{
+                'dataSet': [{
                     'mountPath': '/' + privateFolder['name'],
                     'itemId': adminPublicFolder['_id']
                 }],
@@ -256,7 +256,7 @@ class TaleTestCase(base.TestCase):
                 body=json.dumps(
                     {
                         'imageId': str(self.image['_id']),
-                        'involatileData': [
+                        'dataSet': [
                             {'mountPath': '/' + folder['name'], 'itemId': folder['_id']}
                         ],
                         'public': True
@@ -271,7 +271,7 @@ class TaleTestCase(base.TestCase):
                 body=json.dumps(
                     {
                         'imageId': str(self.image_admin['_id']),
-                        'involatileData': [
+                        'dataSet': [
                             {'mountPath': '/' + folder['name'], 'itemId': folder['_id']}
                         ]
                     })
@@ -430,7 +430,7 @@ class TaleTestCase(base.TestCase):
             type='application/json',
             body=json.dumps({
                 'imageId': str(self.image['_id']),
-                'involatileData': [
+                'dataSet': [
                     {'mountPath': '/' + sub_home_dir['name'], 'itemId': sub_home_dir['_id']}
                 ],
                 'narrative': [str(my_narrative['_id'])]
@@ -499,8 +499,8 @@ class TaleTestCase(base.TestCase):
         self.assertStatusOk(resp)
         new_data_dir = resp.json
         self.assertEqual(str(tale['folderId']), str(new_data_dir['_id']))
-        self.assertEqual(str(tale['involatileData'][0]['itemId']), data_dir['_id'])
-        self.assertEqual(tale['involatileData'][0]['mountPath'], '/' + data_dir['name'])
+        self.assertEqual(str(tale['dataSet'][0]['itemId']), data_dir['_id'])
+        self.assertEqual(tale['dataSet'][0]['mountPath'], '/' + data_dir['name'])
         self.model('tale', 'wholetale').remove(tale)
 
     @mock.patch('gwvolman.tasks.import_tale')
