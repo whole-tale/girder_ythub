@@ -190,7 +190,7 @@ class Tale(Resource):
                 tale['imageId'], user=user, level=AccessType.READ, exc=True)
             default_author = ' '.join((user['firstName'], user['lastName']))
             return self._model.createTale(
-                image, tale['involatileData'], creator=user, save=True,
+                image, tale['dataSet'], creator=user, save=True,
                 title=tale.get('title'), description=tale.get('description'),
                 public=tale.get('public'), config=tale.get('config'),
                 icon=image.get('icon', ('https://raw.githubusercontent.com/'
