@@ -105,18 +105,34 @@ taleModel = {
         }
     },
     'example': {
-        '_accessLevel': 2,
-        '_id': '5873dcdbaec030000144d233',
-        'creatorId': '5873dcdbaec030000144d233',
-        'imageId': '5873dcdbaec030000144d233',
-        'folderId': '5873dcdbaec030000144d233',
-        'config': 'null',
-        '_modelType': 'tale',
-        'created': '2017-01-09T18:56:27.262000+00:00',
-        'title': 'Jupyter Lab',
-        'description': 'Run Jupyter Lab',
-        'public': True,
-        'published': True,
-        'updated': '2017-01-10T16:15:17.313000+00:00',
-    },
+        "_accessLevel": 2,
+        "_id": "5c4887409759c200017b2310",
+        "_modelType": "tale",
+        "authors": "Kacper Kowalik",
+        "category": "science",
+        "config": {},
+        "created": "2019-01-23T15:24:48.217000+00:00",
+        "creatorId": "5c4887149759c200017b22c0",
+        "dataSet": [
+            {
+                "itemId": "5c4887389759c200017b230e",
+                "mountPath": "illustris.jpg"
+            }
+        ],
+        "description": "#### Markdown Editor",
+        "folderId": "5c4887409759c200017b2316",
+        "format": 4,
+        "icon": ("https://raw.githubusercontent.com/whole-tale/jupyter-base/"
+                 "master/squarelogo-greytext-orangebody-greymoons.png"),
+        "iframe": True,
+        "illustration": ("https://raw.githubusercontent.com/whole-tale/dashboard/"
+                         "master/public/images/demo-graph2.jpg"),
+        "imageId": "5c4886279759c200017b22a3",
+        "narrative": [],
+        "narrativeId": "5c4887409759c200017b2319",
+        "public": False,
+        "published": False,
+        "title": "My Tale",
+        "updated": "2019-01-23T15:48:17.476000+00:00"
+    }
 }
