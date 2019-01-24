@@ -23,7 +23,7 @@ taleModel = {
             "description": "Title of the Tale"
         },
         "description": {
-            "type": "string",
+            "type": ["string", "null"],
             "description": "The description of the Tale (Markdown)"
         },
         "imageId": {
