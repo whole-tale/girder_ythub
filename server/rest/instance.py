@@ -3,7 +3,7 @@
 from girder.api import access
 from girder.api.describe import Description, autoDescribeRoute
 from girder.api.docs import addModel
-from girder.api.rest import Resource, filtermodel, RestException, ValidationException
+from girder.api.rest import Resource, filtermodel, RestException
 from girder.constants import AccessType, SortDir
 from girder.utility import path as path_util
 from ..constants import PluginSettings
@@ -150,7 +150,7 @@ class Instance(Resource):
             self.getCurrentToken(),
             image['_id'],
             image['digest'])
-            
+
         return instance
 
     @access.user

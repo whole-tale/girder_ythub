@@ -92,9 +92,9 @@ class Instance(AccessControlledModel):
             }
         ).apply_async()
         instanceTask.get(timeout=TASK_TIMEOUT)
-        
+
         # TODO: Ensure valid imageId / digest?
-        
+
         instance['containerInfo']['digest'] = digest
         instance['containerInfo']['imageId'] = imageId
         return self.updateInstance(instance)

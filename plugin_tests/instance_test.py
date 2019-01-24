@@ -48,7 +48,7 @@ class FakeAsyncResult(object):
 class InstanceTestCase(base.TestCase):
 
     def setUp(self):
-        super(TaleTestCase, self).setUp()
+        super(InstanceTestCase, self).setUp()
         global PluginSettings, instanceCapErrMsg
         from girder.plugins.wholetale.constants import PluginSettings
         from girder.plugins.wholetale.rest.instance import instanceCapErrMsg
@@ -275,4 +275,4 @@ class InstanceTestCase(base.TestCase):
         self.model('tale', 'wholetale').remove(self.tale_two)
         self.model('user').remove(self.user)
         self.model('user').remove(self.admin)
-        super(TaleTestCase, self).tearDown()
+        super(InstanceTestCase, self).tearDown()
