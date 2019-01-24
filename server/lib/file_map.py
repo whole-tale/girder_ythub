@@ -72,10 +72,13 @@ class ChildList:
         self.list[name] = child
         return child
 
-    def getChild(self, name: str) -> 'FileMap':
-        return self.list[name]
+    def getChild(self, name: str) -> Optional['FileMap']:
+        if name not in self.list:
+            return None
+        else:
+            return self.list[name]
 
-    def names(self):
+    def names(self) -> List[str]:
         return self.list.keys()
 
 
