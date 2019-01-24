@@ -86,10 +86,8 @@ class Tale(AccessControlledModel):
                 tale['dataSet'].append(
                     {'itemId': obj['_id'], 'mountPath': '/' + obj['name']}
                 )
-            if 'doi' not in tale:
-                tale['doi'] = None
-            if 'publishedURI' not in tale:
-                tale['publishedURI'] = None
+            tale['doi'] = None
+            tale['publishedURI'] = None
         tale['format'] = _currentTaleFormat
         return tale
 
