@@ -319,8 +319,9 @@ class Image(Resource):
                         image['status'] = ImageStatus.AVAILABLE
                     else:
                         image['status'] = ImageStatus.INVALID
-                        raise RestException('Invalid image digest produced for ' \
-                            + str(image['_id']) + ': ' + digest)
+                        raise RestException(
+                            'Invalid image digest produced for ' + str(image['_id']) + ': ' + digest
+                        )
                 else:
                     image['status'] = ImageStatus.INVALID
                     raise RestException('No image digest produced for ' + str(image['_id']))

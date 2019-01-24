@@ -150,7 +150,6 @@ class Instance(Resource):
             self.getCurrentToken(),
             image['_id'],
             image['digest'])
-
         return instance
 
     @access.user
