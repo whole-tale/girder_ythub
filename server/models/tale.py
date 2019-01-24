@@ -33,13 +33,14 @@ class Tale(AccessControlledModel):
         })
         self.modifiableFields = {
             'title', 'description', 'public', 'config', 'updated', 'authors',
-            'category', 'icon', 'iframe', 'illustration', 'dataSet'
+            'category', 'icon', 'iframe', 'illustration', 'dataSet', 
+            'published', 'doi', 'publishedURI'
         }
         self.exposeFields(
             level=AccessType.READ,
             fields=({'_id', 'folderId', 'imageId', 'creatorId', 'created',
                      'format', 'dataSet', 'narrative',
-                     'narrativeId'} | self.modifiableFields))
+                     'narrativeId', 'doi', 'publishedURI',} | self.modifiableFields))
         self.exposeFields(level=AccessType.ADMIN, fields={'published'})
 
     def validate(self, tale):
@@ -85,7 +86,10 @@ class Tale(AccessControlledModel):
                 tale['dataSet'].append(
                     {'itemId': obj['_id'], 'mountPath': '/' + obj['name']}
                 )
-
+            if 'doi' not in tale:
+                tale['doi'] = None
+            if 'publishedURI' not in tale:
+                tale['publishedURI'] = None
         tale['format'] = _currentTaleFormat
         return tale
 
@@ -129,7 +133,7 @@ class Tale(AccessControlledModel):
     def createTale(self, image, data, creator=None, save=True, title=None,
                    description=None, public=None, config=None, published=False,
                    authors=None, icon=None, category=None, illustration=None,
-                   narrative=None):
+                   narrative=None, doi=None, publishedURI=None):
         if creator is None:
             creatorId = None
         else:
@@ -158,7 +162,9 @@ class Tale(AccessControlledModel):
             'title': title,
             'public': public,
             'published': published,
-            'updated': now
+            'updated': now,
+            'doi': doi,
+            'publishedURI': publishedURI
         }
         if public is not None and isinstance(public, bool):
             self.setPublic(tale, public, save=False)
