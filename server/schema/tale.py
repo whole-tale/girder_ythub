@@ -143,7 +143,8 @@ taleModel = {
         "narrativeId": "5c4887409759c200017b2319",
         "public": False,
         "published": False,
-        'publishedURI': "https://dev.nceas.ucsb.edu/view/urn:uuid:939e48ec-1107-45d9-baa7-05cef08e51cd",
+        'publishedURI': "https://dev.nceas.ucsb.edu/view/urn:uuid:939e48ec-1107-45d9"
+                        "-baa7-05cef08e51cd",
         "title": "My Tale",
         "updated": "2019-01-23T15:48:17.476000+00:00"
     }

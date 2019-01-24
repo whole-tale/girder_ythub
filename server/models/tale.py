@@ -33,14 +33,14 @@ class Tale(AccessControlledModel):
         })
         self.modifiableFields = {
             'title', 'description', 'public', 'config', 'updated', 'authors',
-            'category', 'icon', 'iframe', 'illustration', 'dataSet', 
+            'category', 'icon', 'iframe', 'illustration', 'dataSet',
             'published', 'doi', 'publishedURI'
         }
         self.exposeFields(
             level=AccessType.READ,
             fields=({'_id', 'folderId', 'imageId', 'creatorId', 'created',
                      'format', 'dataSet', 'narrative',
-                     'narrativeId', 'doi', 'publishedURI',} | self.modifiableFields))
+                     'narrativeId', 'doi', 'publishedURI'} | self.modifiableFields))
         self.exposeFields(level=AccessType.ADMIN, fields={'published'})
 
     def validate(self, tale):
