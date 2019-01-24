@@ -31,7 +31,7 @@ class FakeAsyncResult(object):
         self.task_id = 'fake_id'
 
     def get(self):
-        return {'image_digest': 'image_hash'}
+        return {'image_digest': 'registry/image_name@image_hash'}
 
 
 class ImageTestCase(base.TestCase):
