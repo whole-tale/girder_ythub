@@ -30,7 +30,8 @@ class Repository(Resource):
         entity = Entity(dataId, user)
         entity['base_url'] = base_url
         # resolve DOIs, etc.
-        return RESOLVERS.resolve(entity)
+        RESOLVERS.resolve(entity)
+        return entity
 
     @access.public
     @autoDescribeRoute(

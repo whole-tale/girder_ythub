@@ -7,7 +7,7 @@ class Resolver:
     def __init__(self):
         pass
 
-    def resolve(self, entity: Entity) -> Entity:
+    def resolve(self, entity: Entity) -> bool:
         raise NotImplementedError()
 
 
@@ -18,12 +18,20 @@ class Resolvers:
     def add(self, resolver: Resolver):
         self.resolvers.append(resolver)
 
-    def resolve(self, entity: Entity) -> Optional[Entity]:
-        while True:
+    def resolve(self, entity: Entity) -> bool:
+        # go through the resolvers in multiple passes and stop when
+        # no resolver is able to make any more progress
+        done = False
+        any = False
+        while not done:
+            done = True
             for resolver in self.resolvers:
-                result = resolver.resolve(entity)
-                if result is None:
-                    return entity
+                if resolver.resolve(entity):
+                    done = False
+                    any = True
+                    # restart from the top
+                    break
+        return any
 
 
 class ResolutionException(Exception):
@@ -51,14 +59,14 @@ class DOIResolver(Resolver):
                 return url[len(prefix):]
         return None
 
-    def resolve(self, entity: Entity) -> Optional[Entity]:
+    def resolve(self, entity: Entity) -> bool:
         value = entity.getValue()
         doi = DOIResolver.extractDOI(value)
         if doi is None:
-            return None
+            return False
         else:
             self.resolveDOI(entity, doi)
-            return entity
+            return True
 
     def resolveDOI(self, entity: Entity, doi: str):
         # Expect a redirect. Basically, don't do anything fancy because I don't know
