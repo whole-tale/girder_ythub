@@ -172,7 +172,7 @@ class InstanceTestCase(base.TestCase):
     @mock.patch('gwvolman.tasks.update_container')
     @mock.patch('gwvolman.tasks.shutdown_container')
     @mock.patch('gwvolman.tasks.remove_volume')
-    def testInstanceFlow(self, lc, cv, sc, rv):
+    def testInstanceFlow(self, lc, cv, uc, sc, rv):
         with mock.patch('girder_worker.task.celery.Task.apply_async', spec=True) \
                 as mock_apply_async:
             resp = self.request(
