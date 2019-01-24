@@ -550,7 +550,9 @@ class TaleTestCase(base.TestCase):
             type='application/json',
             body=json.dumps({
                 'folderId': '1234',
-                'involatileData': involatile_data,
+                'dataSet': [
+                    {'mountPath': '/' + 'folder', 'itemId': '123456'}
+                ],
                 'imageId': str(self.image['_id']),
                 'title': title,
                 'description': description,
@@ -562,7 +564,6 @@ class TaleTestCase(base.TestCase):
             })
         )
         self.assertStatus(resp, 200)
-        self.assertEqual(resp.json['involatileData'], involatile_data)
         self.assertEqual(str(resp.json['imageId']), str(self.image['_id']))
         self.assertEqual(resp.json['title'], title)
         self.assertEqual(resp.json['description'], description)
@@ -601,7 +602,9 @@ class TaleTestCase(base.TestCase):
             body=json.dumps({
                 'folderId': '1234',
                 'imageId': str(self.image['_id']),
-                'involatileData': involatile_data,
+                                'dataSet': [
+                    {'mountPath': '/' + 'folder', 'itemId': '123456'}
+                ],
                 'title': 'tale tile',
                 'description': 'description',
                 'config': {},
@@ -623,7 +626,9 @@ class TaleTestCase(base.TestCase):
             body=json.dumps({
                 'folderId': '1234',
                 'imageId': str(self.image['_id']),
-                'involatileData': involatile_data,
+                                'dataSet': [
+                    {'mountPath': '/' + 'folder', 'itemId': '123456'}
+                ],
                 'title': title,
                 'description': description,
                 'config':config,
