@@ -319,12 +319,12 @@ class Image(Resource):
                         image['status'] = ImageStatus.AVAILABLE
                     else:
                         image['status'] = ImageStatus.INVALID
-                        raise RestException(
+                        print(
                             'Invalid image digest produced for ' + str(image['_id']) + ': ' + digest
                         )
                 else:
                     image['status'] = ImageStatus.INVALID
-                    raise RestException('No image digest produced for ' + str(image['_id']))
+                    print('No image digest produced for ' + str(image['_id']))
             elif status == JobStatus.ERROR:
                 image['status'] = ImageStatus.INVALID
             elif status in (JobStatus.QUEUED, JobStatus.RUNNING):

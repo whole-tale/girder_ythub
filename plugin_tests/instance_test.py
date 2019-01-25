@@ -238,8 +238,8 @@ class InstanceTestCase(base.TestCase):
         resp = self.request(
             path='/instance/{_id}'.format(**instance), method='GET', user=self.user
         )
-        self.assertEqual(resp.json['containerInfo']['imageId'], '5678901234567890')
-        self.assertEqual(resp.json['containerInfo']['digest'], 'sha256:7a789bc20359dce987653')
+        self.assertEqual(resp.json['containerInfo']['imageId'], str(self.image['_id']))
+        self.assertEqual(resp.json['containerInfo']['digest'], self.image['digest'])
         self.assertEqual(resp.json['containerInfo']['nodeId'], '123456')
         self.assertEqual(resp.json['containerInfo']['volumeName'], 'blah_volume')
         self.assertEqual(resp.json['status'], InstanceStatus.RUNNING)
