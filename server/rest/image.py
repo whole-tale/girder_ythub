@@ -3,7 +3,7 @@
 from girder.api import access
 from girder.api.docs import addModel
 from girder.api.describe import Description, autoDescribeRoute
-from girder.api.rest import Resource, filtermodel, RestException
+from girder.api.rest import Resource, filtermodel
 from girder.constants import AccessType, SortDir, TokenScope
 from ..schema.misc import containerConfigSchema, tagsSchema
 
@@ -117,29 +117,22 @@ class Image(Resource):
         user = self.getCurrentUser()
         imageModel = self.model('image', 'wholetale')
 
+        filters = {}
         if parentId:
             parent = imageModel.load(
                 parentId, user=user, level=AccessType.READ, exc=True)
+            filters['parentId'] = parent['_id']
+        if tag:
+            filters['tags'] = tag
 
-            filters = {}
-            if text:
-                filters['$text'] = {
-                    '$search': text
-                }
-            if tag:
-                print('Do filtering by tag when I figure it out')
-
-            return list(imageModel.childImages(
-                parent=parent, user=user,
-                offset=offset, limit=limit, sort=sort, filters=filters))
-        elif text:
+        if text:
             return list(imageModel.textSearch(
-                text, user=user, limit=limit, offset=offset, sort=sort))
-        elif tag:
-            raise RestException('Can\'t filter by tag. yet...')
+                text, user=user, limit=limit, offset=offset, sort=sort,
+                filters=filters, level=AccessType.READ))
         else:
-            return list(imageModel.list(user=user, offset=offset, limit=limit,
-                                        sort=sort))
+            cursor = imageModel.find(filters, sort=sort)
+            return list(imageModel.filterResultsByPermission(
+                cursor, user, AccessType.READ, limit, offset))
 
     @access.public(scope=TokenScope.DATA_READ)
     @filtermodel(model='image', plugin='wholetale')

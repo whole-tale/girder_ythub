@@ -175,6 +175,61 @@ class ImageTestCase(base.TestCase):
         self.assertStatusOk(resp)
         self.assertEqual(resp.json['public'], False)
 
+    def testImageSearch(self):
+        from girder.plugins.wholetale.models.image import Image
+        images = []
+        images.append(
+            Image().createImage(
+                name='Jupyter One',
+                tags=['black'], creator=self.user, description='Blah', public=False)
+        )
+        images.append(
+            Image().createImage(
+                name='Jupyter Two',
+                tags=['orange'], creator=self.user, description='Blah', public=False,
+                parent=images[0])
+        )
+        images.append(
+            Image().createImage(
+                name='Fortran',
+                tags=['black'], creator=self.user, description='Blah', public=True)
+        )
+
+        resp = self.request(
+            path='/image', method='GET', user=self.user,
+            params={'text': 'Jupyter'})
+        self.assertStatusOk(resp)
+        self.assertEqual(
+            {_['name'] for _ in resp.json}, {'Jupyter One', 'Jupyter Two'}
+        )
+
+        resp = self.request(
+            path='/image', method='GET', user=self.user,
+            params={'tag': 'black'})
+        self.assertStatusOk(resp)
+        self.assertEqual(
+            {_['name'] for _ in resp.json}, {'Jupyter One', 'Fortran'}
+        )
+
+        resp = self.request(
+            path='/image', method='GET', user=self.user,
+            params={'tag': 'black', 'text': 'Fortran'})
+        self.assertStatusOk(resp)
+        self.assertEqual(
+            {_['name'] for _ in resp.json}, {'Fortran'}
+        )
+
+        resp = self.request(
+            path='/image', method='GET', user=self.user,
+            params={'parentId': str(images[0]['_id'])})
+        self.assertStatusOk(resp)
+        self.assertEqual(
+            {_['name'] for _ in resp.json}, {'Jupyter Two'}
+        )
+
+        for image in images:
+            Image().remove(image)
+
     def tearDown(self):
         self.model('user').remove(self.user)
         self.model('user').remove(self.admin)
