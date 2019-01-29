@@ -175,15 +175,15 @@ def find_initial_pid(path):
     # http://blog.crossref.org/2015/08/doi-regular-expressions.html
     doi_regex = re.compile(r'(10.\d{4,9}/[-._;()/:A-Z0-9]+)', re.IGNORECASE)
     doi = doi_regex.search(path)
-    if re.search(r'^http[s]?:\/\/search.dataone.org\/[#]?view\/', path):
+    if re.search(r'^http[s]?://search.dataone.org/[#]?view/', path):
         return re.sub(
-            r'^http[s]?:\/\/search.dataone.org\/[#]?view\/', '', path)
-    elif re.search(r'\Ahttp[s]?:\/\/cn[a-z\-\d\.]*\.dataone\.org\/cn\/v\d\/[a-zA-Z]+\/.+\Z', path):
+            r'^http[s]?://search.dataone.org/[#]?view/', '', path)
+    elif re.search(r'\Ahttp[s]?://cn[a-z\-\d.]*\.dataone\.org/cn/v\d/[a-zA-Z]+/.+\Z', path):
         return re.sub(
-            r'\Ahttp[s]?:\/\/cn[a-z\-\d\.]*\.dataone\.org\/cn\/v\d\/[a-zA-Z]+\/', '', path)
-    if re.search(r'^http[s]?:\/\/dev.nceas.ucsb.edu\/[#]?view\/', path):
+            r'\Ahttp[s]?://cn[a-z\-\d.]*\.dataone\.org/cn/v\d/[a-zA-Z]+/', '', path)
+    if re.search(r'^http[s]?://dev.nceas.ucsb.edu/[#]?view/', path):
         return re.sub(
-            r'^http[s]?:\/\/dev.nceas.ucsb.edu\/[#]?view\/', '', path)
+            r'^http[s]?://dev.nceas.ucsb.edu/[#]?view/', '', path)
     if re.search(r'resolve', path):
         return path.split("resolve/", 1)[1]
     elif doi is not None:

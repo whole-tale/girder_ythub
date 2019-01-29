@@ -136,7 +136,6 @@ class Instance(AccessControlledModel):
         Updates an instance.
 
         :param image: The instance document to update.
-        :type image: dict
         :returns: The instance document that was edited.
         """
         instance['updated'] = datetime.datetime.utcnow()
