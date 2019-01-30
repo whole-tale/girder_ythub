@@ -67,6 +67,11 @@ dataSetItemSchema = {
     'description': 'A schema representing data elements used in DMS dataSets',
     'type': 'object',
     'properties': {
+        '_modelType': {
+            'type': 'string',
+            'enum': ['item', 'folder'],
+            'description': 'Either a Girder item or a Girder folder'
+        },
         'itemId': {
             'type': 'string',
             'description': 'ID of a Girder item or a Girder folder'
