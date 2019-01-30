@@ -1,4 +1,6 @@
 import time
+import json
+import copy
 import mock
 import httmock
 import six
@@ -166,7 +168,7 @@ class InstanceTestCase(base.TestCase):
             self.assertEqual(
                 resp.json['message'], instanceCapErrMsg.format('0'))
             setting.set(PluginSettings.INSTANCE_CAP, current_cap)
-
+        
     @mock.patch('gwvolman.tasks.create_volume')
     @mock.patch('gwvolman.tasks.launch_container')
     @mock.patch('gwvolman.tasks.update_container')
@@ -243,6 +245,9 @@ class InstanceTestCase(base.TestCase):
         self.assertEqual(resp.json['containerInfo']['nodeId'], '123456')
         self.assertEqual(resp.json['containerInfo']['volumeName'], 'blah_volume')
         self.assertEqual(resp.json['status'], InstanceStatus.RUNNING)
+        
+        # Save this response to populate containerInfo
+        instance = resp.json
 
         # Check that the instance is a singleton
         resp = self.request(
@@ -253,6 +258,41 @@ class InstanceTestCase(base.TestCase):
         self.assertStatusOk(resp)
         self.assertEqual(resp.json['_id'], str(instance['_id']))
 
+        # Update/restart the instance
+        with mock.patch('girder_worker.task.celery.Task.apply_async', spec=True) \
+                as mock_apply_async:
+                    
+            # PUT /instance/:id (currently a no-op)
+            resp = self.request(
+                path='/instance/{_id}'.format(**instance), method='PUT', user=self.user,
+                body=json.dumps({
+                    # ObjectId is not serializable
+                    '_id': str(instance['_id']),
+                    'iframe': instance['iframe'],
+                    'name': instance['name'],
+                    'status': instance['status'],
+                    'taleId': instance['status'],
+                    'sessionId': instance['status'],
+                    'url': instance['url'],
+                    'containerInfo': {
+                       'digest': instance['containerInfo']['digest'],
+                       'imageId': instance['containerInfo']['imageId'],
+                       'mountPoint': instance['containerInfo']['mountPoint'],
+                       'name': instance['containerInfo']['name'],
+                       'nodeId': instance['containerInfo']['nodeId'],
+                       'urlPath': instance['containerInfo']['urlPath'],
+                    }
+                })
+            )
+            self.assertStatusOk(resp)
+            mock_apply_async.assert_called_once()
+
+        resp = self.request(
+            path='/instance/{_id}'.format(**instance), method='GET',
+            user=self.user)
+        self.assertStatus(resp, 200)
+
+        # Delete the instance
         with mock.patch('girder_worker.task.celery.Task.apply_async', spec=True) \
                 as mock_apply_async:
             resp = self.request(
