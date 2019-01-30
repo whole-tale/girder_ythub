@@ -8,3 +8,4 @@ dataone.common
 dataone.libclient
 dataone.cli
 validators
+pyld

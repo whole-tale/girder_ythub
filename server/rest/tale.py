@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import re
-import requests
+import json
+#from pyld import jsonld
 
 from girder.api import access
 from girder.api.docs import addModel
@@ -9,6 +10,7 @@ from girder.api.describe import Description, autoDescribeRoute
 from girder.api.rest import Resource, filtermodel, RestException,\
     setResponseHeader, setContentDisposition
 
+from girder import logger
 from girder.constants import AccessType, SortDir, TokenScope
 from girder.utility import ziputil
 from girder.models.token import Token
@@ -249,10 +251,6 @@ class Tale(Resource):
             user=user,
             level=AccessType.READ,
             exc=True)
-        image = self.model('image', 'wholetale').load(
-            tale['imageId'], user=user, level=AccessType.READ, exc=True)
-        recipe = self.model('recipe', 'wholetale').load(
-            image['recipeId'], user=user, level=AccessType.READ, exc=True)
 
         # Construct a sanitized name for the ZIP archive using a whitelist
         # approach
@@ -261,11 +259,45 @@ class Tale(Resource):
         setResponseHeader('Content-Type', 'application/zip')
         setContentDisposition(zip_name + '.zip')
 
-        # Temporary: Fetch the GitHub archive of the recipe. Note that this is
-        # done in a streaming fashion because ziputil makes use of generators
-        # when files are added to the zip
-        url = '{}/archive/{}.tar.gz'.format(recipe['url'], recipe['commitId'])
-        req = requests.get(url, stream=True)
+        context = {
+            "": "https://w3id.org/bundle/context",
+            "schema": {"http://schema.org/"},
+            "parent_dataset": {"@type": "@id"}
+        }
+        doc = {
+            "@id": tale['title'],
+            "createdOn": str(tale['created']),
+            "schema:name": tale['title'],
+            "schema:description": tale['description'],
+            "schema:category": tale['category'],
+            "schema:identifier": str(tale['_id']),
+            "schema:version": tale['format'],
+            "schema:image": tale['illustration'],
+            "aggregates": []
+        }
+
+
+
+        # Created By
+        doc['createdBy']={
+            "@id": tale['authors'],
+            "@type": "schema:Person",
+            "schema:givenName": user['firstName'],
+            "schema:familyName": user['lastName'],
+            "schema:email": user['email']
+        }
+
+        for item_record in tale['dataSet']:
+            item = self.model('item').load(
+                item_record['itemId'], force=True)
+            # Check if the item is remote
+            record = {"uri": 'workspace'+item_record['mountPath']}
+            doc['aggregates'].append(record)
+
+
+        logger.info(json.dumps(doc, indent=2))
+        #expanded = jsonld.expand(doc, context)
+        #logger.info(json.dumps(expanded, indent=2))
 
         def stream():
             zip = ziputil.ZipGenerator(zip_name)
@@ -277,22 +309,19 @@ class Tale(Resource):
 
                 for data in zip.addFile(f, path):
                     yield data
-
-            # Temporary: Add Image metadata
-            for data in zip.addFile(lambda: image.__str__(), 'image.txt'):
-                yield data
-
-            # Temporary: Add Recipe metadata
-            for data in zip.addFile(lambda: recipe.__str__(), 'recipe.txt'):
-                yield data
-
-            # Temporary: Add a zip of the recipe archive
-            # TODO: Grab proper filename from header
-            # e.g. 'Content-Disposition': 'attachment; filename= \
-            # jupyter-base-b45f9a575602e6038b4da6333f2c3e679ee01c58.tar.gz'
-            for data in zip.addFile(req.iter_content, 'archive.tar.gz'):
-                yield data
-
             yield zip.footer()
 
         return stream
+
+
+
+
+
+
+
+
+
+
+
+
+
