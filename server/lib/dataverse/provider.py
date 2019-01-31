@@ -96,19 +96,22 @@ class DataverseImportProvider(ImportProvider):
                 urlparse(url)._replace(path='/api/info/version')
             )
         try:
-            resp = urlopen(url)
+            resp = urlopen(url, timeout=1)
             resp_body = resp.read()
             data = json.loads(resp_body.decode('utf-8'))
+            if 'installations' in data:
+                urls = [_['url'] for _ in data['installations']]
+            else:
+                urls = [self.get_base_url_setting()]
         except Exception:
             logger.warn('[dataverse] failed to generate regex')
-            return re.compile(r"^$")
+            urls = []
 
-        if 'installations' in data:
-            urls = [_['url'] for _ in data['installations']]
-        else:
-            urls = [self.get_base_url_setting()]
         urls += self.get_extra_hosts_setting()
-        return re.compile("^" + "|".join(urls) + ".*$")
+        if urls:
+            return re.compile("^" + "|".join(urls) + ".*$")
+        else:
+            return re.compile("^$")
 
     def setting_changed(self, event):
         triggers = {
