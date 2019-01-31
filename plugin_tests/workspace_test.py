@@ -42,9 +42,9 @@ class WorkspaceTestCase(base.TestCase):
     def testLookup(self):
         resp = self.request(path='/workspace', method='GET', user=self.user)
         self.assertStatus(resp, 200)
-        self.assertEqual(resp.json[1]['lowerName'], self.tale_one['title'].lower())
-        self.assertEqual(resp.json[0]['name'], self.tale_two['title'])
-        workspace_two = resp.json[0]
+        self.assertEqual(resp.json[0]['lowerName'], self.tale_one['title'].lower())
+        self.assertEqual(resp.json[1]['name'], self.tale_two['title'])
+        workspace_two = resp.json[1]
 
         resp = self.request(
             path='/workspace/{_id}'.format(**self.tale_two),
