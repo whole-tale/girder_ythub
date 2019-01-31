@@ -39,7 +39,7 @@ class WorkspaceTestCase(base.TestCase):
             {'_id': ObjectId()}, [], creator=self.admin, title='Tale Two', public=True
         )
 
-    def testLookup(self):
+    def testListingWorkspaces(self):
         resp = self.request(path='/workspace', method='GET', user=self.user)
         self.assertStatus(resp, 200)
         self.assertEqual(resp.json[0]['lowerName'], self.tale_one['title'].lower())
@@ -53,6 +53,16 @@ class WorkspaceTestCase(base.TestCase):
         )
         self.assertStatus(resp, 200)
         self.assertEqual(resp.json, workspace_two)
+
+        resp = self.request(
+            path='/workspace',
+            method='GET',
+            user=self.user,
+            params={'userId': str(self.admin['_id'])},
+        )
+        self.assertStatus(resp, 200)
+        self.assertEqual(len(resp.json), 1)
+        self.assertEqual(resp.json[0], workspace_two)
 
     def tearDown(self):
         for user in (self.user, self.admin):
