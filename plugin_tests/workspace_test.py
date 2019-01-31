@@ -1,5 +1,6 @@
 from bson import ObjectId
 from tests import base
+from girder.constants import AccessType
 
 
 def setUpModule():
@@ -44,6 +45,7 @@ class WorkspaceTestCase(base.TestCase):
         self.assertStatus(resp, 200)
         self.assertEqual(resp.json[0]['lowerName'], self.tale_one['title'].lower())
         self.assertEqual(resp.json[1]['name'], self.tale_two['title'])
+        workspace_one = resp.json[0]
         workspace_two = resp.json[1]
 
         resp = self.request(
@@ -63,6 +65,17 @@ class WorkspaceTestCase(base.TestCase):
         self.assertStatus(resp, 200)
         self.assertEqual(len(resp.json), 1)
         self.assertEqual(resp.json[0], workspace_two)
+
+        # Get Tales that I have write access to
+        resp = self.request(
+            path='/workspace',
+            method='GET',
+            user=self.user,
+            params={'level': AccessType.WRITE},
+        )
+        self.assertStatus(resp, 200)
+        self.assertEqual(len(resp.json), 1)
+        self.assertEqual(resp.json[0], workspace_one)
 
     def tearDown(self):
         for user in (self.user, self.admin):

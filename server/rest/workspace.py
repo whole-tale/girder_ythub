@@ -23,10 +23,18 @@ class Workspace(Resource):
     @autoDescribeRoute(
         Description(('Returns all workspaces that user has access to'))
         .param('userId', "The ID of the parent Tale's creator.", required=False)
+        .param(
+            'level',
+            'The minimum access level to the Tale.',
+            required=False,
+            dataType='integer',
+            default=AccessType.READ,
+            enum=[AccessType.NONE, AccessType.READ, AccessType.WRITE, AccessType.ADMIN],
+        )
         .pagingParams(defaultSort='name', defaultSortDir=SortDir.ASCENDING)
         .responseClass('folder', array=True)
     )
-    def listWorkspaces(self, userId, limit, offset, sort):
+    def listWorkspaces(self, userId, level, limit, offset, sort):
         workspaces = []
         parent = getOrCreateRootFolder(WORKSPACE_NAME)
 
@@ -43,6 +51,7 @@ class Workspace(Resource):
             limit=limit,
             offset=offset,
             sort=sort,
+            level=level,
             currentUser=self.getCurrentUser(),
         ):
             q = {'parentId': parent['_id'], 'name': str(tale['_id'])}
