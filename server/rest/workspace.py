@@ -22,34 +22,39 @@ class Workspace(Resource):
     @autoDescribeRoute(
         Description(('Returns all workspaces that user has access to'))
         .responseClass('folder', array=True)
-        .pagingParams(defaultSort='created', defaultSortDir=SortDir.DESCENDING)
+        .pagingParams(defaultSort='name', defaultSortDir=SortDir.ASCENDING)
     )
     def listWorkspaces(self, limit, offset, sort):
         user = self.getCurrentUser()
         workspaces = []
         parent = getOrCreateRootFolder(WORKSPACE_NAME)
-        for folder in Folder().childFolders(
-            parentType='folder',
-            parent=parent,
-            user=user,
-            limit=limit,
-            offset=offset,
-            sort=sort,
+
+        if sort[0][0] in {'name', 'lowerName'}:
+            sort = [('title', sort[0][1])]
+
+        for tale in Tale().list(
+            limit=limit, offset=offset, sort=sort, currentUser=user
         ):
-            tale = Tale().load(folder['meta']['taleId'], user=user,
-                               level=AccessType.READ)
-            if tale:
+            q = {'parentId': parent['_id'], 'name': str(tale['_id'])}
+            folder = Folder().findOne(q)
+            if folder:
                 folder['_modelType'] = 'folder'
                 folder['name'] = tale['title']
                 folder['lowerName'] = folder['name'].lower()
                 workspaces.append(folder)
+
         return workspaces
 
     @access.public
     @autoDescribeRoute(
         Description('Get the workspace associated with a Tale ID')
-        .modelParam('id', description='The ID of a Tale', model='tale',
-                    plugin='wholetale', level=AccessType.READ)
+        .modelParam(
+            'id',
+            description='The ID of a Tale',
+            model='tale',
+            plugin='wholetale',
+            level=AccessType.READ,
+        )
         .responseClass('folder')
         .errorResponse('Tale ID was invalid.')
         .errorResponse('Read access was denied for the resource.', 403)
