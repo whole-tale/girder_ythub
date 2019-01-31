@@ -41,6 +41,10 @@ taleModel = {
         "dataSet": {
             "$ref": "#/definitions/dataSet"
         },
+        "workspaceId": {
+            "type": "string",
+            "description": "ID of a folder containing Tale's workspace"
+        },
         "narrative": {
             "type": "array",
             "items": {

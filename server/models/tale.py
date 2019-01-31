@@ -19,7 +19,7 @@ from girder.exceptions import \
 # Whenever the Tale object schema is modified (e.g. fields are added or
 # removed) increase `_currentTaleFormat` to retroactively apply those
 # changes to existing Tales.
-_currentTaleFormat = 4
+_currentTaleFormat = 5
 
 
 class Tale(AccessControlledModel):
@@ -40,7 +40,7 @@ class Tale(AccessControlledModel):
             level=AccessType.READ,
             fields=({'_id', 'folderId', 'imageId', 'creatorId', 'created',
                      'format', 'dataSet', 'narrative', 'narrativeId',
-                     'doi', 'publishedURI'} | self.modifiableFields))
+                     'doi', 'publishedURI', 'workspaceId'} | self.modifiableFields))
         self.exposeFields(level=AccessType.ADMIN, fields={'published'})
 
     def validate(self, tale):
@@ -49,6 +49,14 @@ class Tale(AccessControlledModel):
 
         if '_id' not in tale:
             return tale
+
+        if 'workspaceId' not in tale:
+            if tale.get('creatorId'):
+                creator = User().load(tale['creatorId'], force=True)
+            else:
+                creator = None
+            workspace = self.createWorkspace(tale, creator=creator)
+            tale['workspaceId'] = workspace['_id']
 
         if tale.get('format', 0) < 2:
             data_folder = getOrCreateRootFolder(DATADIRS_NAME)
@@ -174,9 +182,10 @@ class Tale(AccessControlledModel):
                                save=False)
         if save:
             tale = self.save(tale)
-            self.createWorkspace(tale, creator=creator)
+            workspace = self.createWorkspace(tale, creator=creator)
             data_folder = self.createDataMountpoint(tale, creator=creator)
             tale['folderId'] = data_folder['_id']
+            tale['workspaceId'] = workspace['_id']
             narrative_folder = self.createNarrativeFolder(
                 tale, creator=creator, default=not bool(tale['narrative']))
             for obj_id in tale['narrative']:
