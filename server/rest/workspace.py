@@ -47,10 +47,11 @@ class Workspace(Resource):
 
     @access.public
     @autoDescribeRoute(
-        Description('Get any workspace by ID.')
-        .modelParam('id', model='tale', plugin='wholetale', level=AccessType.READ)
+        Description('Get the workspace associated with a Tale ID')
+        .modelParam('id', description='The ID of a Tale', model='tale',
+                    plugin='wholetale', level=AccessType.READ)
         .responseClass('folder')
-        .errorResponse('ID was invalid.')
+        .errorResponse('Tale ID was invalid.')
         .errorResponse('Read access was denied for the resource.', 403)
     )
     def getWorkspace(self, tale):
