@@ -99,7 +99,7 @@ class Tale(AccessControlledModel):
         return tale
 
     def list(self, user=None, data=None, image=None, limit=0, offset=0,
-             sort=None, currentUser=None):
+             sort=None, currentUser=None, level=AccessType.READ):
         """
         List a page of jobs for a given user.
 
@@ -124,7 +124,7 @@ class Tale(AccessControlledModel):
 
         cursor = self.find(cursor_def, sort=sort)
         for r in self.filterResultsByPermission(
-                cursor=cursor, user=currentUser, level=AccessType.READ,
+                cursor=cursor, user=currentUser, level=level,
                 limit=limit, offset=offset):
             yield r
 
