@@ -43,36 +43,46 @@ class Tale(Resource):
     @filtermodel(model='tale', plugin='wholetale')
     @autoDescribeRoute(
         Description('Return all the tales accessible to the user')
+        .param('text', ('Perform a full text search for Tale with a matching '
+                        'title or description.'), required=False)
         .param('userId', "The ID of the tale's creator.", required=False)
         .param('imageId', "The ID of the tale's image.", required=False)
-        .param('text', ('Perform a full text search for recipe with matching '
-                        'Title or description.'), required=False)
-        .responseClass('tale', array=True)
-        .pagingParams(defaultSort='lowerName',
+        .param(
+            'level',
+            'The minimum access level to the Tale.',
+            required=False,
+            dataType='integer',
+            default=AccessType.READ,
+            enum=[AccessType.NONE, AccessType.READ, AccessType.WRITE, AccessType.ADMIN],
+        )
+        .pagingParams(defaultSort='title',
                       defaultSortDir=SortDir.DESCENDING)
+        .responseClass('tale', array=True)
     )
-    def listTales(self, userId, imageId, text, limit, offset, sort,
+    def listTales(self, text, userId, imageId, level, limit, offset, sort,
                   params):
         currentUser = self.getCurrentUser()
+        image = None
         if imageId:
-            image = self.model('image', 'wholetale').load(
-                imageId, user=currentUser, level=AccessType.READ, exc=True)
-        else:
-            image = None
+            image = imageModel().load(imageId, user=currentUser, level=AccessType.READ, exc=True)
 
+        creator = None
         if userId:
-            user = self.model('user').load(userId, force=True, exc=True)
-        else:
-            user = None
+            creator = self.model('user').load(userId, force=True, exc=True)
 
         if text:
+            filters = {}
+            if creator:
+                filters['creatorId'] = creator['_id']
+            if image:
+                filters['imageId'] = image['_id']
             return list(self._model.textSearch(
-                text, user=user, limit=limit, offset=offset, sort=sort))
+                text, user=currentUser, filters=filters,
+                limit=limit, offset=offset, sort=sort, level=level))
         else:
             return list(self._model.list(
-                user=user, data=None, image=image,
-                currentUser=currentUser,
-                offset=offset, limit=limit, sort=sort))
+                user=creator, image=image, limit=limit, offset=offset,
+                sort=sort, currentUser=currentUser, level=level))
 
     @access.public
     @filtermodel(model='tale', plugin='wholetale')
