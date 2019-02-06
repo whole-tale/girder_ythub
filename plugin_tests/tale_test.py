@@ -999,6 +999,7 @@ class TaleWithWorkspaceTestCase(base.TestCase):
 
     def testTaleCopy(self):
         from girder.plugins.wholetale.models.tale import Tale
+        from girder.plugins.wholetale.constants import TaleStatus
         from girder.plugins.jobs.models.job import Job
         from girder.plugins.jobs.constants import JobStatus
         tale = Tale().createTale(
@@ -1033,6 +1034,8 @@ class TaleWithWorkspaceTestCase(base.TestCase):
         self.assertEqual(new_tale['copyOfTale'], str(tale['_id']))
         self.assertEqual(new_tale['imageId'], str(tale['imageId']))
         self.assertEqual(new_tale['creatorId'], str(self.user['_id']))
+        # TODO: Delay job execution somehow
+        # self.assertEqual(new_tale['status'], TaleStatus.PREPARING)
 
         copied_file_path = re.sub(workspace['name'], new_tale['_id'], fullPath)
         job = Job().findOne({'type': 'wholetale.copy_workspace'})
@@ -1062,6 +1065,7 @@ class TaleWithWorkspaceTestCase(base.TestCase):
 
             time.sleep(0.1)
         self.assertTrue(os.path.isfile(copied_file_path))
+        self.assertEqual(new_tale['status'], TaleStatus.READY)
 
         Tale().remove(new_tale)
         Tale().remove(tale)

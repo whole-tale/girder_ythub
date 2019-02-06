@@ -9,7 +9,9 @@ from girder.models.item import Item
 from girder.models.folder import Folder
 from girder.constants import AccessType
 from girder.exceptions import AccessException
-from ..constants import WORKSPACE_NAME, DATADIRS_NAME, SCRIPTDIRS_NAME
+from girder.plugins.jobs.constants import JobStatus
+
+from ..constants import WORKSPACE_NAME, DATADIRS_NAME, SCRIPTDIRS_NAME, TaleStatus
 from ..utils import getOrCreateRootFolder, init_progress
 from ..lib.license import WholeTaleLicense
 
@@ -41,9 +43,14 @@ class Tale(AccessControlledModel):
             fields=({'_id', 'folderId', 'imageId', 'creatorId', 'created',
                      'format', 'dataSet', 'narrative', 'narrativeId', 'licenseSPDX',
                      'imageInfo', 'publishInfo', 'workspaceId',
-                     'workspaceModified', 'dataSetCitation', 'copyOfTale'} | self.modifiableFields))
+                     'workspaceModified', 'dataSetCitation', 'copyOfTale',
+                     'status'} | self.modifiableFields))
+        events.bind('jobs.job.update.after', 'wholetale', self.updateTaleStatus)
 
     def validate(self, tale):
+        if 'status' not in tale:
+            tale['status'] = TaleStatus.READY
+
         if 'iframe' not in tale:
             tale['iframe'] = False
 
@@ -296,3 +303,16 @@ class Tale(AccessControlledModel):
         ).apply_async()
 
         return buildTask.job
+
+    @staticmethod
+    def updateTaleStatus(event):
+        job = event.info['job']
+        if job['type'] == 'wholetale.copy_workspace' and job.get('status') is not None:
+            status = int(job['status'])
+            workspace = Folder().load(job['args'][1], force=True)
+            tale = Tale().load(workspace['meta']['taleId'], force=True)
+            if status == JobStatus.SUCCESS:
+                tale['status'] = TaleStatus.READY
+            elif status == JobStatus.ERROR:
+                tale['status'] = TaleStatus.ERROR
+            Tale().updateTale(tale)
