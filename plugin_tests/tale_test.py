@@ -537,7 +537,6 @@ class TaleTestCase(base.TestCase):
             }
         )
 
-        public_folder = resp.json[1]
         title = 'new name'
         description = 'new description'
         config = {'memLimit': '2g'}
@@ -577,7 +576,7 @@ class TaleTestCase(base.TestCase):
             body=json.dumps({
                 'folderId': '1234',
                 'imageId': str(self.image['_id']),
-                                'dataSet': [
+                'dataSet': [
                     {'mountPath': '/' + 'folder', 'itemId': '123456'}
                 ],
                 'title': title,

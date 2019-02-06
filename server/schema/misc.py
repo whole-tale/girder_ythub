@@ -67,6 +67,11 @@ dataSetItemSchema = {
     'description': 'A schema representing data elements used in DMS dataSets',
     'type': 'object',
     'properties': {
+        '_modelType': {
+            'type': 'string',
+            'enum': ['item', 'folder'],
+            'description': 'Either a Girder item or a Girder folder'
+        },
         'itemId': {
             'type': 'string',
             'description': 'ID of a Girder item or a Girder folder'
@@ -154,6 +159,16 @@ containerInfoSchema = {
         },
         'name': {
             'type': 'string',
+        },
+        'imageId': {
+            'type': 'string',
+            'description': ("ID of the successfully built image "
+                            "that was used to run this instance."),
+        },
+        'digest': {
+            'type': 'string',
+            'description': ("Checksum of the successfully built image "
+                            "that was used to run this instance."),
         },
         'nodeId': {
             'type': 'string',

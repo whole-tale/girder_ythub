@@ -1,4 +1,6 @@
 import time
+import json
+import copy
 import mock
 import httmock
 import six
@@ -35,6 +37,8 @@ class FakeAsyncResult(object):
 
     def get(self, timeout=None):
         return dict(
+            digest='sha256:7a789bc20359dce987653',
+            imageId='5678901234567890',
             nodeId='123456',
             mountPoint='/foo/bar',
             volumeName='blah_volume',
@@ -43,10 +47,10 @@ class FakeAsyncResult(object):
         )
 
 
-class TaleTestCase(base.TestCase):
+class InstanceTestCase(base.TestCase):
 
     def setUp(self):
-        super(TaleTestCase, self).setUp()
+        super(InstanceTestCase, self).setUp()
         global PluginSettings, instanceCapErrMsg
         from girder.plugins.wholetale.constants import PluginSettings
         from girder.plugins.wholetale.rest.instance import instanceCapErrMsg
@@ -164,12 +168,13 @@ class TaleTestCase(base.TestCase):
             self.assertEqual(
                 resp.json['message'], instanceCapErrMsg.format('0'))
             setting.set(PluginSettings.INSTANCE_CAP, current_cap)
-
+        
     @mock.patch('gwvolman.tasks.create_volume')
     @mock.patch('gwvolman.tasks.launch_container')
+    @mock.patch('gwvolman.tasks.update_container')
     @mock.patch('gwvolman.tasks.shutdown_container')
     @mock.patch('gwvolman.tasks.remove_volume')
-    def testInstanceFlow(self, lc, cv, sc, rv):
+    def testInstanceFlow(self, lc, cv, uc, sc, rv):
         with mock.patch('girder_worker.task.celery.Task.apply_async', spec=True) \
                 as mock_apply_async:
             resp = self.request(
@@ -235,9 +240,14 @@ class TaleTestCase(base.TestCase):
         resp = self.request(
             path='/instance/{_id}'.format(**instance), method='GET', user=self.user
         )
+        self.assertEqual(resp.json['containerInfo']['imageId'], str(self.image['_id']))
+        self.assertEqual(resp.json['containerInfo']['digest'], self.image['digest'])
         self.assertEqual(resp.json['containerInfo']['nodeId'], '123456')
         self.assertEqual(resp.json['containerInfo']['volumeName'], 'blah_volume')
         self.assertEqual(resp.json['status'], InstanceStatus.RUNNING)
+        
+        # Save this response to populate containerInfo
+        instance = resp.json
 
         # Check that the instance is a singleton
         resp = self.request(
@@ -248,6 +258,41 @@ class TaleTestCase(base.TestCase):
         self.assertStatusOk(resp)
         self.assertEqual(resp.json['_id'], str(instance['_id']))
 
+        # Update/restart the instance
+        with mock.patch('girder_worker.task.celery.Task.apply_async', spec=True) \
+                as mock_apply_async:
+                    
+            # PUT /instance/:id (currently a no-op)
+            resp = self.request(
+                path='/instance/{_id}'.format(**instance), method='PUT', user=self.user,
+                body=json.dumps({
+                    # ObjectId is not serializable
+                    '_id': str(instance['_id']),
+                    'iframe': instance['iframe'],
+                    'name': instance['name'],
+                    'status': instance['status'],
+                    'taleId': instance['status'],
+                    'sessionId': instance['status'],
+                    'url': instance['url'],
+                    'containerInfo': {
+                       'digest': instance['containerInfo']['digest'],
+                       'imageId': instance['containerInfo']['imageId'],
+                       'mountPoint': instance['containerInfo']['mountPoint'],
+                       'name': instance['containerInfo']['name'],
+                       'nodeId': instance['containerInfo']['nodeId'],
+                       'urlPath': instance['containerInfo']['urlPath'],
+                    }
+                })
+            )
+            self.assertStatusOk(resp)
+            mock_apply_async.assert_called_once()
+
+        resp = self.request(
+            path='/instance/{_id}'.format(**instance), method='GET',
+            user=self.user)
+        self.assertStatus(resp, 200)
+
+        # Delete the instance
         with mock.patch('girder_worker.task.celery.Task.apply_async', spec=True) \
                 as mock_apply_async:
             resp = self.request(
@@ -270,4 +315,4 @@ class TaleTestCase(base.TestCase):
         self.model('tale', 'wholetale').remove(self.tale_two)
         self.model('user').remove(self.user)
         self.model('user').remove(self.admin)
-        super(TaleTestCase, self).tearDown()
+        super(InstanceTestCase, self).tearDown()
