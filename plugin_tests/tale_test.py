@@ -1,9 +1,12 @@
 import bagit
 from bdbag import bdbag_api as bdb
-import mock
+from bson import ObjectId
 import httmock
-import os
+from io import BytesIO
 import json
+import mock
+import os
+import re
 import time
 import urllib.request
 import tempfile
@@ -11,7 +14,11 @@ import zipfile
 import shutil
 from tests import base
 from .tests_helpers import mockOtherRequest
+
+from girder.utility import assetstore_utilities
+from girder.models.assetstore import Assetstore
 from girder.models.item import Item
+from girder.models.upload import Upload
 from girder.models.folder import Folder
 
 
@@ -45,6 +52,7 @@ class FakeAsyncResult(object):
 
 def setUpModule():
     base.enabledPlugins.append('wholetale')
+    base.enabledPlugins.append('wt_home_dir')
     base.startServer()
 
     global JobStatus, Tale, ImageStatus
@@ -940,3 +948,126 @@ class TaleTestCase(base.TestCase):
         self.model('user').remove(self.admin)
         self.model('image', 'wholetale').remove(self.image)
         super(TaleTestCase, self).tearDown()
+
+
+class TaleWithWorkspaceTestCase(base.TestCase):
+
+    def setUp(self):
+        super(TaleWithWorkspaceTestCase, self).setUp()
+        from girder.plugins.wholetale.models.image import Image
+        users = ({
+            'email': 'root@dev.null',
+            'login': 'admin',
+            'firstName': 'Root',
+            'lastName': 'van Klompf',
+            'password': 'secret'
+        }, {
+            'email': 'joe@dev.null',
+            'login': 'joeregular',
+            'firstName': 'Joe',
+            'lastName': 'Regular',
+            'password': 'secret'
+        })
+        self.admin, self.user = [self.model('user').createUser(**user)
+                                 for user in users]
+        self.image = Image().createImage(
+            {'_id': ObjectId()},
+            'test image',
+            creator=self.admin,
+            public=True,
+            config=dict(template='base.tpl', buildpack='SomeBuildPack',
+                        user='someUser', port=8888, urlPath=''),
+        )
+
+        from girder.plugins.wt_home_dir import HOME_DIRS_APPS
+        self.homeDirsApps = HOME_DIRS_APPS  # nopep8
+        for e in self.homeDirsApps.entries():
+            provider = e.app.providerMap['/']['provider']
+            provider.updateAssetstore()
+
+        from girder.plugins.wt_home_dir.lib.WTAssetstoreTypes import WTAssetstoreTypes
+        self.ws_assetstore = Assetstore().find(
+            {'type': WTAssetstoreTypes.WT_TALE_ASSETSTORE}).next()
+
+        self.clearDAVAuthCache()
+
+    def clearDAVAuthCache(self):
+        # need to do this because the DB is wiped on every test, but the dav domain
+        # controller keeps a cache with users/tokens
+        for e in self.homeDirsApps.entries():
+            e.app.config['domaincontroller'].clearCache()
+
+    def testTaleCopy(self):
+        from girder.plugins.wholetale.models.tale import Tale
+        from girder.plugins.jobs.models.job import Job
+        from girder.plugins.jobs.constants import JobStatus
+        tale = Tale().createTale(
+            self.image,
+            [],
+            creator=self.admin,
+            public=True
+        )
+        workspace = Tale().createWorkspace(tale)
+        # Below workarounds a bug, it will be addressed elsewhere.
+        workspace = Folder().setPublic(workspace, True, save=True)
+
+        adapter = assetstore_utilities.getAssetstoreAdapter(self.ws_assetstore)
+        size = 101
+        data = BytesIO(b' ' * size)
+        files = []
+        files.append(Upload().uploadFromFile(
+            data, size, 'file01.txt', parentType='folder', parent=workspace,
+            assetstore=self.ws_assetstore))
+        fullPath = adapter.fullPath(files[0])
+
+        # Create a copy
+        resp = self.request(
+            path='/tale/{_id}/copy'.format(**tale), method='POST',
+            user=self.user
+        )
+        self.assertStatusOk(resp)
+
+        new_tale = resp.json
+        self.assertFalse(new_tale['public'])
+        self.assertEqual(new_tale['dataSet'], tale['dataSet'])
+        self.assertEqual(new_tale['copyOfTale'], str(tale['_id']))
+        self.assertEqual(new_tale['imageId'], str(tale['imageId']))
+        self.assertEqual(new_tale['creatorId'], str(self.user['_id']))
+
+        copied_file_path = re.sub(workspace['name'], new_tale['_id'], fullPath)
+        job = Job().findOne({'type': 'wholetale.copy_workspace'})
+        for i in range(10):
+            job = Job().load(job['_id'], force=True)
+            if job['status'] == JobStatus.SUCCESS:
+                break
+    def testExportBag(self):
+        tale = self._create_water_tale()
+        export_path = '/tale/{}/export'.format(str(tale['_id']))
+        resp = self.request(
+            path=export_path, method='GET', params={'taleFormat': 'bagit'},
+        super(TaleWithWorkspaceTestCase, self).tearDown()
+        dirpath = tempfile.mkdtemp()
+        bag_file = os.path.join(dirpath, "{}.zip".format(str(tale['_id'])))
+        with open(bag_file, 'wb') as fp:
+            for content in resp.body:
+                fp.write(content)
+        temp_path = bdb.extract_bag(bag_file, temp=True)
+        try:
+            bdb.validate_bag_structure(temp_path)
+        except bagit.BagValidationError:
+            pass  # TODO: Goes without saying that we should not be doing that...
+        shutil.rmtree(dirpath)
+        self.model('tale', 'wholetale').remove(tale)
+        self.model('collection').remove(self.data_collection)
+
+            time.sleep(0.1)
+        self.assertTrue(os.path.isfile(copied_file_path))
+
+        Tale().remove(new_tale)
+        Tale().remove(tale)
+
+    def tearDown(self):
+        self.model('user').remove(self.user)
+        self.model('user').remove(self.admin)
+        self.model('image', 'wholetale').remove(self.image)
+        super(TaleCopyTestCase, self).tearDown()
