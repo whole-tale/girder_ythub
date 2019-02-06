@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 import re
 import json
-#from pyld import jsonld
 
 from girder.api import access
 from girder.api.docs import addModel
@@ -10,7 +9,6 @@ from girder.api.describe import Description, autoDescribeRoute
 from girder.api.rest import Resource, filtermodel, RestException,\
     setResponseHeader, setContentDisposition
 
-from girder import logger
 from girder.constants import AccessType, SortDir, TokenScope
 from girder.utility import ziputil
 from girder.models.token import Token
@@ -22,6 +20,23 @@ from ..models.tale import Tale as taleModel
 from ..models.image import Image as imageModel
 
 addModel('tale', taleSchema, resources='tale')
+
+publishers = {
+    "DataONE":
+        {
+            "@id": "",
+            "@type": "Organization",
+            "legalName": "DataONE",
+            "Description": "A federated data network allowing access to science data"
+        },
+    "Globus":
+        {
+            "@id": "https://www.materialsdatafacility.org/",
+            "@type": "Organization",
+            "legalName": "Materials Data Facility",
+            "Description": "A simple way to publish, discover, and access materials datasets"
+        }
+}
 
 
 class Tale(Resource):
@@ -246,11 +261,123 @@ class Tale(Resource):
     )
     def exportTale(self, tale, params):
         user = self.getCurrentUser()
-        folder = self.model('folder').load(
-            tale['folderId'],
-            user=user,
-            level=AccessType.READ,
-            exc=True)
+        doc = {
+            "@context": [
+                "https://w3id.org/bundle/context",
+                {"schema": "http://schema.org/"},
+                {"parent_dataset": {"@type": "@id"}}
+            ],
+            "@id": tale['title'],
+            "createdOn": str(tale['created']),
+            "schema:name": tale['title'],
+            "schema:description": tale.get('description', str()),
+            "schema:category": tale['category'],
+            "schema:identifier": str(tale['_id']),
+            "schema:version": tale['format'],
+            "schema:image": tale['illustration'],
+            "aggregates": list(),
+            "Datasets": list()
+        }
+
+        tale_user = self.model('user').load(tale['creatorId'], user=user)
+        doc['createdBy'] = {
+            "@id": tale['authors'],
+            "@type": "schema:Person",
+            "schema:givenName": tale_user.get('firstName', ''),
+            "schema:familyName": tale_user.get('lastName', ''),
+            "schema:email": tale_user.get('email', '')
+        }
+
+        # Handle the files in the workspace
+        folder = self.model('folder').load(tale['workspaceId'], user=user)
+        if folder:
+            workspace_folder_files = self.model('folder').fileList(folder, user=user)
+            for workspace_file in workspace_folder_files:
+
+                doc['aggregates'].append({'uri': '../workspace/' + clean_workspace_path(tale['_id'],
+                                                                                        workspace_file[0])})
+
+        folder_files = list()
+        datasets = set()
+        """
+        Handle objects that are in the dataSet, ie files that point to external sources.
+        Some of these sources may be datasets from publishers.
+        """
+        for obj in tale['dataSet']:
+            if obj['_modelType'] == 'folder':
+                folder = self.model('folder').load(obj['itemId'], user=user)
+                if folder:
+                    # Check if it's a dataset by checking for meta.identifier
+                    folder_meta = folder.get('meta')
+                    if folder_meta:
+                        dataset_identifier = folder_meta.get('identifier')
+                        if dataset_identifier:
+                            datasets.add(obj['itemId'])
+                            folder_files.append({"dataset_identifier": dataset_identifier,
+                                                 "provider": folder_meta.get('provider'),
+                                                 "file_iterator": get_folder_files(self,
+                                                                                   folder,
+                                                                                   user)
+                                                 })
+
+                    else:
+                        folder_files.append({"file_iterator": get_folder_files(self,
+                                                                               folder,
+                                                                               user)})
+            elif obj['_modelType'] == 'item':
+                """
+                If there is a file that was added to a tale that came from a dataset, but outside
+                the dataset folder, we need to get metadata about the parent folder and the file.
+                
+                """
+                root_item = self.model('item').load(obj['itemId'], user=user)
+                if root_item:
+                    # Should always be true since the item is in dataSet
+                    if root_item.get('meta'):
+                        item_folder = self.model('folder').load(root_item['folderId'], user=user)
+                        folder_meta = item_folder.get('meta')
+                        if folder_meta:
+                            datasets.add(root_item['folderId'])
+                            folder_files.append({"dataset_identifier": folder_meta.get('identifier'),
+                                                 "provider": folder_meta.get('provider'),
+                                                 "file_iterator": self.model('item').fileList(root_item,
+                                                                                              user=user,
+                                                                                              data=False)
+                                                 })
+
+        """
+        Add records for the remote files that exist under a folder
+        """
+        for folder_record in folder_files:
+            if folder_record['file_iterator'] is None:
+                continue
+            for file_record in folder_record['file_iterator']:
+                # Check if the file points to an external resource
+                if 'linkUrl' in file_record[1]:
+                    bundle = create_bundle('../data/'+get_dataset_file_path(file_record),
+                                           file_record[1]['name'])
+                    record = create_aggregation_record(file_record[1]['linkUrl'],
+                                                       bundle,
+                                                       folder_record.get('dataset_identifier'))
+                    doc['aggregates'].append(record)
+
+        """
+        Add Dataset records
+        """
+        for folder_id in datasets:
+            doc['Datasets'].append(create_dataset_record(self, user, folder_id))
+
+        """
+        Add records for files that we inject (README, LICENSE, etc)
+        """
+        # Should look at tale['license']
+        doc['aggregates'].append({'uri': '../LICENSE',
+                                  'schema:license': 'CC0'})
+
+        doc['aggregates'].append({'uri': '../README.txt',
+                                  '@type': 'schema:HowTo'})
+
+        doc['aggregates'].append({'uri': '../environment.txt'})
 
         # Construct a sanitized name for the ZIP archive using a whitelist
         # approach
@@ -259,69 +386,90 @@ class Tale(Resource):
         setResponseHeader('Content-Type', 'application/zip')
         setContentDisposition(zip_name + '.zip')
 
-        context = {
-            "": "https://w3id.org/bundle/context",
-            "schema": {"http://schema.org/"},
-            "parent_dataset": {"@type": "@id"}
-        }
-        doc = {
-            "@id": tale['title'],
-            "createdOn": str(tale['created']),
-            "schema:name": tale['title'],
-            "schema:description": tale['description'],
-            "schema:category": tale['category'],
-            "schema:identifier": str(tale['_id']),
-            "schema:version": tale['format'],
-            "schema:image": tale['illustration'],
-            "aggregates": []
-        }
-
-
-
-        # Created By
-        doc['createdBy']={
-            "@id": tale['authors'],
-            "@type": "schema:Person",
-            "schema:givenName": user['firstName'],
-            "schema:familyName": user['lastName'],
-            "schema:email": user['email']
-        }
-
-        for item_record in tale['dataSet']:
-            item = self.model('item').load(
-                item_record['itemId'], force=True)
-            # Check if the item is remote
-            record = {"uri": 'workspace'+item_record['mountPath']}
-            doc['aggregates'].append(record)
-
-
-        logger.info(json.dumps(doc, indent=2))
-        #expanded = jsonld.expand(doc, context)
-        #logger.info(json.dumps(expanded, indent=2))
-
         def stream():
             zip = ziputil.ZipGenerator(zip_name)
 
-            # Add files from the Tale folder
+            # Add files from the workspace
+            folder = self.model('folder').load(tale['workspaceId'], user=user)
             for (path, f) in self.model('folder').fileList(folder,
                                                            user=user,
                                                            subpath=False):
-
-                for data in zip.addFile(f, path):
+                for data in zip.addFile(f, 'workspace/' + path):
                     yield data
-            yield zip.footer()
 
+            # Add manifest.json
+            for data in zip.addFile(lambda: json.dumps(doc, indent=4),
+                                    'metadata/manifest.json'):
+                yield data
+
+            # Add top level README
+            for data in zip.addFile(lambda: 'Instructions on running the docker container',
+                                    'README.txt'):
+                yield data
+
+            # Add the environment
+            for data in zip.addFile(lambda: str(tale['imageId']),
+                                    'environment.txt'):
+                yield data
+
+            yield zip.footer()
         return stream
 
 
+def create_aggregation_record(uri, bundle=None, parent_dataset=None):
+    aggregation = dict()
+    aggregation['uri'] = uri
+    if bundle:
+        aggregation['bundledAs'] = bundle
+    if parent_dataset:
+        aggregation['parent_dataset'] = parent_dataset
+    return aggregation
 
 
+def get_folder_files(self, folder, user):
+    return self.model('folder').fileList(folder,
+                                         user=user,
+                                         data=False)
 
 
+def is_item(self, user, item_id):
+    return self.model('item').load(item_id, user=user) is not None
 
 
+def create_bundle(folder, filename):
+    return{
+        'folder': folder,
+        'filename': filename
+    }
 
 
+def clean_workspace_path(tale_id, path):
+    return path.replace(str(tale_id)+'/', '')
 
 
+def create_dataset_record(self, user, folder_id):
+    folder = self.model('folder').load(folder_id, user=user)
+    if folder:
+        meta = folder.get('meta')
+        if meta:
+            provider = meta.get('provider')
+            if provider:
+                return {
+                    "@id": meta.get('identifier'),
+                    "@type": "Dataset",
+                    "name": folder['name'],
+                    "identifier": meta.get('identifier'),
+                    "publisher": publishers[provider]
+                }
 
+
+def get_dataset_file_path(file_info):
+    """
+    Removes a filename from a full path
+    :param file_info:
+    :return:
+    """
+    res = file_info[0].replace('/'+file_info[1]['name'], '')
+    if res != file_info[0]:
+        return res
+    return ''
