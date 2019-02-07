@@ -303,8 +303,8 @@ class DataONEHarversterTestCase(base.TestCase):
         resp = self.request('/dataset', method='GET', user=self.user)
         self.assertStatusOk(resp)
         self.assertEqual(len(resp.json), 2)
-        folder_ds = next(_ for _ in resp.json if _['modelType'] == 'folder')
-        item_ds = next(_ for _ in resp.json if _['modelType'] == 'item')
+        folder_ds = next(_ for _ in resp.json if _['_modelType'] == 'folder')
+        item_ds = next(_ for _ in resp.json if _['_modelType'] == 'item')
 
         resp = self.request('/dataset/{}'.format(item_ds['_id']), method='GET',
                             user=self.user)
