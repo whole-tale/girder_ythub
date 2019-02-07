@@ -21,7 +21,7 @@ datasetModel = {
     "description": "Object representing registered data.",
     "required": [
         "_id",
-        "modelType"
+        "_modelType"
     ],
     "properties": {
         "_id": {
@@ -35,7 +35,7 @@ datasetModel = {
         "description": {
             "type": "string"
         },
-        "modelType": {
+        "_modelType": {
             "type": "string",
             "description": "Model of the object.",
             "enum": [
@@ -84,7 +84,6 @@ def _itemOrFolderToDataset(obj):
     ds = {key: obj[key] for key in obj.keys() & datasetModelKeys}
     ds['provider'] = obj['meta'].get('provider', 'unknown')
     ds['identifier'] = obj['meta'].get('identifier', 'unknown')
-    ds['modelType'] = obj['_modelType']
     return ds
 
 
@@ -160,7 +159,7 @@ class Dataset(Resource):
     )
     def copyDatasetToHome(self, id, dataset, params):
         user = self.getCurrentUser()
-        modelType = dataset['modelType']
+        modelType = dataset['_modelType']
         user_target_resource = path_util.lookUpPath(
             '/user/%s/Data' % user['login'], user)
         user_folder = user_target_resource['document']
