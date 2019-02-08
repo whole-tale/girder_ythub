@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 import re
 import json
+import os
 
 from girder.api import access
 from girder.api.docs import addModel
@@ -14,6 +15,7 @@ from girder.utility import ziputil
 from girder.models.token import Token
 from girder.plugins.jobs.constants import REST_CREATE_JOB_TOKEN_SCOPE
 from gwvolman.tasks import import_tale
+from girder.plugins.jobs.models.job import Job
 
 from ..schema.tale import taleModel as taleSchema
 from ..models.tale import Tale as taleModel
@@ -51,9 +53,11 @@ class Tale(Resource):
         self.route('PUT', (':id',), self.updateTale)
         self.route('POST', (), self.createTale)
         self.route('POST', ('import', ), self.createTaleFromDataset)
+        self.route('POST', ('import_tale_zip',), self.import_zip)
         self.route('DELETE', (':id',), self.deleteTale)
         self.route('GET', (':id', 'access'), self.getTaleAccess)
         self.route('PUT', (':id', 'access'), self.updateTaleAccess)
+        self.route('GET', (':id', 'manifest'), self.generateManifest)
         self.route('GET', (':id', 'export'), self.exportTale)
 
     @access.public
@@ -260,6 +264,28 @@ class Tale(Resource):
         return self._model.setAccessList(
             tale, access, save=True, user=user, setPublic=public, publicFlags=publicFlags)
 
+
+    @access.user
+    @autoDescribeRoute(
+        Description('Import a zipped Tale.')
+        .responseClass('tale')
+        .param('path', 'Path to the zip file (in wt_girder).', required=True)
+        .errorResponse('ID was invalid.', 404)
+        .errorResponse('You are not authorized to export this tale.', 403)
+    )
+    def import_zip(self, itemId):
+        token = self.getCurrentToken()
+        user = self.getCurrentUser()
+
+        job = Job().createLocalJob(
+            title='Import zipped tale', user=user,
+            type='wholetale.import_zip', public=False, async=True,
+            module='girder.plugins.wholetale.tasks.import_zip',
+            kwargs={'user': user, 'itemId': itemId, 'token':token}
+        )
+        Job().scheduleJob(job)
+
+
     @access.user
     @autoDescribeRoute(
         Description('Export a tale.')
@@ -271,13 +297,61 @@ class Tale(Resource):
     )
     def exportTale(self, tale, params):
         user = self.getCurrentUser()
+
+        # Construct a sanitized name for the ZIP archive using a whitelist
+        # approach
+        zip_name = re.sub('[^a-zA-Z0-9-]', '_', tale['title'])
+
+        setResponseHeader('Content-Type', 'application/zip')
+        setContentDisposition(zip_name + '.zip')
+
+        def stream():
+            zip = ziputil.ZipGenerator(zip_name)
+
+            # Add files from the workspace
+            folder = self.model('folder').load(tale['workspaceId'], user=user)
+            for (path, f) in self.model('folder').fileList(folder,
+                                                           user=user,
+                                                           subpath=False):
+                for data in zip.addFile(f, 'workspace/' + path):
+                    yield data
+
+            # Add manifest.json
+            manifest = self.generateManifest(self, tale)
+            for data in zip.addFile(lambda: json.dumps(manifest, indent=4),
+                                    'metadata/manifest.json'):
+                yield data
+
+            # Add top level README
+            for data in zip.addFile(lambda: 'Instructions on running the docker container',
+                                    'README.txt'):
+                yield data
+
+            # Add the environment
+            for data in zip.addFile(lambda: str(tale['imageId']),
+                                    'environment.txt'):
+                yield data
+
+            yield zip.footer()
+        return stream
+
+    @access.user(scope=TokenScope.DATA_OWN)
+    @autoDescribeRoute(
+        Description('Update the access control list for a tale.')
+        .modelParam('id', model='tale', plugin='wholetale', level=AccessType.ADMIN)
+        .errorResponse('ID was invalid.')
+        .errorResponse('Admin access was denied for the tale.', 403)
+    )
+    def generateManifest(self, tale):
+
+        user = self.getCurrentUser()
         doc = {
             "@context": [
                 "https://w3id.org/bundle/context",
                 {"schema": "http://schema.org/"},
                 {"parent_dataset": {"@type": "@id"}}
             ],
-            "@id": tale['title'],
+            "@id": str(tale['_id']),
             "createdOn": str(tale['created']),
             "schema:name": tale['title'],
             "schema:description": tale.get('description', str()),
@@ -298,12 +372,12 @@ class Tale(Resource):
             "schema:email": tale_user.get('email', '')
         }
 
+
         # Handle the files in the workspace
         folder = self.model('folder').load(tale['workspaceId'], user=user)
         if folder:
             workspace_folder_files = self.model('folder').fileList(folder, user=user)
             for workspace_file in workspace_folder_files:
-
                 doc['aggregates'].append({'uri': '../workspace/' + clean_workspace_path(tale['_id'],
                                                                                         workspace_file[0])})
 
@@ -311,7 +385,8 @@ class Tale(Resource):
         datasets = set()
         """
         Handle objects that are in the dataSet, ie files that point to external sources.
-        Some of these sources may be datasets from publishers.
+        Some of these sources may be datasets from publishers. We need to save information 
+        about the source so that they can added to the Datasets section.
         """
         for obj in tale['dataSet']:
             if obj['_modelType'] == 'folder':
@@ -338,7 +413,7 @@ class Tale(Resource):
                 """
                 If there is a file that was added to a tale that came from a dataset, but outside
                 the dataset folder, we need to get metadata about the parent folder and the file.
-                
+        
                 """
                 root_item = self.model('item').load(obj['itemId'], user=user)
                 if root_item:
@@ -364,7 +439,7 @@ class Tale(Resource):
             for file_record in folder_record['file_iterator']:
                 # Check if the file points to an external resource
                 if 'linkUrl' in file_record[1]:
-                    bundle = create_bundle('../data/'+get_dataset_file_path(file_record),
+                    bundle = create_bundle('../data/' + get_dataset_file_path(file_record),
                                            file_record[1]['name'])
                     record = create_aggregation_record(file_record[1]['linkUrl'],
                                                        bundle,
@@ -380,7 +455,6 @@ class Tale(Resource):
         """
         Add records for files that we inject (README, LICENSE, etc)
         """
-        # Should look at tale['license']
         doc['aggregates'].append({'uri': '../LICENSE',
                                   'schema:license': 'CC0'})
 
@@ -389,44 +463,19 @@ class Tale(Resource):
 
         doc['aggregates'].append({'uri': '../environment.txt'})
 
-        # Construct a sanitized name for the ZIP archive using a whitelist
-        # approach
-        zip_name = re.sub('[^a-zA-Z0-9-]', '_', tale['title'])
-
-        setResponseHeader('Content-Type', 'application/zip')
-        setContentDisposition(zip_name + '.zip')
-
-        def stream():
-            zip = ziputil.ZipGenerator(zip_name)
-
-            # Add files from the workspace
-            folder = self.model('folder').load(tale['workspaceId'], user=user)
-            for (path, f) in self.model('folder').fileList(folder,
-                                                           user=user,
-                                                           subpath=False):
-                for data in zip.addFile(f, 'workspace/' + path):
-                    yield data
-
-            # Add manifest.json
-            for data in zip.addFile(lambda: json.dumps(doc, indent=4),
-                                    'metadata/manifest.json'):
-                yield data
-
-            # Add top level README
-            for data in zip.addFile(lambda: 'Instructions on running the docker container',
-                                    'README.txt'):
-                yield data
-
-            # Add the environment
-            for data in zip.addFile(lambda: str(tale['imageId']),
-                                    'environment.txt'):
-                yield data
-
-            yield zip.footer()
-        return stream
+        return doc
 
 
 def create_aggregation_record(uri, bundle=None, parent_dataset=None):
+    """
+    Creates an aggregation record. Externally defined aggregations should include
+    a bundle and a parent_dataset if it belongs to one
+
+    :param uri:
+    :param bundle:
+    :param parent_dataset:
+    :return:
+    """
     aggregation = dict()
     aggregation['uri'] = uri
     if bundle:
@@ -442,11 +491,17 @@ def get_folder_files(self, folder, user):
                                          data=False)
 
 
-def is_item(self, user, item_id):
-    return self.model('item').load(item_id, user=user) is not None
-
-
 def create_bundle(folder, filename):
+    """
+    Creates a bundle for an externally referenced file
+
+    :param folder: The name of the folder that the file is in
+    :param filename:  The name of the file
+    :return: A dictionary record of the bundle
+    """
+
+    # Add a trailing slash to the path if there isn't one
+    os.path.join(folder, '')
     return{
         'folder': folder,
         'filename': filename
@@ -458,6 +513,13 @@ def clean_workspace_path(tale_id, path):
 
 
 def create_dataset_record(self, user, folder_id):
+    """
+    Creates
+    :param self:
+    :param user:
+    :param folder_id:
+    :return:
+    """
     folder = self.model('folder').load(folder_id, user=user)
     if folder:
         meta = folder.get('meta')
