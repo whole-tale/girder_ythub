@@ -112,8 +112,12 @@ class Tale(AccessControlledModel):
             if 'narrative' not in tale:
                 tale['narrative'] = []
 
-        if tale.get('format', 0) < 4:
-            tale = self._migrate_format_lt_4(tale)
+        # TODO: migrate via external script
+        # if tale.get('format', 0) < 4:
+        #    tale = self._migrate_format_lt_4(tale)
+
+        if 'dataSet' not in tale:
+            tale['dataSet'] = []
 
         tale['format'] = _currentTaleFormat
         return tale
