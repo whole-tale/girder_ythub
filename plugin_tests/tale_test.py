@@ -501,8 +501,9 @@ class TaleTestCase(base.TestCase):
         self.assertStatusOk(resp)
         new_data_dir = resp.json
         self.assertEqual(str(tale['folderId']), str(new_data_dir['_id']))
-        self.assertEqual(str(tale['dataSet'][0]['itemId']), data_dir['_id'])
-        self.assertEqual(tale['dataSet'][0]['mountPath'], '/' + data_dir['name'])
+        self.assertEqual(tale['dataSet'], [])
+        # self.assertEqual(str(tale['dataSet'][0]['itemId']), data_dir['_id'])
+        # self.assertEqual(tale['dataSet'][0]['mountPath'], '/' + data_dir['name'])
         self.model('tale', 'wholetale').remove(tale)
 
     @mock.patch('gwvolman.tasks.import_tale')
