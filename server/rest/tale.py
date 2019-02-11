@@ -26,7 +26,7 @@ addModel('tale', taleSchema, resources='tale')
 publishers = {
     "DataONE":
         {
-            "@id": "",
+            "@id": "https://www.dataone.org/",
             "@type": "Organization",
             "legalName": "DataONE",
             "Description": "A federated data network allowing access to science data"
