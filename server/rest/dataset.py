@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from bson import ObjectId
 from girder.api import access
 from girder.api.docs import addModel
 from girder.api.describe import Description, autoDescribeRoute
@@ -95,6 +96,7 @@ class Dataset(Resource):
 
         self.route('GET', (), self.listDatasets)
         self.route('GET', (':id',), self.getDataset)
+        self.route('DELETE', (':id',), self.deleteUserDataset)
         self.route('POST', ('register',), self.importData)
 
     @access.public
@@ -153,6 +155,17 @@ class Dataset(Resource):
         if 'meta' not in doc or 'provider' not in doc['meta']:
             raise ValidationException('No such item: %s' % str(doc['_id']), 'id')
         return _itemOrFolderToDataset(doc)
+
+    @access.user
+    @autoDescribeRoute(
+        Description("Remove user's reference to a registered dataset")
+        .param('id', 'The ID of the Dataset.', paramType='path')
+    )
+    def deleteUserDataset(self, id):
+        user = self.getCurrentUser()
+        user_data = set(user.get('myData', []))
+        user['myData'] = list(user_data.difference({ObjectId(id)}))
+        user = User().save(user)
 
     @access.user(scope=TokenScope.DATA_WRITE)
     @autoDescribeRoute(
