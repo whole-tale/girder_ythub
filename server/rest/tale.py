@@ -294,7 +294,7 @@ class Tale(Resource):
                     yield data
 
             # Add manifest.json
-            manifest = self.generateManifest(self, tale['_id'])
+            manifest = self._generateManifest(tale)
             for data in zip_generator.addFile(lambda: json.dumps(manifest, indent=4),
                                               'metadata/manifest.json'):
                 yield data
