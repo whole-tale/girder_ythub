@@ -89,11 +89,12 @@ def run(job):
     Register each dataset that's in the "Datasets" array in the manifest 
     """
 
-    for dataset_record in manifest_data:
+    for dataset_record in manifest_data.get('Datasets'):
         tale_task = register_dataset.apply_async(dataset_record['@id'],
             girder_client_token=str(token['_id'])
         )
-
+        logger.info('Foubnd dataset record')
+        logger.info(str(dataset_record))
         resource = tale_task.wait(timeout=None, interval=0.5)
         logger.info('Finished registering')
         logger.info(str(resource))
