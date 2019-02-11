@@ -297,7 +297,8 @@ class Image(Resource):
             title=jobTitle, type='build_image', handler='worker_handler',
             user=user, public=False, args=args, kwargs={},
             otherFields={
-                'celeryTaskName': 'gwvolman.tasks.build_image'
+                'celeryTaskName': 'gwvolman.tasks.build_image',
+                'celeryQueue': 'manager'
             })
         jobModel.scheduleJob(job)
         return job

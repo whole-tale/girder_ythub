@@ -96,3 +96,13 @@ class DatasetTestCase(base.TestCase):
         self.assertStatusOk(resp)
         ds = resp.json
         self.assertEqual(len(ds), 2)
+
+        resp = self.request(
+            path='/dataset/{_id}'.format(**ds[0]), method='DELETE', user=self.user)
+        self.assertStatusOk(resp)
+
+        resp = self.request(
+            path='/dataset', method='GET', user=self.user, params={'myData': True})
+        self.assertStatusOk(resp)
+        ds = resp.json
+        self.assertEqual(len(ds), 1)
