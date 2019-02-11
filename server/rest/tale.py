@@ -57,6 +57,7 @@ class Tale(Resource):
         self.route('GET', (':id', 'access'), self.getTaleAccess)
         self.route('PUT', (':id', 'access'), self.updateTaleAccess)
         self.route('GET', (':id', 'export'), self.exportTale)
+        self.route('POST', ('import_tale_zip',), self.import_zip)
         self.route('GET', (':id', 'manifest'), self.generateManifest)
 
     @access.public
@@ -443,6 +444,26 @@ class Tale(Resource):
 
         return doc
 
+    @access.user
+    @autoDescribeRoute(
+        Description('Import a zipped Tale.')
+        .responseClass('tale')
+        .param('itemId', 'The ID of the item that is holding the zipped Tale', required=True)
+        .errorResponse('ID was invalid.', 404)
+        .errorResponse('You are not authorized to export this tale.', 403)
+    )
+    def import_zip(self, itemId):
+        token = self.getCurrentToken()
+        user = self.getCurrentUser()
+
+        job = Job().createLocalJob(
+            title='Import zipped tale', user=user,
+            type='wholetale.import_zip', public=False, async=True,
+            module='girder.plugins.wholetale.tasks.import_zip',
+            kwargs={'user': user, 'itemId': itemId, 'token': token}
+        )
+        Job().scheduleJob(job)
+        return job
 
 def create_aggregation_record(uri, bundle=None, parent_dataset=None):
     """
