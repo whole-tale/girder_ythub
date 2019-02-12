@@ -7,6 +7,9 @@ import zipfile
 from pathlib import Path
 import json
 
+from ..models.tale import Tale
+from ..models.instance import Instance
+
 from girder import logger
 from girder.constants import AccessType, TokenScope
 from girder.models.folder import Folder
@@ -20,7 +23,7 @@ from girder.plugins.jobs.constants import REST_CREATE_JOB_TOKEN_SCOPE
 from gwvolman.tasks import register_dataset
 
 
-def create_tale_payload(manifest_data, imageId=None):
+def create_tale_payload(manifest_data, user, imageId=None):
     """
     Creates the structure that's needed to send to POST /tale. It contains
     the essential information to create a Tale
@@ -38,6 +41,11 @@ def create_tale_payload(manifest_data, imageId=None):
         'description': manifest_data.get('schema:description'),
         'category': manifest_data.get('schema:category'),
         'icon': manifest_data.get('schema:image'),
+        'illustration': 'https://raw.githubusercontent.com/'
+                        'whole-tale/dashboard/master/public/'
+                        'images/demo-graph2.jpg',
+        'save': True,
+
     }
     if imageId:
         payload['imageId']=imageId
@@ -49,6 +57,10 @@ def run(job):
     Takes a zipped Tale and turns it into a Tale
     :return:
     """
+
+    jobModel = Job()
+    jobModel.updateJob(job, status=JobStatus.RUNNING)
+
     zip_item_id = job['kwargs']['itemId']
     user = job['kwargs']['user']
     token = job['kwargs']['token']
@@ -59,7 +71,7 @@ def run(job):
     zip_path = File().getLocalFilePath(zip_file)
 
     try:
-        tale_zip = zipfile.ZipFile(zip_path )
+        tale_zip = zipfile.ZipFile(zip_path)
     except FileNotFoundError:
         errormsg = 'Could not find zipped Tale'
         raise ValueError(errormsg)
@@ -83,16 +95,14 @@ def run(job):
         errormsg = 'Failed to read the environment information'
         raise ValueError(errormsg)
 
-    payload = create_tale_payload(manifest_data ,environment_data)
+    payload = create_tale_payload(manifest_data, user, environment_data)
     logger.info(payload)
     """
     Register each dataset that's in the "Datasets" array in the manifest 
     """
 
     for dataset_record in manifest_data.get('Datasets'):
-        tale_task = register_dataset.apply_async(dataset_record['@id'],
-            girder_client_token=str(token['_id'])
-        )
+        tale_task = register_dataset.apply_async(dataset_record['@id'])
         logger.info('Foubnd dataset record')
         logger.info(str(dataset_record))
         resource = tale_task.wait(timeout=None, interval=0.5)
@@ -102,30 +112,20 @@ def run(job):
             {'mountPath': '/' + resource['name'], 'itemId': resource['_id']}
         ),
 
-    tale = self.girder_client.post('/tale', json=payload)
-
-    try:
-        instance = self.girder_client.post(
-            '/instance', parameters={'taleId': tale['_id']})
-    except girder_client.HttpError as resp:
-        try:
-            message = json.loads(resp.responseText).get('message', '')
-        except json.JSONDecodeError:
-            message = str(resp)
-        errormsg = 'Unable to create instance. Server returned {}: {}'
-        errormsg = errormsg.format(resp.status, message)
-        raise ValueError(errormsg)
+    tale = Tale().createTale(payload)
+    instance = Instance().createInstance(tale, user, token, name=payload['title'],
+                                            save=True, spawn=True)
 
     while instance['status'] == InstanceStatus.LAUNCHING:
         # TODO: Timeout? Raise error?
         time.sleep(1)
-        instance = self.girder_client.get(
-            '/instance/{_id}'.format(**instance))
+        instance = Instance().load(instance['_id'])
     else:
         instance = None
 
     self.job_manager.updateProgress(
         message='Tale is ready!')
+    jobModel.updateJob(job, status=JobStatus.SUCCESS, log="Tale import finished")
 
     return 'done'
     #return {'tale': tale, 'instance': instance}
