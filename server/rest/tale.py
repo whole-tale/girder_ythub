@@ -11,7 +11,9 @@ from girder.api.rest import Resource, filtermodel, RestException,\
 
 from girder.constants import AccessType, SortDir, TokenScope
 from girder.utility import ziputil
+from girder.utility.progress import ProgressContext
 from girder.models.token import Token
+from girder.models.folder import Folder
 from girder.plugins.jobs.constants import REST_CREATE_JOB_TOKEN_SCOPE
 from gwvolman.tasks import import_tale
 
@@ -43,36 +45,46 @@ class Tale(Resource):
     @filtermodel(model='tale', plugin='wholetale')
     @autoDescribeRoute(
         Description('Return all the tales accessible to the user')
+        .param('text', ('Perform a full text search for Tale with a matching '
+                        'title or description.'), required=False)
         .param('userId', "The ID of the tale's creator.", required=False)
         .param('imageId', "The ID of the tale's image.", required=False)
-        .param('text', ('Perform a full text search for recipe with matching '
-                        'Title or description.'), required=False)
-        .responseClass('tale', array=True)
-        .pagingParams(defaultSort='lowerName',
+        .param(
+            'level',
+            'The minimum access level to the Tale.',
+            required=False,
+            dataType='integer',
+            default=AccessType.READ,
+            enum=[AccessType.NONE, AccessType.READ, AccessType.WRITE, AccessType.ADMIN],
+        )
+        .pagingParams(defaultSort='title',
                       defaultSortDir=SortDir.DESCENDING)
+        .responseClass('tale', array=True)
     )
-    def listTales(self, userId, imageId, text, limit, offset, sort,
+    def listTales(self, text, userId, imageId, level, limit, offset, sort,
                   params):
         currentUser = self.getCurrentUser()
+        image = None
         if imageId:
-            image = self.model('image', 'wholetale').load(
-                imageId, user=currentUser, level=AccessType.READ, exc=True)
-        else:
-            image = None
+            image = imageModel().load(imageId, user=currentUser, level=AccessType.READ, exc=True)
 
+        creator = None
         if userId:
-            user = self.model('user').load(userId, force=True, exc=True)
-        else:
-            user = None
+            creator = self.model('user').load(userId, force=True, exc=True)
 
         if text:
+            filters = {}
+            if creator:
+                filters['creatorId'] = creator['_id']
+            if image:
+                filters['imageId'] = image['_id']
             return list(self._model.textSearch(
-                text, user=user, limit=limit, offset=offset, sort=sort))
+                text, user=currentUser, filters=filters,
+                limit=limit, offset=offset, sort=sort, level=level))
         else:
             return list(self._model.list(
-                user=user, data=None, image=image,
-                currentUser=currentUser,
-                offset=offset, limit=limit, sort=sort))
+                user=creator, image=image, limit=limit, offset=offset,
+                sort=sort, currentUser=currentUser, level=level))
 
     @access.public
     @filtermodel(model='tale', plugin='wholetale')
@@ -122,10 +134,22 @@ class Tale(Resource):
     @autoDescribeRoute(
         Description('Delete an existing tale.')
         .modelParam('id', model='tale', plugin='wholetale', level=AccessType.ADMIN)
+        .param('progress', 'Whether to record progress on this task.',
+               required=False, dataType='boolean', default=False)
         .errorResponse('ID was invalid.')
         .errorResponse('Admin access was denied for the tale.', 403)
     )
-    def deleteTale(self, tale, params):
+    def deleteTale(self, tale, progress):
+        user = self.getCurrentUser()
+        workspace = Folder().load(
+            tale['workspaceId'], user=user, level=AccessType.ADMIN)
+        with ProgressContext(
+                progress, user=user,
+                title='Deleting workspace of {title}'.format(**tale),
+                message='Calculating folder size...') as ctx:
+            if progress:
+                ctx.update(total=Folder().subtreeCount(workspace))
+            Folder().remove(workspace, progress=ctx)
         self._model.remove(tale)
 
     @access.user
@@ -190,7 +214,7 @@ class Tale(Resource):
                 tale['imageId'], user=user, level=AccessType.READ, exc=True)
             default_author = ' '.join((user['firstName'], user['lastName']))
             return self._model.createTale(
-                image, tale['involatileData'], creator=user, save=True,
+                image, tale['dataSet'], creator=user, save=True,
                 title=tale.get('title'), description=tale.get('description'),
                 public=tale.get('public'), config=tale.get('config'),
                 icon=image.get('icon', ('https://raw.githubusercontent.com/'
@@ -202,7 +226,8 @@ class Tale(Resource):
                                      'images/demo-graph2.jpg')),
                 authors=tale.get('authors', default_author),
                 category=tale.get('category', 'science'),
-                published=False, narrative=tale.get('narrative', [])
+                published=False, narrative=tale.get('narrative'),
+                doi=tale.get('doi'), publishedURI=tale.get('publishedURI')
             )
 
     @access.user(scope=TokenScope.DATA_OWN)

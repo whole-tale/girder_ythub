@@ -1,7 +1,7 @@
 name: WholeTale
 description: WholeTale plugin for Girder
-version: 0.5.0
+version: 0.6.0rc1
 dependencies:
     - jobs
     - worker
-    - wt_data_manager
+    - globus_handler

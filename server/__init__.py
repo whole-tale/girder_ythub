@@ -29,6 +29,7 @@ from .rest.harvester import listImportedData
 from .rest.tale import Tale
 from .rest.instance import Instance
 from .rest.wholetale import wholeTale
+from .rest.workspace import Workspace
 from .models.instance import finalizeInstance
 
 
@@ -352,6 +353,7 @@ def load(info):
     info['apiRoot'].repository = Repository()
     info['apiRoot'].publish = Publish()
     info['apiRoot'].integration = Integration()
+    info['apiRoot'].workspace = Workspace()
     info['apiRoot'].folder.route('GET', ('registered',), listImportedData)
     info['apiRoot'].folder.route('GET', (':id', 'listing'), listFolder)
     info['apiRoot'].folder.route('GET', (':id', 'dataset'), getDataSet)
@@ -362,4 +364,4 @@ def load(info):
     info['apiRoot'].user.route('PUT', ('settings',), setUserMetadata)
     info['apiRoot'].user.route('GET', ('settings',), getUserMetadata)
     ModelImporter.model('user').exposeFields(
-        level=AccessType.WRITE, fields=('meta',))
+        level=AccessType.WRITE, fields=('meta', 'myData'))

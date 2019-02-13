@@ -1,15 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from .misc import containerConfigSchema, dataResourceSchema
+from .misc import containerConfigSchema, dataSetSchema
 
 taleModel = {
     "definitions": {
-        'containerConfig': containerConfigSchema
+        "containerConfig": containerConfigSchema,
+        "dataSet": dataSetSchema
     },
     "description": "Object representing a Tale.",
     "required": [
-        "involatileData",
+        "dataSet",
         "imageId"
     ],
     "properties": {
@@ -22,7 +23,7 @@ taleModel = {
             "description": "Title of the Tale"
         },
         "description": {
-            "type": "string",
+            "type": ["string", "null"],
             "description": "The description of the Tale (Markdown)"
         },
         "imageId": {
@@ -31,16 +32,18 @@ taleModel = {
         },
         "folderId": {
             "type": "string",
-            "description": "ID of a folder containing copy of tale['involatileData']"
+            "description": "ID of a folder containing copy of tale['dataSet']"
         },
         "narrativeId": {
             "type": "string",
             "description": "ID of a folder containing copy of tale['narrative']"
         },
-        "involatileData": {
-            "type": "array",
-            "items": dataResourceSchema,
-            "description": "Resources used to create Tale's data folder"
+        "dataSet": {
+            "$ref": "#/definitions/dataSet"
+        },
+        "workspaceId": {
+            "type": "string",
+            "description": "ID of a folder containing Tale's workspace"
         },
         "narrative": {
             "type": "array",
@@ -103,21 +106,50 @@ taleModel = {
         "icon": {
             "type": "string",
             "description": "A URL to an image icon"
+        },
+        "doi": {
+            "type": ["string", "null"],
+            "description": "A unique identifier assigned to this tale from a "
+                           "publishing source."
+        },
+        "publishedURI": {
+            "type": ["string", "null"],
+            "description": "A URI pointing to the location of the published "
+                           "Tale."
         }
     },
     'example': {
-        '_accessLevel': 2,
-        '_id': '5873dcdbaec030000144d233',
-        'creatorId': '5873dcdbaec030000144d233',
-        'imageId': '5873dcdbaec030000144d233',
-        'folderId': '5873dcdbaec030000144d233',
-        'config': 'null',
-        '_modelType': 'tale',
-        'created': '2017-01-09T18:56:27.262000+00:00',
-        'title': 'Jupyter Lab',
-        'description': 'Run Jupyter Lab',
-        'public': True,
-        'published': True,
-        'updated': '2017-01-10T16:15:17.313000+00:00',
-    },
+        "_accessLevel": 2,
+        "_id": "5c4887409759c200017b2310",
+        "_modelType": "tale",
+        "authors": "Kacper Kowalik",
+        "category": "science",
+        "config": {},
+        "created": "2019-01-23T15:24:48.217000+00:00",
+        "creatorId": "5c4887149759c200017b22c0",
+        "dataSet": [
+            {
+                "itemId": "5c4887389759c200017b230e",
+                "mountPath": "illustris.jpg"
+            }
+        ],
+        "description": "#### Markdown Editor",
+        "doi": "doi:x.xx.xxx",
+        "folderId": "5c4887409759c200017b2316",
+        "format": 4,
+        "icon": ("https://raw.githubusercontent.com/whole-tale/jupyter-base/"
+                 "master/squarelogo-greytext-orangebody-greymoons.png"),
+        "iframe": True,
+        "illustration": ("https://raw.githubusercontent.com/whole-tale/dashboard/"
+                         "master/public/images/demo-graph2.jpg"),
+        "imageId": "5c4886279759c200017b22a3",
+        "narrative": [],
+        "narrativeId": "5c4887409759c200017b2319",
+        "public": False,
+        "published": False,
+        "publishedURI": "https://dev.nceas.ucsb.edu/view/urn:uuid:939e48ec-1107-45d9"
+                        "-baa7-05cef08e51cd",
+        "title": "My Tale",
+        "updated": "2019-01-23T15:48:17.476000+00:00"
+    }
 }

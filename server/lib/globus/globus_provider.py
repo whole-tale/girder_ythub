@@ -11,7 +11,7 @@ from ..entity import Entity
 from ..data_map import DataMap
 from ..import_item import ImportItem
 
-from girder.plugins.wt_data_manager.lib.handlers._globus.clients import Clients
+from girder.plugins.globus_handler.clients import Clients
 
 
 class GlobusImportProvider(ImportProvider):
@@ -78,22 +78,24 @@ class GlobusImportProvider(ImportProvider):
         (endpoint, path, doi, title) = self._extractMeta(doc)
         yield ImportItem(ImportItem.FOLDER, name=title)
         tc = self.clients.getUserTransferClient(user)
-        yield from self._listRecursive2(tc, endpoint, '/~/%s' % path, progress)
+        yield from self._listRecursive2(tc, endpoint, path, progress)
         yield ImportItem(ImportItem.END_FOLDER)
 
     def _listRecursive2(self, tc, endpoint: str, path: str, progress=None):
+        if path[-1] != '/':
+            path = path + '/'
         if progress:
             progress.update(increment=1, message='Listing files')
         for entry in tc.operation_ls(endpoint, path=path):
             if entry['type'] == 'dir':
                 yield ImportItem(ImportItem.FOLDER, name=entry['name'])
-                yield from self._listRecursive2(tc, endpoint, path + '/' + entry['name'], progress)
+                yield from self._listRecursive2(tc, endpoint, path + entry['name'], progress)
                 yield ImportItem(ImportItem.END_FOLDER)
             elif entry['type'] == 'file':
                 yield ImportItem(
                     ImportItem.FILE, entry['name'], size=entry['size'],
                     mimeType='application/octet-stream',
-                    url='globus://%s/%s' % (endpoint, path))
+                    url='globus://%s/%s%s' % (endpoint, path, entry['name']))
 
 
 TRANSFER_URL_PREFIX = 'https://www.globus.org/app/transfer?'

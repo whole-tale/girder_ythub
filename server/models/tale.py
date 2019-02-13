@@ -19,7 +19,7 @@ from girder.exceptions import \
 # Whenever the Tale object schema is modified (e.g. fields are added or
 # removed) increase `_currentTaleFormat` to retroactively apply those
 # changes to existing Tales.
-_currentTaleFormat = 3
+_currentTaleFormat = 5
 
 
 class Tale(AccessControlledModel):
@@ -33,14 +33,53 @@ class Tale(AccessControlledModel):
         })
         self.modifiableFields = {
             'title', 'description', 'public', 'config', 'updated', 'authors',
-            'category', 'icon', 'iframe', 'illustration'
+            'category', 'icon', 'iframe', 'illustration', 'dataSet',
+            'published', 'doi', 'publishedURI'
         }
         self.exposeFields(
             level=AccessType.READ,
             fields=({'_id', 'folderId', 'imageId', 'creatorId', 'created',
-                     'format', 'involatileData', 'narrative',
-                     'narrativeId'} | self.modifiableFields))
+                     'format', 'dataSet', 'narrative', 'narrativeId',
+                     'doi', 'publishedURI', 'workspaceId'} | self.modifiableFields))
         self.exposeFields(level=AccessType.ADMIN, fields={'published'})
+
+    @staticmethod
+    def _migrate_format_lt_2(tale):
+        data_folder = getOrCreateRootFolder(DATADIRS_NAME)
+        try:
+            origFolder = Folder().load(tale['folderId'], force=True, exc=True)
+        except ValidationException:
+            raise GirderException(
+                ('Tale ({_id}) references folder ({folderId}) '
+                 'that does not exist').format(**tale))
+        if origFolder.get('creatorId'):
+            creator = User().load(origFolder['creatorId'], force=True)
+        else:
+            creator = None
+        tale['involatileData'] = [
+            {'type': 'folder', 'id': tale.pop('folderId')}
+        ]
+        newFolder = Folder().copyFolder(
+            origFolder, parent=data_folder, parentType='folder',
+            name=str(tale['_id']), creator=creator, progress=False)
+        tale['folderId'] = newFolder['_id']
+        return tale
+
+    @staticmethod
+    def _migrate_format_lt_4(tale):
+        old_data = tale.pop('involatileData')
+        tale['dataSet'] = []
+        for entry in old_data:
+            if entry['type'] == 'folder':
+                obj = Folder().load(entry['id'], force=True)
+            elif entry['type'] == 'item':
+                obj = Item().load(entry['id'], force=True)
+            tale['dataSet'].append({
+                'itemId': obj['_id'],
+                'mountPath': '/' + obj['name'],
+                '_modelType': entry['type']}
+            )
+        return tale
 
     def validate(self, tale):
         if 'iframe' not in tale:
@@ -49,31 +88,37 @@ class Tale(AccessControlledModel):
         if '_id' not in tale:
             return tale
 
-        if tale.get('format', 0) < 2:
-            data_folder = getOrCreateRootFolder(DATADIRS_NAME)
-            try:
-                origFolder = Folder().load(tale['folderId'], force=True, exc=True)
-            except ValidationException:
-                raise GirderException(
-                    ('Tale ({_id}) references folder ({folderId}) '
-                     'that does not exist').format(**tale))
-            if origFolder.get('creatorId'):
-                creator = User().load(origFolder['creatorId'], force=True)
+        if 'workspaceId' not in tale:
+            if tale.get('creatorId'):
+                creator = User().load(tale['creatorId'], force=True)
             else:
                 creator = None
-            tale['involatileData'] = [
-                {'type': 'folder', 'id': tale.pop('folderId')}
-            ]
-            newFolder = Folder().copyFolder(
-                origFolder, parent=data_folder, parentType='folder',
-                name=str(tale['_id']), creator=creator, progress=False)
-            tale['folderId'] = newFolder['_id']
+            workspace = self.createWorkspace(tale, creator=creator)
+            tale['workspaceId'] = workspace['_id']
+
+        if 'doi' not in tale:
+            tale['doi'] = None
+
+        if 'publishedURI' not in tale:
+            tale['publishedURI'] = None
+
+        if tale.get('format', 0) < 2:
+            tale = self._migrate_format_lt_2(tale)
+
         if tale.get('format', 0) < 3:
             if 'narrativeId' not in tale:
                 default = self.createNarrativeFolder(tale, default=True)
                 tale['narrativeId'] = default['_id']
             if 'narrative' not in tale:
                 tale['narrative'] = []
+
+        # TODO: migrate via external script
+        # if tale.get('format', 0) < 4:
+        #    tale = self._migrate_format_lt_4(tale)
+
+        if 'dataSet' not in tale:
+            tale['dataSet'] = []
+
         tale['format'] = _currentTaleFormat
         return tale
 
@@ -85,7 +130,7 @@ class Tale(AccessControlledModel):
         return tale
 
     def list(self, user=None, data=None, image=None, limit=0, offset=0,
-             sort=None, currentUser=None):
+             sort=None, currentUser=None, level=AccessType.READ):
         """
         List a page of jobs for a given user.
 
@@ -104,20 +149,20 @@ class Tale(AccessControlledModel):
         if user is not None:
             cursor_def['creatorId'] = user['_id']
         if data is not None:
-            cursor_def['involatileData'] = data
+            cursor_def['dataSet'] = data
         if image is not None:
             cursor_def['imageId'] = image['_id']
 
         cursor = self.find(cursor_def, sort=sort)
         for r in self.filterResultsByPermission(
-                cursor=cursor, user=currentUser, level=AccessType.READ,
+                cursor=cursor, user=currentUser, level=level,
                 limit=limit, offset=offset):
             yield r
 
     def createTale(self, image, data, creator=None, save=True, title=None,
                    description=None, public=None, config=None, published=False,
                    authors=None, icon=None, category=None, illustration=None,
-                   narrative=None):
+                   narrative=None, doi=None, publishedURI=None):
         if creator is None:
             creatorId = None
         else:
@@ -134,7 +179,7 @@ class Tale(AccessControlledModel):
             'category': category,
             'config': config,
             'creatorId': creatorId,
-            'involatileData': data or [],
+            'dataSet': data or [],
             'description': description,
             'format': _currentTaleFormat,
             'created': now,
@@ -146,7 +191,9 @@ class Tale(AccessControlledModel):
             'title': title,
             'public': public,
             'published': published,
-            'updated': now
+            'updated': now,
+            'doi': doi,
+            'publishedURI': publishedURI
         }
         if public is not None and isinstance(public, bool):
             self.setPublic(tale, public, save=False)
@@ -158,19 +205,10 @@ class Tale(AccessControlledModel):
                                save=False)
         if save:
             tale = self.save(tale)
-            self.createWorkspace(tale, creator=creator)
+            workspace = self.createWorkspace(tale, creator=creator)
             data_folder = self.createDataMountpoint(tale, creator=creator)
             tale['folderId'] = data_folder['_id']
-            for obj in tale['involatileData']:
-                if obj['type'] == 'folder':
-                    folder = Folder().load(obj['id'], user=creator)
-                    Folder().copyFolder(
-                        folder, parent=data_folder, parentType='folder',
-                        creator=creator, progress=False)
-                elif obj['type'] == 'item':
-                    item = Item().load(obj['id'], user=creator)
-                    Item().copyItem(item, creator, folder=data_folder)
-
+            tale['workspaceId'] = workspace['_id']
             narrative_folder = self.createNarrativeFolder(
                 tale, creator=creator, default=not bool(tale['narrative']))
             for obj_id in tale['narrative']:

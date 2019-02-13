@@ -61,6 +61,36 @@ dataMapListSchema = {
     'items': dataMapSchema,
 }
 
+dataSetItemSchema = {
+    'title': 'dataSetItem',
+    '$schema': 'http://json-schema.org/draft-04/schema#',
+    'description': 'A schema representing data elements used in DMS dataSets',
+    'type': 'object',
+    'properties': {
+        '_modelType': {
+            'type': 'string',
+            'enum': ['item', 'folder'],
+            'description': 'Either a Girder item or a Girder folder'
+        },
+        'itemId': {
+            'type': 'string',
+            'description': 'ID of a Girder item or a Girder folder'
+        },
+        'mountPath': {
+            'type': 'string',
+            'description': 'An absolute path where the item/folder are mounted in the EFS'
+        }
+    },
+    'required': ['itemId', 'mountPath']
+}
+
+dataSetSchema = {
+    'title': 'A list of resources with a corresponding mount points in the ESF',
+    '$schema': 'http://json-schema.org/draft-04/schema#',
+    'type': 'array',
+    'items': dataSetItemSchema,
+}
+
 tagsSchema = {
     'title': 'tags',
     '$schema': 'http://json-schema.org/draft-04/schema#',
@@ -130,6 +160,16 @@ containerInfoSchema = {
         'name': {
             'type': 'string',
         },
+        'imageId': {
+            'type': 'string',
+            'description': ("ID of the successfully built image "
+                            "that was used to run this instance."),
+        },
+        'digest': {
+            'type': 'string',
+            'description': ("Checksum of the successfully built image "
+                            "that was used to run this instance."),
+        },
         'nodeId': {
             'type': 'string',
         },
@@ -147,3 +187,4 @@ containerInfoSchema = {
 }
 
 addModel('containerConfig', containerConfigSchema)
+addModel('dataSet', dataSetSchema)

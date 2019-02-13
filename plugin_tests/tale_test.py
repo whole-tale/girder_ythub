@@ -7,6 +7,7 @@ from .tests_helpers import \
     GOOD_REPO, GOOD_COMMIT, XPRA_REPO, XPRA_COMMIT, \
     mockOtherRequest, mockCommitRequest, mockReposRequest
 from girder.models.item import Item
+from girder.models.folder import Folder
 
 
 SCRIPTDIRS_NAME = None
@@ -69,7 +70,7 @@ class TaleTestCase(base.TestCase):
         self.assertStatus(resp, 400)
         self.assertEqual(resp.json, {
             'message': ("Invalid JSON object for parameter tale: "
-                        "'involatileData' "
+                        "'dataSet' "
                         "is a required property"),
             'type': 'rest'
         })
@@ -100,8 +101,8 @@ class TaleTestCase(base.TestCase):
             type='application/json',
             body=json.dumps({
                 'imageId': str(self.image['_id']),
-                'involatileData': [
-                    {'type': 'folder', 'id': publicFolder['_id']}
+                'dataSet': [
+                    {'mountPath': '/' + publicFolder['name'], 'itemId': publicFolder['_id']}
                 ]
             })
         )
@@ -113,7 +114,6 @@ class TaleTestCase(base.TestCase):
         # Check that data folder was created
         from girder.plugins.wholetale.constants import DATADIRS_NAME
         from girder.utility.path import getResourcePath
-        from girder.models.folder import Folder
         sc = {
             '_id': tale['_id'],
             'cname': DATADIRS_NAME,
@@ -132,13 +132,15 @@ class TaleTestCase(base.TestCase):
             type='application/json',
             user=self.user, body=json.dumps({
                 'folderId': tale['folderId'],
-                'involatileData': tale['involatileData'],
+                'dataSet': tale['dataSet'],
                 'imageId': tale['imageId'],
                 'title': 'new name',
                 'description': 'new description',
                 'config': {'memLimit': '2g'},
                 'public': True,
-                'published': False
+                'published': False,
+                'doi': 'doi:10.x.x.xx',
+                'publishedURI': 'publishedURI_URL'
             })
         )
         self.assertStatusOk(resp)
@@ -150,9 +152,10 @@ class TaleTestCase(base.TestCase):
             type='application/json',
             body=json.dumps({
                 'imageId': str(self.image['_id']),
-                'involatileData': [
-                    {'type': 'folder', 'id': privateFolder['_id']}
-                ]
+                'dataSet': [{
+                    'mountPath': '/' + privateFolder['name'],
+                    'itemId': privateFolder['_id']
+                }]
             })
         )
         self.assertStatusOk(resp)
@@ -163,9 +166,10 @@ class TaleTestCase(base.TestCase):
             type='application/json',
             body=json.dumps({
                 'imageId': str(self.image['_id']),
-                'involatileData': [
-                    {'type': 'folder', 'id': adminPublicFolder['_id']}
-                ],
+                'dataSet': [{
+                    'mountPath': '/' + privateFolder['name'],
+                    'itemId': adminPublicFolder['_id']
+                }],
                 'public': False
             })
         )
@@ -254,8 +258,8 @@ class TaleTestCase(base.TestCase):
                 body=json.dumps(
                     {
                         'imageId': str(self.image['_id']),
-                        'involatileData': [
-                            {'type': 'folder', 'id': folder['_id']}
+                        'dataSet': [
+                            {'mountPath': '/' + folder['name'], 'itemId': folder['_id']}
                         ],
                         'public': True
                     })
@@ -269,8 +273,8 @@ class TaleTestCase(base.TestCase):
                 body=json.dumps(
                     {
                         'imageId': str(self.image_admin['_id']),
-                        'involatileData': [
-                            {'type': 'folder', 'id': folder['_id']}
+                        'dataSet': [
+                            {'mountPath': '/' + folder['name'], 'itemId': folder['_id']}
                         ]
                     })
             )
@@ -428,8 +432,8 @@ class TaleTestCase(base.TestCase):
             type='application/json',
             body=json.dumps({
                 'imageId': str(self.image['_id']),
-                'involatileData': [
-                    {'type': 'folder', 'id': sub_home_dir['_id']}
+                'dataSet': [
+                    {'mountPath': '/' + sub_home_dir['name'], 'itemId': sub_home_dir['_id']}
                 ],
                 'narrative': [str(my_narrative['_id'])]
             })
@@ -449,8 +453,9 @@ class TaleTestCase(base.TestCase):
 
         resp = self.request(
             path='/tale/{_id}'.format(**tale), method='DELETE',
-            user=self.admin)
+            user=self.admin, params={'progress': True})
         self.assertStatusOk(resp)
+        self.assertEqual(Folder().load(tale['workspaceId'], force=True), None)
 
     def testTaleValidation(self):
         resp = self.request(
@@ -497,8 +502,9 @@ class TaleTestCase(base.TestCase):
         self.assertStatusOk(resp)
         new_data_dir = resp.json
         self.assertEqual(str(tale['folderId']), str(new_data_dir['_id']))
-        self.assertEqual(tale['involatileData'],
-                         [{'id': str(data_dir['_id']), 'type': 'folder'}])
+        self.assertEqual(tale['dataSet'], [])
+        # self.assertEqual(str(tale['dataSet'][0]['itemId']), data_dir['_id'])
+        # self.assertEqual(tale['dataSet'][0]['mountPath'], '/' + data_dir['name'])
         self.model('tale', 'wholetale').remove(tale)
 
     @mock.patch('gwvolman.tasks.import_tale')
@@ -520,6 +526,81 @@ class TaleTestCase(base.TestCase):
             )
             self.assertEqual(job_call['kwargs'], {'spawn': False})
             self.assertEqual(job_call['headers']['girder_job_title'], 'Import Tale')
+
+    def testTaleUpdate(self):
+        # Test that Tale updating works
+
+        resp = self.request(
+            path='/folder', method='GET', user=self.user, params={
+                'parentType': 'user',
+                'parentId': self.user['_id'],
+                'sort': 'title',
+                'sortdir': 1
+            }
+        )
+
+        title = 'new name'
+        description = 'new description'
+        config = {'memLimit': '2g'}
+        public = True
+        published = True
+        doi = 'doi:10.x.zz'
+        published_uri = 'atestURI'
+
+        # Create a new Tale
+        resp = self.request(
+            path='/tale', method='POST', user=self.user,
+            type='application/json',
+            body=json.dumps({
+                'folderId': '1234',
+                'imageId': str(self.image['_id']),
+                'dataSet': [
+                    {'mountPath': '/' + 'folder', 'itemId': '123456'}
+                ],
+                'title': 'tale tile',
+                'description': 'description',
+                'config': {},
+                'public': False,
+                'published': False,
+                'doi': 'doi',
+                'publishedURI': 'published_uri'
+            })
+        )
+
+        self.assertStatus(resp, 200)
+
+        # Update the Tale with new values
+        resp = self.request(
+            path='/tale/{}'.format(str(resp.json['_id'])),
+            method='PUT',
+            user=self.user,
+            type='application/json',
+            body=json.dumps({
+                'folderId': '1234',
+                'imageId': str(self.image['_id']),
+                'dataSet': [
+                    {'mountPath': '/' + 'folder', 'itemId': '123456'}
+                ],
+                'title': title,
+                'description': description,
+                'config': config,
+                'public': public,
+                'published': published,
+                'doi': doi,
+                'publishedURI': published_uri
+            })
+        )
+
+        # Check that the updates happened
+        # self.assertStatus(resp, 200)
+        self.assertEqual(resp.json['imageId'], str(self.image['_id']))
+        self.assertEqual(resp.json['title'], title)
+        self.assertEqual(resp.json['description'], description)
+        self.assertEqual(resp.json['config'], config)
+        self.assertEqual(resp.json['public'], public)
+        self.assertEqual(resp.json['published'], published)
+        self.assertEqual(resp.json['doi'], doi)
+        self.assertEqual(resp.json['publishedURI'], published_uri)
 
     def tearDown(self):
         self.model('user').remove(self.user)

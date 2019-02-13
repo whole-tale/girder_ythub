@@ -14,9 +14,9 @@ instanceModel = {
     'type': 'object',
     'required': [
         '_accessLevel', '_id', '_modelType', 'containerId',
-        'containerPath', 'created', 'folderId', 'frontendId',
-        'lastActivity', 'mountPoint', 'status', 'userId',
-        'when'
+        'containerPath', 'created', 'digest', 'folderId',
+        'frontendId', 'imageId',  'lastActivity', 'mountPoint',
+        'status', 'userId', 'when'
     ],
     'example': {
         '_accessLevel': 2,
@@ -27,7 +27,9 @@ instanceModel = {
             'containerPath': 'user/.../login?token=...',
             'host': '172.17.0.1',
             'mountPoint': '/var/lib/docker/volumes/58caa69f9fcbde0001/_data',
-            'volumeName': '58ca9fcbde0001df4d26_foo'
+            'volumeName': '58ca9fcbde0001df4d26_foo',
+            'digest': 'sha256:198246816212941281ab1243de09c9adbca92',
+            'imageId': '58caa69f00f4d26cbd9fe01d'
         },
         'created': '2017-04-07T17:04:04.777000+00:00',
         'creatorId': '57c099af86ed1d0001733722',
@@ -78,6 +80,7 @@ class Instance(Resource):
         self.route('POST', (), self.createInstance)
         self.route('GET', (':id',), self.getInstance)
         self.route('DELETE', (':id',), self.deleteInstance)
+        self.route('PUT', (':id',), self.updateInstance)
 
     @access.user
     @filtermodel(model='instance', plugin='wholetale')
@@ -118,6 +121,35 @@ class Instance(Resource):
         .errorResponse('Read access was denied for the instance.', 403)
     )
     def getInstance(self, instance, params):
+        return instance
+
+    @access.user
+    @autoDescribeRoute(
+        Description('Updates and restarts an existing instance.')
+        .modelParam('id', model='instance', plugin='wholetale', level=AccessType.WRITE)
+        .errorResponse('ID was invalid.')
+        .errorResponse('Write access was denied for the instance.', 403)
+    )
+    def updateInstance(self, instance):
+        currentUser = self.getCurrentUser()
+
+        taleId = instance['taleId']
+        tale = self.model('tale', 'wholetale').load(
+            taleId, user=currentUser, level=AccessType.READ)
+        imageId = tale['imageId']
+        image = self.model('image', 'wholetale').load(
+            imageId, user=currentUser, level=AccessType.READ)
+
+        # TODO: Only continue if digest has changed
+        # if image['digest'] != instance['containerInfo']['digest']:
+
+        # Digest ensures that container runs from newest image version
+        instanceModel = self.model('instance', 'wholetale')
+        instanceModel.updateAndRestartInstance(
+            instance,
+            self.getCurrentToken(),
+            image['_id'],
+            image['digest'])
         return instance
 
     @access.user

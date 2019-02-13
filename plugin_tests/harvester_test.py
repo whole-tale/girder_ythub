@@ -253,18 +253,15 @@ class DataONEHarversterTestCase(base.TestCase):
                 params={'dataMap': json.dumps(dataMap)}, user=self.user)
             self.assertStatusOk(resp)
 
-        # Grab the default user Data folders
+        # Grab user data
         resp = self.request(
-            path='/folder', method='GET', user=self.user, params={
-                'parentType': 'folder',
-                'parentId': dataFolder['_id'],
-                'text': 'Thaw',
-                'sort': 'name',
-                'sortdir': -1
-            })
+            path='/dataset', method='GET', user=self.user, params={'myData': True})
         self.assertStatusOk(resp)
-        self.assertEqual(len(resp.json), 1)
-        folder = resp.json[0]
+        datasets = resp.json
+        self.assertEqual(len(datasets), 2)
+        ds_folder = next((_ for _ in datasets if _['_modelType'] == 'folder'), None)
+        self.assertNotEqual(ds_folder, None)
+        folder = self.model('folder').load(ds_folder['_id'], user=self.user)
         self.assertEqual(folder['name'], dataMap[0]['name'])
         self.assertEqual(folder['meta']['provider'], dataMap[0]['repository'])
         self.assertEqual(folder['meta']['identifier'], dataMap[0]['doi'])
@@ -284,49 +281,15 @@ class DataONEHarversterTestCase(base.TestCase):
             self.assertEqual(items[i]['meta']['identifier'],
                              source[i]['identifier'])
 
+        # TODO: check if it's that method is still used anywhere
         resp = self.request('/folder/registered', method='GET', user=self.user)
         self.assertStatusOk(resp)
-        self.assertEqual(len(resp.json), 2)
+        self.assertEqual(len(resp.json), 1)
         # self.assertEqual(folder, resp.json[0])
 
-        resp = self.request(
-            path='/item', method='GET', user=self.user, params={
-                'folderId': dataFolder['_id'],
-                'text': 'nginx'
-            })
-        self.assertStatusOk(resp)
-        self.assertEqual(len(resp.json), 1)
-        item = resp.json[0]
+        ds_item = next((_ for _ in datasets if _['_modelType'] == 'item'), None)
+        item = self.model('item').load(ds_item['_id'], user=self.user, force=True)
         self.assertEqual(item['name'], 'nginx.tmpl')
-
-        # Dataset testing
-        resp = self.request('/dataset', method='GET', user=self.user)
-        self.assertStatusOk(resp)
-        self.assertEqual(len(resp.json), 2)
-        folder_ds = next(_ for _ in resp.json if _['modelType'] == 'folder')
-        item_ds = next(_ for _ in resp.json if _['modelType'] == 'item')
-
-        resp = self.request('/dataset/{}'.format(item_ds['_id']), method='GET',
-                            user=self.user)
-        self.assertStatusOk(resp)
-        self.assertEqual(resp.json['name'], item_ds['name'])
-
-        resp = self.request(
-            '/dataset/{}'.format(item_ds['_id']), method='PUT', user=self.user,
-            type='application/json', body=json.dumps(item_ds))
-        self.assertStatusOk(resp)
-
-        resp = self.request(
-            '/dataset/{}'.format(folder_ds['_id']), method='PUT', user=self.user,
-            type='application/json', body=json.dumps(folder_ds))
-        self.assertStatusOk(resp)
-
-        resp = self.request(
-            path='/folder/{}/details'.format(dataFolder['_id']),
-            method='GET', user=self.user)
-        self.assertStatusOk(resp)
-        self.assertEqual(resp.json['nItems'], 2)
-        self.assertEqual(resp.json['nFolders'], 2)
 
     @vcr.use_cassette(os.path.join(DATA_PATH, 'test_list_files.txt'))
     def test_list_files(self):

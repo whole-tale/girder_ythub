@@ -4,7 +4,8 @@
 import datetime
 import ssl
 import time
-from tornado.httpclient import HTTPRequest, HTTPError, HTTPClient
+from urllib.request import urlopen
+from urllib.error import HTTPError, URLError
 
 from girder import logger
 from girder.constants import AccessType, SortDir
@@ -14,10 +15,13 @@ from girder.models.token import Token
 from girder.plugins.worker import getCeleryApp
 from girder.plugins.jobs.constants import JobStatus, REST_CREATE_JOB_TOKEN_SCOPE
 from gwvolman.tasks import \
-    create_volume, launch_container, shutdown_container, remove_volume
+    create_volume, launch_container, update_container, shutdown_container, remove_volume
 
 from ..constants import InstanceStatus
 from ..schema.misc import containerInfoSchema
+
+from girder.plugins.wholetale.models.tale import Tale
+from girder.plugins.wholetale.models.image import Image
 
 
 TASK_TIMEOUT = 15.0
@@ -39,7 +43,7 @@ class Instance(AccessControlledModel):
             fields={'_id', 'created', 'creatorId', 'iframe', 'name', 'taleId'})
         self.exposeFields(
             level=AccessType.WRITE,
-            fields={'containerInfo', 'lastActivity', 'status', 'url'})
+            fields={'containerInfo', 'lastActivity', 'status', 'url', 'sessionId'})
 
     def validate(self, instance):
         if not InstanceStatus.isValid(instance['status']):
@@ -70,6 +74,40 @@ class Instance(AccessControlledModel):
                 cursor=cursor, user=currentUser, level=AccessType.READ,
                 limit=limit, offset=offset):
             yield r
+
+    def updateAndRestartInstance(self, instance, token, imageId, digest):
+        """
+        Updates and restarts an instance.
+
+        :param image: The instance document to restart.
+        :type image: dict
+        :returns: The instance document that was edited.
+        """
+
+        instanceTask = update_container.signature(
+            args=[str(instance['_id'])], queue='manager',
+            kwargs={
+                'girder_client_token': str(token['_id']),
+                'image': str(imageId) + '@' + str(digest)
+            }
+        ).apply_async()
+        instanceTask.get(timeout=TASK_TIMEOUT)
+        # TODO: Ensure valid imageId / digest?
+        instance['containerInfo']['digest'] = digest
+        instance['containerInfo']['imageId'] = imageId
+        return self.updateInstance(instance)
+
+    def updateInstance(self, instance):
+        """
+        Updates an instance.
+
+        :param image: The instance document to restart.
+        :type image: dict
+        :returns: The instance document that was edited.
+        """
+
+        instance['updated'] = datetime.datetime.utcnow()
+        return self.save(instance)
 
     def deleteInstance(self, instance, token):
         app = getCeleryApp()
@@ -130,31 +168,20 @@ class Instance(AccessControlledModel):
             (volumeTask | serviceTask).apply_async()
         return instance
 
-    def updateInstance(self, instance):
-        """
-        Updates an instance.
-
-        :param image: The instance document to update.
-        :type image: dict
-        :returns: The instance document that was edited.
-        """
-        instance['updated'] = datetime.datetime.utcnow()
-        return self.save(instance)
-
 
 def _wait_for_server(url, timeout=30, wait_time=0.5):
     """Wait for a server to show up within a newly launched instance."""
     tic = time.time()
-    http_client = HTTPClient()
-    req = HTTPRequest(url)
-
     while time.time() - tic < timeout:
         try:
-            http_client.fetch(req)
-        except HTTPError as http_error:
-            code = http_error.code
+            urlopen(url, timeout=1)
+        except HTTPError as err:
             logger.info(
-                'Booting server at [%s], getting HTTP status [%s]', url, code)
+                'Booting server at [%s], getting HTTP status [%s]', url, err.code)
+            time.sleep(wait_time)
+        except URLError as err:
+            logger.info(
+                'Booting server at [%s], getting URLError due to [%s]', url, err.reason)
             time.sleep(wait_time)
         except ssl.SSLError:
             logger.info(
@@ -183,6 +210,13 @@ def finalizeInstance(event):
             containerInfo = {key: service.get(key, '') for key in valid_keys}
             url = service.get('url', 'https://google.com')
             _wait_for_server(url)
+
+            # Preserve the imageId / current digest in containerInfo
+            tale = Tale().load(instance['taleId'], force=True)
+            containerInfo['imageId'] = tale['imageId']
+            image = Image().load(tale['imageId'], force=True)
+            containerInfo['digest'] = image['digest']
+
             instance.update({
                 'url': url,
                 'status': InstanceStatus.RUNNING,
