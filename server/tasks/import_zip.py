@@ -4,12 +4,14 @@
 import sys
 import traceback
 import zipfile
-from pathlib import Path
 import json
+import time
+from pathlib import Path
 
 from ..models.tale import Tale
 from ..models.instance import Instance
 from ..models.image import Image
+from ..constants import InstanceStatus
 
 from girder import logger
 from girder.constants import AccessType, TokenScope
@@ -24,7 +26,7 @@ from girder.plugins.jobs.constants import REST_CREATE_JOB_TOKEN_SCOPE
 from gwvolman.tasks import register_dataset
 
 
-def create_tale_payload(manifest_data, user, imageId=None):
+def create_tale_payload(manifest_data, user):
     """
     Creates the structure that's needed to send to POST /tale. It contains
     the essential information to create a Tale
@@ -46,11 +48,9 @@ def create_tale_payload(manifest_data, user, imageId=None):
                         'whole-tale/dashboard/master/public/'
                         'images/demo-graph2.jpg',
         'save': True,
-        creator: user
-
+        'creator': user,
+        'dataSet': []
     }
-    if imageId:
-        payload['imageId']=imageId
     return payload
 
 
@@ -92,43 +92,33 @@ def run(job):
         errormsg = 'Failed to open a manifest file'
         raise ValueError(errormsg)
     try:
-        environment_data = tale_zip.read(zip_root + '/' + 'environment.txt').decode("utf-8")
+        image_id = tale_zip.read(zip_root + '/' + 'environment.txt').decode("utf-8")
     except KeyError:
         errormsg = 'Failed to read the environment information'
         raise ValueError(errormsg)
 
-    payload = create_tale_payload(manifest_data, user, environment_data)
-    logger.info(payload)
-    """
-    Register each dataset that's in the "Datasets" array in the manifest 
-    """
+    payload = create_tale_payload(manifest_data, user)
 
+    # Register each dataset that's in the "Datasets" array in the manifest
     for dataset_record in manifest_data.get('Datasets'):
         tale_task = register_dataset.apply_async(kwargs={
             'girder_client_token': str(token['_id']),
             'dataset_uri': dataset_record['@id']
         })
         resource = tale_task.wait()
-        logger.info('Finished registering')
-        logger.info(str(resource))
         payload['dataSet'].append(
             {'mountPath': '/' + resource['name'], 'itemId': resource['_id']}
         ),
-    image = Image().load(payload['imageId'], user=user)
-    tale = Tale().createTale(image, payload)
+    image = Image().load(image_id, user=user)
+    tale = Tale().createTale(image, data=payload.pop('dataSet'), **payload)
     instance = Instance().createInstance(tale, user, token, name=payload['title'],
                                             save=True, spawn=True)
 
     while instance['status'] == InstanceStatus.LAUNCHING:
         # TODO: Timeout? Raise error?
         time.sleep(1)
-        instance = Instance().load(instance['_id'])
+        instance = Instance().load(instance['_id'], user=user)
     else:
         instance = None
-
-    self.job_manager.updateProgress(
-        message='Tale is ready!')
     jobModel.updateJob(job, status=JobStatus.SUCCESS, log="Tale import finished")
-
-    return 'done'
-    #return {'tale': tale, 'instance': instance}
+    return {'tale': tale, 'instance': instance}
