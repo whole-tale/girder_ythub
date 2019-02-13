@@ -291,7 +291,7 @@ class Tale(Resource):
             for (path, f) in self.model('folder').fileList(folder,
                                                            user=user,
                                                            subpath=False):
-                for data in zip.addFile(f, 'workspace/' + path):
+                for data in zip_generator.addFile(f, 'workspace/' + path):
                     yield data
 
             # Add manifest.json

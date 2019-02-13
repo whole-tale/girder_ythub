@@ -9,6 +9,7 @@ import json
 
 from ..models.tale import Tale
 from ..models.instance import Instance
+from ..models.image import Image
 
 from girder import logger
 from girder.constants import AccessType, TokenScope
@@ -45,6 +46,7 @@ def create_tale_payload(manifest_data, user, imageId=None):
                         'whole-tale/dashboard/master/public/'
                         'images/demo-graph2.jpg',
         'save': True,
+        creator: user
 
     }
     if imageId:
@@ -102,17 +104,18 @@ def run(job):
     """
 
     for dataset_record in manifest_data.get('Datasets'):
-        tale_task = register_dataset.apply_async(dataset_record['@id'])
-        logger.info('Foubnd dataset record')
-        logger.info(str(dataset_record))
-        resource = tale_task.wait(timeout=None, interval=0.5)
+        tale_task = register_dataset.apply_async(kwargs={
+            'girder_client_token': str(token['_id']),
+            'dataset_uri': dataset_record['@id']
+        })
+        resource = tale_task.wait()
         logger.info('Finished registering')
         logger.info(str(resource))
         payload['dataSet'].append(
             {'mountPath': '/' + resource['name'], 'itemId': resource['_id']}
         ),
-
-    tale = Tale().createTale(payload)
+    image = Image().load(payload['imageId'], user=user)
+    tale = Tale().createTale(image, payload)
     instance = Instance().createInstance(tale, user, token, name=payload['title'],
                                             save=True, spawn=True)
 
