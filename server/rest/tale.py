@@ -11,7 +11,9 @@ from girder.api.rest import Resource, filtermodel, RestException,\
 
 from girder.constants import AccessType, SortDir, TokenScope
 from girder.utility import ziputil
+from girder.utility.progress import ProgressContext
 from girder.models.token import Token
+from girder.models.folder import Folder
 from girder.plugins.jobs.constants import REST_CREATE_JOB_TOKEN_SCOPE
 from gwvolman.tasks import import_tale
 
@@ -132,10 +134,22 @@ class Tale(Resource):
     @autoDescribeRoute(
         Description('Delete an existing tale.')
         .modelParam('id', model='tale', plugin='wholetale', level=AccessType.ADMIN)
+        .param('progress', 'Whether to record progress on this task.',
+               required=False, dataType='boolean', default=False)
         .errorResponse('ID was invalid.')
         .errorResponse('Admin access was denied for the tale.', 403)
     )
-    def deleteTale(self, tale, params):
+    def deleteTale(self, tale, progress):
+        user = self.getCurrentUser()
+        workspace = Folder().load(
+            tale['workspaceId'], user=user, level=AccessType.ADMIN)
+        with ProgressContext(
+                progress, user=user,
+                title='Deleting workspace of {title}'.format(**tale),
+                message='Calculating folder size...') as ctx:
+            if progress:
+                ctx.update(total=Folder().subtreeCount(workspace))
+            Folder().remove(workspace, progress=ctx)
         self._model.remove(tale)
 
     @access.user
