@@ -347,4 +347,4 @@ def load(info):
     info['apiRoot'].user.route('PUT', ('settings',), setUserMetadata)
     info['apiRoot'].user.route('GET', ('settings',), getUserMetadata)
     ModelImporter.model('user').exposeFields(
-        level=AccessType.WRITE, fields=('meta',))
+        level=AccessType.WRITE, fields=('meta', 'myData'))
