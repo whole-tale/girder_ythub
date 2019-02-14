@@ -7,6 +7,7 @@ from .tests_helpers import \
     GOOD_REPO, GOOD_COMMIT, XPRA_REPO, XPRA_COMMIT, \
     mockOtherRequest, mockCommitRequest, mockReposRequest
 from girder.models.item import Item
+from girder.models.folder import Folder
 
 
 SCRIPTDIRS_NAME = None
@@ -113,7 +114,6 @@ class TaleTestCase(base.TestCase):
         # Check that data folder was created
         from girder.plugins.wholetale.constants import DATADIRS_NAME
         from girder.utility.path import getResourcePath
-        from girder.models.folder import Folder
         sc = {
             '_id': tale['_id'],
             'cname': DATADIRS_NAME,
@@ -453,8 +453,9 @@ class TaleTestCase(base.TestCase):
 
         resp = self.request(
             path='/tale/{_id}'.format(**tale), method='DELETE',
-            user=self.admin)
+            user=self.admin, params={'progress': True})
         self.assertStatusOk(resp)
+        self.assertEqual(Folder().load(tale['workspaceId'], force=True), None)
 
     def testTaleValidation(self):
         resp = self.request(
