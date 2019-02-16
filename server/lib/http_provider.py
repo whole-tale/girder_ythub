@@ -30,9 +30,7 @@ class HTTPImportProvider(ImportProvider):
         headers = requests.head(
             pid, headers={'Accept-Encoding': 'identity'}).headers
 
-        valid_target = headers.get('Content-Type') is not None
-        valid_target = valid_target and \
-            ('Content-Length' in headers or 'Content-Range' in headers)
+        valid_target = 'Content-Length' in headers or 'Content-Range' in headers
         if not valid_target:
             raise Exception('Failed to get size for %s' % pid)
 
