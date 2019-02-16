@@ -239,12 +239,19 @@ class Tale(AccessControlledModel):
         doc = super().setAccessList(
             doc, access, user=user, save=save, force=force)
 
-        folder = Folder().load(
-            doc['folderId'], user=user, level=AccessType.ADMIN)
+        for id_key in ('folderId', 'workspaceId', 'narrativeId'):
+            try:
+                folder = Folder().load(doc[id_key], user=user, level=AccessType.ADMIN)
+            except AccessException:
+                _folder = Folder().load(doc[id_key], force=True)
+                if id_key != 'narrativeId' or _folder['name'] != 'default':
+                    raise
+                folder = None
 
-        Folder().setAccessList(
-            folder, access, user=user, save=save, force=force, recurse=True,
-            setPublic=setPublic, publicFlags=publicFlags)
+            if folder:
+                Folder().setAccessList(
+                    folder, access, user=user, save=save, force=force, recurse=True,
+                    setPublic=setPublic, publicFlags=publicFlags)
 
         try:
             image = Image().load(
