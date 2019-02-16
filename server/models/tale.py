@@ -43,44 +43,6 @@ class Tale(AccessControlledModel):
                      'doi', 'publishedURI', 'workspaceId'} | self.modifiableFields))
         self.exposeFields(level=AccessType.ADMIN, fields={'published'})
 
-    @staticmethod
-    def _migrate_format_lt_2(tale):
-        data_folder = getOrCreateRootFolder(DATADIRS_NAME)
-        try:
-            origFolder = Folder().load(tale['folderId'], force=True, exc=True)
-        except ValidationException:
-            raise GirderException(
-                ('Tale ({_id}) references folder ({folderId}) '
-                 'that does not exist').format(**tale))
-        if origFolder.get('creatorId'):
-            creator = User().load(origFolder['creatorId'], force=True)
-        else:
-            creator = None
-        tale['involatileData'] = [
-            {'type': 'folder', 'id': tale.pop('folderId')}
-        ]
-        newFolder = Folder().copyFolder(
-            origFolder, parent=data_folder, parentType='folder',
-            name=str(tale['_id']), creator=creator, progress=False)
-        tale['folderId'] = newFolder['_id']
-        return tale
-
-    @staticmethod
-    def _migrate_format_lt_4(tale):
-        old_data = tale.pop('involatileData')
-        tale['dataSet'] = []
-        for entry in old_data:
-            if entry['type'] == 'folder':
-                obj = Folder().load(entry['id'], force=True)
-            elif entry['type'] == 'item':
-                obj = Item().load(entry['id'], force=True)
-            tale['dataSet'].append({
-                'itemId': obj['_id'],
-                'mountPath': '/' + obj['name'],
-                '_modelType': entry['type']}
-            )
-        return tale
-
     def validate(self, tale):
         if 'iframe' not in tale:
             tale['iframe'] = False
@@ -88,38 +50,15 @@ class Tale(AccessControlledModel):
         if '_id' not in tale:
             return tale
 
-        if 'workspaceId' not in tale:
-            if tale.get('creatorId'):
-                creator = User().load(tale['creatorId'], force=True)
-            else:
-                creator = None
-            workspace = self.createWorkspace(tale, creator=creator)
-            tale['workspaceId'] = workspace['_id']
-
         if 'doi' not in tale:
             tale['doi'] = None
 
         if 'publishedURI' not in tale:
             tale['publishedURI'] = None
 
-        if tale.get('format', 0) < 2:
-            tale = self._migrate_format_lt_2(tale)
-
-        if tale.get('format', 0) < 3:
-            if 'narrativeId' not in tale:
-                default = self.createNarrativeFolder(tale, default=True)
-                tale['narrativeId'] = default['_id']
-            if 'narrative' not in tale:
-                tale['narrative'] = []
-
-        # TODO: migrate via external script
-        # if tale.get('format', 0) < 4:
-        #    tale = self._migrate_format_lt_4(tale)
-
         if 'dataSet' not in tale:
             tale['dataSet'] = []
 
-        tale['format'] = _currentTaleFormat
         return tale
 
     def setPublished(self, tale, publish, save=False):
