@@ -4,16 +4,13 @@ import datetime
 
 from bson.objectid import ObjectId
 
-from .image import Image
 from ..constants import WORKSPACE_NAME, DATADIRS_NAME, SCRIPTDIRS_NAME
 from ..utils import getOrCreateRootFolder
 from girder.models.model_base import AccessControlledModel
 from girder.models.item import Item
 from girder.models.folder import Folder
-from girder.models.user import User
 from girder.constants import AccessType
-from girder.exceptions import \
-    AccessException, GirderException, ValidationException
+from girder.exceptions import AccessException
 
 
 # Whenever the Tale object schema is modified (e.g. fields are added or
@@ -252,17 +249,5 @@ class Tale(AccessControlledModel):
                 Folder().setAccessList(
                     folder, access, user=user, save=save, force=force, recurse=True,
                     setPublic=setPublic, publicFlags=publicFlags)
-
-        try:
-            image = Image().load(
-                doc['imageId'], user=user, level=AccessType.ADMIN)
-            Image().setAccessList(
-                image, access, user=user, save=save, force=force,
-                setPublic=setPublic, publicFlags=publicFlags)
-        except AccessException:
-            # TODO: Information about that should be returned to the user,
-            # For now we allow this operation to succeed since all our Images
-            # are public.
-            pass
 
         return doc
