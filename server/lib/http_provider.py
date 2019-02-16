@@ -6,6 +6,7 @@ from urllib.parse import urlparse
 from girder.utility.model_importer import ModelImporter
 
 from .import_providers import ImportProvider
+from .resolvers import DOIResolver
 from .entity import Entity
 from .data_map import DataMap
 from .file_map import FileMap
@@ -20,7 +21,7 @@ class HTTPImportProvider(ImportProvider):
         return re.compile(r'^http(s)?://.*')
 
     def lookup(self, entity: Entity) -> DataMap:
-        pid = entity.getValue()
+        pid = DOIResolver.follow_redirects(entity.getValue())
         url = urlparse(pid)
         if url.scheme not in ('http', 'https'):
             # This should be redundant. This should only be called if matches()
