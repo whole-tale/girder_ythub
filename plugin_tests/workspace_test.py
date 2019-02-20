@@ -43,7 +43,7 @@ class WorkspaceTestCase(base.TestCase):
     def testListingWorkspaces(self):
         resp = self.request(path='/workspace', method='GET', user=self.user)
         self.assertStatus(resp, 200)
-        self.assertEqual(resp.json[0]['lowerName'], self.tale_one['title'].lower())
+        self.assertEqual(resp.json[0]['name'], self.tale_one['title'])
         self.assertEqual(resp.json[1]['name'], self.tale_two['title'])
         workspace_one = resp.json[0]
         workspace_two = resp.json[1]

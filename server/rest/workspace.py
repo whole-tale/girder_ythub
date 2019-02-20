@@ -60,6 +60,7 @@ class Workspace(Resource):
                 folder['_modelType'] = 'folder'
                 folder['name'] = tale['title']
                 folder['lowerName'] = folder['name'].lower()
+                folder = Folder().filter(folder, self.getCurrentUser())
                 workspaces.append(folder)
 
         return workspaces
@@ -97,4 +98,4 @@ class Workspace(Resource):
         folder['_modelType'] = 'folder'
         folder['name'] = tale['title']
         folder['lowerName'] = folder['name'].lower()
-        return folder
+        return Folder().filter(folder, user)
