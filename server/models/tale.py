@@ -4,16 +4,13 @@ import datetime
 
 from bson.objectid import ObjectId
 
-from .image import Image
 from ..constants import WORKSPACE_NAME, DATADIRS_NAME, SCRIPTDIRS_NAME
 from ..utils import getOrCreateRootFolder
 from girder.models.model_base import AccessControlledModel
 from girder.models.item import Item
 from girder.models.folder import Folder
-from girder.models.user import User
 from girder.constants import AccessType
-from girder.exceptions import \
-    AccessException, GirderException, ValidationException
+from girder.exceptions import AccessException
 
 
 # Whenever the Tale object schema is modified (e.g. fields are added or
@@ -43,44 +40,6 @@ class Tale(AccessControlledModel):
                      'doi', 'publishedURI', 'workspaceId'} | self.modifiableFields))
         self.exposeFields(level=AccessType.ADMIN, fields={'published'})
 
-    @staticmethod
-    def _migrate_format_lt_2(tale):
-        data_folder = getOrCreateRootFolder(DATADIRS_NAME)
-        try:
-            origFolder = Folder().load(tale['folderId'], force=True, exc=True)
-        except ValidationException:
-            raise GirderException(
-                ('Tale ({_id}) references folder ({folderId}) '
-                 'that does not exist').format(**tale))
-        if origFolder.get('creatorId'):
-            creator = User().load(origFolder['creatorId'], force=True)
-        else:
-            creator = None
-        tale['involatileData'] = [
-            {'type': 'folder', 'id': tale.pop('folderId')}
-        ]
-        newFolder = Folder().copyFolder(
-            origFolder, parent=data_folder, parentType='folder',
-            name=str(tale['_id']), creator=creator, progress=False)
-        tale['folderId'] = newFolder['_id']
-        return tale
-
-    @staticmethod
-    def _migrate_format_lt_4(tale):
-        old_data = tale.pop('involatileData')
-        tale['dataSet'] = []
-        for entry in old_data:
-            if entry['type'] == 'folder':
-                obj = Folder().load(entry['id'], force=True)
-            elif entry['type'] == 'item':
-                obj = Item().load(entry['id'], force=True)
-            tale['dataSet'].append({
-                'itemId': obj['_id'],
-                'mountPath': '/' + obj['name'],
-                '_modelType': entry['type']}
-            )
-        return tale
-
     def validate(self, tale):
         if 'iframe' not in tale:
             tale['iframe'] = False
@@ -88,38 +47,15 @@ class Tale(AccessControlledModel):
         if '_id' not in tale:
             return tale
 
-        if 'workspaceId' not in tale:
-            if tale.get('creatorId'):
-                creator = User().load(tale['creatorId'], force=True)
-            else:
-                creator = None
-            workspace = self.createWorkspace(tale, creator=creator)
-            tale['workspaceId'] = workspace['_id']
-
         if 'doi' not in tale:
             tale['doi'] = None
 
         if 'publishedURI' not in tale:
             tale['publishedURI'] = None
 
-        if tale.get('format', 0) < 2:
-            tale = self._migrate_format_lt_2(tale)
-
-        if tale.get('format', 0) < 3:
-            if 'narrativeId' not in tale:
-                default = self.createNarrativeFolder(tale, default=True)
-                tale['narrativeId'] = default['_id']
-            if 'narrative' not in tale:
-                tale['narrative'] = []
-
-        # TODO: migrate via external script
-        # if tale.get('format', 0) < 4:
-        #    tale = self._migrate_format_lt_4(tale)
-
         if 'dataSet' not in tale:
             tale['dataSet'] = []
 
-        tale['format'] = _currentTaleFormat
         return tale
 
     def setPublished(self, tale, publish, save=False):
@@ -300,23 +236,18 @@ class Tale(AccessControlledModel):
         doc = super().setAccessList(
             doc, access, user=user, save=save, force=force)
 
-        folder = Folder().load(
-            doc['folderId'], user=user, level=AccessType.ADMIN)
+        for id_key in ('folderId', 'workspaceId', 'narrativeId'):
+            try:
+                folder = Folder().load(doc[id_key], user=user, level=AccessType.ADMIN)
+            except AccessException:
+                _folder = Folder().load(doc[id_key], force=True)
+                if id_key != 'narrativeId' or _folder['name'] != 'default':
+                    raise
+                folder = None
 
-        Folder().setAccessList(
-            folder, access, user=user, save=save, force=force, recurse=True,
-            setPublic=setPublic, publicFlags=publicFlags)
-
-        try:
-            image = Image().load(
-                doc['imageId'], user=user, level=AccessType.ADMIN)
-            Image().setAccessList(
-                image, access, user=user, save=save, force=force,
-                setPublic=setPublic, publicFlags=publicFlags)
-        except AccessException:
-            # TODO: Information about that should be returned to the user,
-            # For now we allow this operation to succeed since all our Images
-            # are public.
-            pass
+            if folder:
+                Folder().setAccessList(
+                    folder, access, user=user, save=save, force=force, recurse=True,
+                    setPublic=setPublic, publicFlags=publicFlags)
 
         return doc

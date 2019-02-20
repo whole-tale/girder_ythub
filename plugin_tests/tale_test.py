@@ -325,9 +325,8 @@ class TaleTestCase(base.TestCase):
             user=self.user, params={'access': json.dumps(input_tale_access)})
         self.assertStatusOk(resp)
         # Check that the returned access control list for the tale is as expected
+        tale = resp.json
         result_tale_access = resp.json['access']
-        result_image_id = resp.json['imageId']
-        result_folder_id = resp.json['folderId']
         expected_tale_access = {
             "groups": [],
             "users": [
@@ -346,23 +345,24 @@ class TaleTestCase(base.TestCase):
         self.assertEqual(result_tale_access, expected_tale_access)
         # Check that the access control list propagated to the image that the tale
         # was built from
-        resp = self.request(
-            path='/image/%s/access' % result_image_id, method='GET',
-            user=self.user)
-        self.assertStatusOk(resp)
-        result_image_access = resp.json
-        expected_image_access = input_tale_access
-        self.assertEqual(result_image_access, expected_image_access)
+        # resp = self.request(
+        #     path='/image/%s/access' % result_image_id, method='GET',
+        #     user=self.user)
+        # self.assertStatusOk(resp)
+        # result_image_access = resp.json
+        # expected_image_access = input_tale_access
+        # self.assertEqual(result_image_access, expected_image_access)
 
         # Check that the access control list propagated to the folder that the tale
         # is associated with
-        resp = self.request(
-            path='/folder/%s/access' % result_folder_id, method='GET',
-            user=self.user)
-        self.assertStatusOk(resp)
-        result_folder_access = resp.json
-        expected_folder_access = input_tale_access
-        self.assertEqual(result_folder_access, expected_folder_access)
+        for key in ('folderId', 'workspaceId'):
+            resp = self.request(
+                path='/folder/%s/access' % tale[key], method='GET',
+                user=self.user)
+            self.assertStatusOk(resp)
+            result_folder_access = resp.json
+            expected_folder_access = input_tale_access
+            self.assertEqual(result_folder_access, expected_folder_access)
 
         # Update the access control list of a tale that was generated from an image that the user
         # does not have admin access to
@@ -494,14 +494,14 @@ class TaleTestCase(base.TestCase):
         tale = self.model('tale', 'wholetale').save(tale)  # get's id
         tale = self.model('tale', 'wholetale').save(tale)  # migrate to new format
 
-        path = os.path.join(
-            '/collection', DATADIRS_NAME, DATADIRS_NAME, str(tale['_id']))
-        resp = self.request(
-            path='/resource/lookup', method='GET', user=self.user,
-            params={'path': path})
-        self.assertStatusOk(resp)
-        new_data_dir = resp.json
-        self.assertEqual(str(tale['folderId']), str(new_data_dir['_id']))
+        # path = os.path.join(
+        #     '/collection', DATADIRS_NAME, DATADIRS_NAME, str(tale['_id']))
+        # resp = self.request(
+        #    path='/resource/lookup', method='GET', user=self.user,
+        #    params={'path': path})
+        # self.assertStatusOk(resp)
+        # new_data_dir = resp.json
+        # self.assertEqual(str(tale['folderId']), str(new_data_dir['_id']))
         self.assertEqual(tale['dataSet'], [])
         # self.assertEqual(str(tale['dataSet'][0]['itemId']), data_dir['_id'])
         # self.assertEqual(tale['dataSet'][0]['mountPath'], '/' + data_dir['name'])
