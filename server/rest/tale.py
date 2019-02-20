@@ -342,8 +342,7 @@ class Tale(Resource):
         doc = {
             "@context": [
                 "https://w3id.org/bundle/context",
-                {"schema": "http://schema.org/"},
-                {"parent_dataset": {"@type": "@id"}}
+                {"schema": "http://schema.org/"}
             ],
             "@id": data_root+'tale/'+str(tale['_id']),
             "schema:name": tale['title'],
@@ -473,7 +472,7 @@ def create_aggregation_record(uri, bundle=None, parent_dataset=None):
     if bundle:
         aggregation['bundledAs'] = bundle
     if parent_dataset:
-        aggregation['parent_dataset'] = parent_dataset
+        aggregation['schema:isPartOf'] = parent_dataset
     return aggregation
 
 
