@@ -345,7 +345,7 @@ class Tale(Resource):
                 {"schema": "http://schema.org/"},
                 {"parent_dataset": {"@type": "@id"}}
             ],
-            "@id": str(data_root+'tale/'+tale['_id']),
+            "@id": data_root+'tale/'+str(tale['_id']),
             "schema:name": tale['title'],
             "schema:description": tale.get('description', str()),
             "schema:category": tale['category'],
