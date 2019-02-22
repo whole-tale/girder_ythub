@@ -338,6 +338,7 @@ class Tale(Resource):
 
     def _generateManifest(self, tale):
         user = self.getCurrentUser()
+<<<<<<< HEAD
         data_root='https://data.wholetale.org/api/v1/'
         doc = {
             "@context": [
@@ -347,6 +348,18 @@ class Tale(Resource):
             "@id": data_root+'tale/'+str(tale['_id']),
             "schema:name": tale['title'],
             "schema:description": tale.get('description', str()),
+=======
+        doc = {
+            "@context": [
+                "https://w3id.org/bundle/context",
+                {"schema": "http://schema.org/"},
+                {"parent_dataset": {"@type": "@id"}}
+            ],
+            "@id": str(tale['_id']),
+            "createdOn": str(tale['created']),
+            "schema:name": tale['title'],
+            "schema:description": tale.get('description', 'None'),
+>>>>>>> tale_Export
             "schema:category": tale['category'],
             "schema:identifier": str(tale['_id']),
             "schema:version": tale['format'],
@@ -472,7 +485,11 @@ def create_aggregation_record(uri, bundle=None, parent_dataset=None):
     if bundle:
         aggregation['bundledAs'] = bundle
     if parent_dataset:
+<<<<<<< HEAD
         aggregation['schema:isPartOf'] = parent_dataset
+=======
+        aggregation['parent_dataset'] = parent_dataset
+>>>>>>> tale_Export
     return aggregation
 
 
