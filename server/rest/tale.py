@@ -15,11 +15,11 @@ from girder.utility.progress import ProgressContext
 from girder.models.token import Token
 from girder.models.folder import Folder
 from girder.plugins.jobs.constants import REST_CREATE_JOB_TOKEN_SCOPE
-from gwvolman.tasks import import_tale
 
 from ..schema.tale import taleModel as taleSchema
 from ..models.tale import Tale as taleModel
 from ..models.image import Image as imageModel
+from ..lib.manifest import Manifest
 
 addModel('tale', taleSchema, resources='tale')
 
@@ -40,6 +40,7 @@ class Tale(Resource):
         self.route('GET', (':id', 'access'), self.getTaleAccess)
         self.route('PUT', (':id', 'access'), self.updateTaleAccess)
         self.route('GET', (':id', 'export'), self.exportTale)
+        self.route('GET', (':id', 'manifest'), self.generateManifest)
 
     @access.public
     @filtermodel(model='tale', plugin='wholetale')
@@ -321,3 +322,31 @@ class Tale(Resource):
             yield zip.footer()
 
         return stream
+
+    @access.public
+    @autoDescribeRoute(
+        Description('Generate the Tale manifest')
+        .modelParam('id', model='tale', plugin='wholetale', level=AccessType.READ)
+        .param(name='license',
+               required=True,
+               description='The SPDX of the license that the Tale is under.'
+                           'For example, `CC0-1.0`')
+        .jsonParam(name='itemIds',
+                   required=False,
+                   description='A list of item ids of files that are aggregated.\n'
+                               'Example: ["item1", "item2", "item3"]')
+        .errorResponse('ID was invalid.')
+    )
+    def generateManifest(self, tale, license, itemIds=list()):
+        """
+        Creates a manifest objbect and returns the contents.
+        :param tale: The Tale whose information is being used
+        :param license: The license that the Tale is under
+        :param itemIds: An optional list of items to include in the manifest
+        :return: A JSON structure representing the Tale
+        """
+
+        manifest_doc = Manifest(license, itemIds)
+        user = self.getCurrentUser()
+        manifest_doc.generate_manifest(user, tale)
+        return manifest_doc.manifest
