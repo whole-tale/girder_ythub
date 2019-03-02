@@ -15,6 +15,7 @@ from girder.utility.progress import ProgressContext
 from girder.models.token import Token
 from girder.models.folder import Folder
 from girder.plugins.jobs.constants import REST_CREATE_JOB_TOKEN_SCOPE
+from gwvolman.tasks import import_tale
 
 from ..schema.tale import taleModel as taleSchema
 from ..models.tale import Tale as taleModel
