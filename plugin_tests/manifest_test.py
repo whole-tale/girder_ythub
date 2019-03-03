@@ -31,7 +31,6 @@ class ManifestTestCase(base.TestCase):
         })
         self.admin, self.user = [self.model('user').createUser(**user)
                                  for user in self.users]
-
         self.license = 'CCO-1.0'
 
         collection = self.model('collection').createCollection('c1', self.user)
@@ -39,6 +38,8 @@ class ManifestTestCase(base.TestCase):
             collection, 'my workspace data', parentType='collection')
         self.data_folder = self.model('folder').createFolder(
             collection, 'Data', parentType='collection')
+        self.data_folder2 = self.model('folder').createFolder(
+            collection, 'Data2', parentType='collection')
 
         self.workspace_top_item1 = self.model('item').createItem('ws_item1',
                                                                  self.user,
@@ -54,11 +55,18 @@ class ManifestTestCase(base.TestCase):
                                                             self.user,
                                                             self.data_folder)
 
+        self.floating_item = self.model('item').createItem('data_item',
+                                                            self.user,
+                                                            self.data_folder2)
+
         # Add meta sections to dataSet items
         self.model('item').setMetadata(self.data_top_item1, {'identifier': '1234'})
         self.model('item').setMetadata(self.data_top_item2, {'identifier': '4321'})
+        self.model('item').setMetadata(self.floating_item, {'identifier': '4321a'})
         self.model('folder').setMetadata(self.data_folder, {'identifier': '123456',
                                                             'provider': 'DataONE'})
+        self.model('folder').setMetadata(self.data_folder2, {'identifier': '1234516',
+                                                            'provider': 'Globus'})
 
         # Create files for each item
         assetstore = {'_id': 0}
@@ -75,6 +83,7 @@ class ManifestTestCase(base.TestCase):
 
         self.fake_url1 = 'http:Fake_URI'
         self.fake_url2 = 'http:Fake_URI2'
+        self.fake_url3 = 'http:Fake_URI3'
 
         self.data_fl1 = self.model('file').createLinkFile('data file1.csv',
                                                           self.data_top_item1,
@@ -88,6 +97,12 @@ class ManifestTestCase(base.TestCase):
                                                           self.fake_url2,
                                                           self.user)
 
+        self.floating_file = self.model('file').createLinkFile('data file3.csv',
+                                                          self.floating_item,
+                                                          'item',
+                                                          self.fake_url3,
+                                                          self.user)
+
         # Tale map of values to check against in tests
         self.tale_info = {'_id': ObjectId(),
                           'name': 'Main Tale',
@@ -97,7 +112,10 @@ class ManifestTestCase(base.TestCase):
                           'public': True,
                           'data': [{'itemId': self.data_folder['_id'],
                                     '_mountPath': self.data_folder['name'],
-                                    '_modelType': 'folder'}],
+                                    '_modelType': 'folder'},
+                                   {'itemId': self.floating_item['_id'],
+                                    '_mountPath': self.floating_item['name'],
+                                    '_modelType': 'item'}],
                           'illustration': 'linkToImage',
                           'workspaceId': self.workspace_folder['_id']}
 
@@ -177,6 +195,13 @@ class ManifestTestCase(base.TestCase):
         agg = manifest_doc.create_aggregation_record(uri, bundle, parent_dataset)
         self.assertEqual(agg['schema:isPartOf'], parent_dataset)
 
+    def testGetFolderIdentifier(self):
+        from server.lib.manifest import get_folder_identifier
+
+        folder_identifier = get_folder_identifier(self.data_folder['_id'],
+                                                  self.user)
+        self.assertEqual(folder_identifier, self.data_folder['meta']['identifier'])
+
     def testWorkspace(self):
         from server.lib.manifest import Manifest
         # Test that all of the files in the workspace have aggregation records
@@ -224,9 +249,14 @@ class ManifestTestCase(base.TestCase):
             self.assertEqual(record['schema:isPartOf'], self.data_folder['meta']['identifier'])
             self.assertEqual(record['bundledAs']['filename'], self.data_fl2['name'])
 
-        datasets = manifest_doc.manifest['Datasets'][0]
-        self.assertEqual(datasets['publisher']['legalName'], 'DataONE')
+        # Check the datasets
+        datasets = manifest_doc.manifest['Datasets']
+        file_check = all(x for x in datasets if (x['publisher']['legalName'] == 'DataONE'))
+        self.assertTrue(file_check)
 
+        file_check = all(x for x in datasets if (x['publisher']['legalName'] == 'Globus'))
+        self.assertTrue(file_check)
+        
     def testItems(self):
         from server.lib.manifest import Manifest
         # Test that a manifest can be created from a list of items
