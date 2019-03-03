@@ -33,29 +33,30 @@ class ManifestTestCase(base.TestCase):
                                  for user in self.users]
         self.license = 'CCO-1.0'
 
-        collection = self.model('collection').createCollection('c1', self.user)
+        data_collection = self.model('collection').createCollection('WholeTale Catalog', self.user)
+        workspace_collection = self.model('collection').createCollection('WholeTale Workspaces', self.user)
         self.workspace_folder = self.model('folder').createFolder(
-            collection, 'my workspace data', parentType='collection')
+            workspace_collection, 'WholeTale Workspaces', parentType='collection')
         self.data_folder = self.model('folder').createFolder(
-            collection, 'Data', parentType='collection')
+            data_collection, 'Data', parentType='collection')
         self.data_folder2 = self.model('folder').createFolder(
-            collection, 'Data2', parentType='collection')
+            data_collection, 'WholeTale Catalog', parentType='collection')
 
-        self.workspace_top_item1 = self.model('item').createItem('ws_item1',
+        self.workspace_top_item1 = self.model('item').createItem('workspace file1.csv',
                                                                  self.user,
                                                                  self.workspace_folder)
         self.workspace_top_item2 = self.model('item').createItem('ws_item2',
                                                                  self.user,
                                                                  self.workspace_folder)
 
-        self.data_top_item1 = self.model('item').createItem('data_item1',
+        self.data_top_item1 = self.model('item').createItem('data file1.csv',
                                                             self.user,
                                                             self.data_folder)
         self.data_top_item2 = self.model('item').createItem('data_item2',
                                                             self.user,
                                                             self.data_folder)
 
-        self.floating_item = self.model('item').createItem('data_item',
+        self.floating_item = self.model('item').createItem('data_item.csv',
                                                             self.user,
                                                             self.data_folder2)
 
@@ -122,6 +123,16 @@ class ManifestTestCase(base.TestCase):
         self.tale = self.model('tale', 'wholetale').createTale(
             {'_id': self.tale_info['_id']},
             data=self.tale_info['data'],
+            creator=self.tale_info['creator'],
+            title=self.tale_info['name'],
+            public=self.tale_info['public'],
+            description=self.tale_info['description'],
+            authors=self.tale_info['authors']
+        )
+
+        self.tale2 = self.model('tale', 'wholetale').createTale(
+            {'_id': self.tale_info['_id']},
+            data=[],
             creator=self.tale_info['creator'],
             title=self.tale_info['name'],
             public=self.tale_info['public'],
@@ -214,8 +225,7 @@ class ManifestTestCase(base.TestCase):
         # Search for workspace file1.csv
         expected_path = '../workspace/' +\
                         self.workspace_folder['name'] + '/' + \
-                        self.workspace_top_item1['name'] + '/' +\
-                        self.ws_fl1['name']
+                        self.workspace_top_item1['name']
 
         file_check = any(x for x in aggregates_section if (x['uri'] == expected_path))
         self.assertTrue(file_check)
@@ -256,15 +266,32 @@ class ManifestTestCase(base.TestCase):
 
         file_check = all(x for x in datasets if (x['publisher']['legalName'] == 'Globus'))
         self.assertTrue(file_check)
-        
+
     def testItems(self):
         from server.lib.manifest import Manifest
         # Test that a manifest can be created from a list of items
         self.assertEqual(True, True)
-        item_ids = list()
+        item_ids = [self.floating_item['_id'], self.workspace_top_item1['_id']]
 
         manifest_doc = Manifest('CCO-1.0', item_ids)
-        manifest_doc.add_item_records(self.user, self.tale)
+        manifest_doc.generate_manifest(self.user, self.tale)
+        aggregates_section = manifest_doc.manifest['aggregates']
+        expected_path = '../workspace/' + \
+                        self.workspace_folder['name'] + '/' + \
+                        self.workspace_top_item1['name']
+
+        # Check the workspace file
+        file_check = all(x for x in aggregates_section if (x['uri'] == expected_path))
+        self.assertTrue(file_check)
+
+        # Check the data item
+        file_check = (x for x in aggregates_section if (x['uri'] == self.fake_url3))
+        self.assertTrue(file_check)
+
+        # Check the dataset
+        datasets = manifest_doc.manifest['Datasets']
+        file_check = all(x for x in datasets if (x['publisher']['legalName'] == 'DataONE'))
+        self.assertTrue(file_check)
 
     def tearDown(self):
         self.model('user').remove(self.user)

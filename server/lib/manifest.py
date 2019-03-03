@@ -33,6 +33,7 @@ class Manifest:
         self.manifest.update(self.create_context())
         self.manifest.update(self.create_basic_attributes(tale))
         self.add_tale_creator(tale, user)
+        self.manifest['aggregates'] = []
 
         if self.item_ids:
             self.add_item_records(user, tale)
