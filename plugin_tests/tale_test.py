@@ -9,6 +9,8 @@ from .tests_helpers import \
 from girder.models.item import Item
 from girder.models.folder import Folder
 
+from girder import logger
+
 
 SCRIPTDIRS_NAME = None
 DATADIRS_NAME = None
@@ -617,6 +619,31 @@ class TaleTestCase(base.TestCase):
         self.assertEqual(resp.json['doi'], doi)
         self.assertEqual(resp.json['publishedURI'], published_uri)
         self.assertEqual(resp.json['licenseSPDX'], newLicense)
+
+    def testTaleManifest(self):
+        resp = self.request(
+            path='/tale', method='POST', user=self.user,
+            type='application/json',
+            body=json.dumps({
+                'dataSet': [],
+                'imageId': str(self.image['_id']),
+                'title': 'new name',
+                'description': 'new description',
+                'config': {'memLimit': '2g'},
+                'public': True,
+                'published': False,
+                'doi': 'doi:10.x.x.xx',
+                'publishedURI': 'publishedURI_URL'
+            })
+        )
+
+        self.assertStatusOk(resp)
+
+        resp = self.request(path='/tale{}/manifest'.format('12345'),
+                            method='GET', user=self.user)
+        # self.assertStatusOk(res)
+
+
 
     def tearDown(self):
         self.model('user').remove(self.user)
