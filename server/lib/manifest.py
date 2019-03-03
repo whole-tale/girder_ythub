@@ -199,7 +199,7 @@ class Manifest:
 
     def add_tale_records(self, tale, user):
         """
-        Creates and adds file records to the internal manifest objbect for an entire Tale.
+        Creates and adds file records to the internal manifest object for an entire Tale.
         :param tale: The Tale being described
         :param user: The user requesting the manifest
         """
@@ -207,7 +207,9 @@ class Manifest:
         # Handle the files in the workspace
         folder = self.folderModel.load(tale['workspaceId'], user=user)
         if folder:
-            workspace_folder_files = self.folderModel.fileList(folder, user=user)
+            workspace_folder_files = self.folderModel.fileList(folder,
+                                                               user=user,
+                                                               data=False)
             for workspace_file in workspace_folder_files:
                 self.manifest['aggregates'].append(
                     {'uri': '../workspace/' + clean_workspace_path(tale['_id'],
