@@ -287,7 +287,9 @@ class Tale(Resource):
             zip_generator = ziputil.ZipGenerator(zip_name)
 
             # Add files from the workspace
-            folder = self.model('folder').load(tale['workspaceId'], user=user)
+            folder = self.model('folder').load(tale['workspaceId'],
+                                               user=user,
+                                               force=True)
             for (path, f) in self.model('folder').fileList(folder,
                                                            user=user,
                                                            subpath=False):
