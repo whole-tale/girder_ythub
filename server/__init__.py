@@ -30,6 +30,7 @@ from .rest.tale import Tale
 from .rest.instance import Instance
 from .rest.wholetale import wholeTale
 from .rest.workspace import Workspace
+from .rest.license import License
 from .models.instance import finalizeInstance
 
 
@@ -335,6 +336,7 @@ def load(info):
     events.bind('model.user.save.created', 'wholetale', addDefaultFolders)
     info['apiRoot'].repository = Repository()
     info['apiRoot'].publish = Publish()
+    info['apiRoot'].license = License()
     info['apiRoot'].integration = Integration()
     info['apiRoot'].workspace = Workspace()
     info['apiRoot'].folder.route('GET', ('registered',), listImportedData)
