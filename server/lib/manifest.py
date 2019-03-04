@@ -116,7 +116,9 @@ class Manifest:
         :param folder_id: Folder that represents a dataset
         :return: Dictionary that describes a dataset
         """
-        folder = self.folderModel.load(folder_id, user=user)
+        folder = self.folderModel.load(folder_id,
+                                       user=user,
+                                       force=True)
         if folder:
             meta = folder.get('meta')
             if meta:
@@ -155,7 +157,9 @@ class Manifest:
         :param tale: The tale whose information is being used
         """
         for item_id in self.item_ids:
-            item = self.itemModel.load(item_id, user=user)
+            item = self.itemModel.load(item_id,
+                                       user=user,
+                                       force=True)
             if item:
                 root = self.itemModel.parentsToRoot(item, user=user)
 
@@ -188,7 +192,9 @@ class Manifest:
                         self.manifest['aggregates'].append(agg_record)
                     self.datasets.add(item['folderId'])
 
-            folder = self.folderModel.load(item_id, user=user)
+            folder = self.folderModel.load(item_id,
+                                           user=user,
+                                           force=True)
             if folder:
                 parent = self.folderModel.parentsToRoot(folder, user=user)
                 # Check if the folder is in the workspace
@@ -206,7 +212,9 @@ class Manifest:
         """
 
         # Handle the files in the workspace
-        folder = self.folderModel.load(tale['workspaceId'], user=user)
+        folder = self.folderModel.load(tale['workspaceId'],
+                                       user=user,
+                                       force=True)
         if folder:
             workspace_folder_files = self.folderModel.fileList(folder,
                                                                user=user,
@@ -245,7 +253,9 @@ class Manifest:
         """
         for obj in tale['dataSet']:
             if obj['_modelType'] == 'folder':
-                folder = self.folderModel.load(obj['itemId'], user=user)
+                folder = self.folderModel.load(obj['itemId'],
+                                               user=user,
+                                               force=True)
                 if folder:
                     # Check if it's a dataset by checking for meta.identifier
                     folder_meta = folder.get('meta')
@@ -269,11 +279,15 @@ class Manifest:
                 the dataset folder, we need to get metadata about the parent folder and the file.
 
                 """
-                root_item = self.itemModel.load(obj['itemId'], user=user)
+                root_item = self.itemModel.load(obj['itemId'],
+                                                user=user,
+                                                force=True)
                 if root_item:
                     # Should always be true since the item is in dataSet
                     if root_item.get('meta'):
-                        item_folder = self.folderModel.load(root_item['folderId'], user=user)
+                        item_folder = self.folderModel.load(root_item['folderId'],
+                                                            user=user,
+                                                            force=True)
                         folder_meta = item_folder.get('meta')
                         if folder_meta:
                             self.datasets.add(root_item['folderId'])
@@ -344,7 +358,9 @@ def get_folder_identifier(folder_id, user):
     :param user: The user that is creating the manifest
     :return: The identifier of a dataset
     """
-    folder = ModelImporter.model('folder').load(folder_id, user=user)
+    folder = ModelImporter.model('folder').load(folder_id,
+                                                user=user,
+                                                force=True)
     if folder:
         meta = folder.get('meta')
         if meta:
