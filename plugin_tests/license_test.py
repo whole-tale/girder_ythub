@@ -26,8 +26,7 @@ class RecipeTestCase(base.TestCase):
         resp = self.request(
             path='/license', method='GET',
             type='application/json')
-        print(resp.json)
-
+        
         # Make sure that we support CC0
         is_supported = all(x for x in resp.json if (x['spdx'] == 'CCO-1.0'))
         self.assertTrue(is_supported)
