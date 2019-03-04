@@ -227,7 +227,8 @@ class Tale(Resource):
                 authors=tale.get('authors', default_author),
                 category=tale.get('category', 'science'),
                 published=False, narrative=tale.get('narrative'),
-                doi=tale.get('doi'), publishedURI=tale.get('publishedURI')
+                doi=tale.get('doi'), publishedURI=tale.get('publishedURI'),
+                license=tale.get('license')
             )
 
     @access.user(scope=TokenScope.DATA_OWN)

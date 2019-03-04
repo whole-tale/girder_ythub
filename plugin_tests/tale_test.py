@@ -127,6 +127,7 @@ class TaleTestCase(base.TestCase):
             '/collection/{cname}/{fname}/{_id}'.format(**sc)
         )
 
+        license = 'CCO-1.0'
         resp = self.request(
             path='/tale/{_id}'.format(**tale), method='PUT',
             type='application/json',
@@ -140,11 +141,13 @@ class TaleTestCase(base.TestCase):
                 'public': True,
                 'published': False,
                 'doi': 'doi:10.x.x.xx',
-                'publishedURI': 'publishedURI_URL'
+                'publishedURI': 'publishedURI_URL',
+                'license': license
             })
         )
         self.assertStatusOk(resp)
         self.assertEqual(resp.json['title'], 'new name')
+        self.assertEqual(resp.json['license'], license)
         tale = resp.json
 
         resp = self.request(
@@ -546,6 +549,7 @@ class TaleTestCase(base.TestCase):
         published = True
         doi = 'doi:10.x.zz'
         published_uri = 'atestURI'
+        license = 'CC-BY'
 
         # Create a new Tale
         resp = self.request(
@@ -587,7 +591,8 @@ class TaleTestCase(base.TestCase):
                 'public': public,
                 'published': published,
                 'doi': doi,
-                'publishedURI': published_uri
+                'publishedURI': published_uri,
+                'license': license
             })
         )
 
@@ -601,6 +606,7 @@ class TaleTestCase(base.TestCase):
         self.assertEqual(resp.json['published'], published)
         self.assertEqual(resp.json['doi'], doi)
         self.assertEqual(resp.json['publishedURI'], published_uri)
+        self.assertEqual(resp.json['license'], license)
 
     def tearDown(self):
         self.model('user').remove(self.user)

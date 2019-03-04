@@ -16,7 +16,7 @@ from girder.exceptions import AccessException
 # Whenever the Tale object schema is modified (e.g. fields are added or
 # removed) increase `_currentTaleFormat` to retroactively apply those
 # changes to existing Tales.
-_currentTaleFormat = 5
+_currentTaleFormat = 6
 
 
 class Tale(AccessControlledModel):
@@ -31,12 +31,12 @@ class Tale(AccessControlledModel):
         self.modifiableFields = {
             'title', 'description', 'public', 'config', 'updated', 'authors',
             'category', 'icon', 'iframe', 'illustration', 'dataSet',
-            'published', 'doi', 'publishedURI'
+            'published', 'doi', 'publishedURI', 'license'
         }
         self.exposeFields(
             level=AccessType.READ,
             fields=({'_id', 'folderId', 'imageId', 'creatorId', 'created',
-                     'format', 'dataSet', 'narrative', 'narrativeId',
+                     'format', 'dataSet', 'narrative', 'narrativeId', 'license',
                      'doi', 'publishedURI', 'workspaceId'} | self.modifiableFields))
         self.exposeFields(level=AccessType.ADMIN, fields={'published'})
 
@@ -98,7 +98,7 @@ class Tale(AccessControlledModel):
     def createTale(self, image, data, creator=None, save=True, title=None,
                    description=None, public=None, config=None, published=False,
                    authors=None, icon=None, category=None, illustration=None,
-                   narrative=None, doi=None, publishedURI=None):
+                   narrative=None, doi=None, publishedURI=None, license='CCO-1.0'):
         if creator is None:
             creatorId = None
         else:
@@ -129,7 +129,8 @@ class Tale(AccessControlledModel):
             'published': published,
             'updated': now,
             'doi': doi,
-            'publishedURI': publishedURI
+            'publishedURI': publishedURI,
+            'license': license
         }
         if public is not None and isinstance(public, bool):
             self.setPublic(tale, public, save=False)
