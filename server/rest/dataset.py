@@ -108,7 +108,7 @@ class Dataset(Resource):
                required=False, dataType='boolean', default=False)
         .responseClass('dataset', array=True)
         .pagingParams(defaultSort='lowerName',
-                      defaultSortDir=SortDir.DESCENDING)
+                      defaultSortDir=SortDir.ASCENDING)
     )
     def listDatasets(self, myData, limit, offset, sort, params):
         user = self.getCurrentUser()
