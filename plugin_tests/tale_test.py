@@ -127,7 +127,7 @@ class TaleTestCase(base.TestCase):
             '/collection/{cname}/{fname}/{_id}'.format(**sc)
         )
 
-        license = 'CCO-1.0'
+        license = 'CC0-1.0'
         resp = self.request(
             path='/tale/{_id}'.format(**tale), method='PUT',
             type='application/json',

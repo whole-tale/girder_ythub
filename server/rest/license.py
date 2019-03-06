@@ -21,7 +21,7 @@ class License(Resource):
         return [
             {
                 'name': 'Creative Commons Zero v1.0 Universal',
-                'spdx': 'CCO-1.0',
+                'spdx': 'CC0-1.0',
                 'text': 'This work is dedicated to the public domain under the Creative Commons '
                         'Universal 1.0 Public Domain Dedication. To view a copy of this '
                         'dedication, visit https://creativecommons.org/publicdomain/zero/1.0/.'

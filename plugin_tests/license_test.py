@@ -28,7 +28,7 @@ class RecipeTestCase(base.TestCase):
             type='application/json')
         
         # Make sure that we support CC0
-        is_supported = all(x for x in resp.json if (x['spdx'] == 'CCO-1.0'))
+        is_supported = all(x for x in resp.json if (x['spdx'] == 'CC0-1.0'))
         self.assertTrue(is_supported)
         # Make sure that we support CC-BY
         is_supported = all(x for x in resp.json if (x['spdx'] == 'CC-BY-4.0'))
