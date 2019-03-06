@@ -98,7 +98,8 @@ class Tale(AccessControlledModel):
     def createTale(self, image, data, creator=None, save=True, title=None,
                    description=None, public=None, config=None, published=False,
                    authors=None, icon=None, category=None, illustration=None,
-                   narrative=None, doi=None, publishedURI=None, license='CCO-1.0'):
+                   narrative=None, doi=None, publishedURI=None,
+                   license='CC-BY-4.0'):
         if creator is None:
             creatorId = None
         else:
