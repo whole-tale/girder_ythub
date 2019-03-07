@@ -1,8 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import cherrypy
+import tempfile
 import time
+
 from girder import events
 from girder.api import access
+from girder.api.rest import iterBody
 from girder.api.docs import addModel
 from girder.api.describe import Description, autoDescribeRoute
 from girder.api.rest import Resource, filtermodel, RestException,\
@@ -179,7 +183,11 @@ class Tale(Resource):
     @autoDescribeRoute(
         Description('Create a new tale from an external dataset.')
         .notes('Currently, this task only handles importing raw data. '
-               'In the future, it should also allow importing serialized Tales.')
+               'A serialized Tale can be sent as the body of the request using an '
+               'appropriate content-type and with the other parameters as part '
+               'of the query string. The file will be stored in a temporary '
+               'space. However, it is not currently being processed in any '
+               'way.')
         .param('imageId', "The ID of the tale's image.", required=True)
         .param('url', 'External dataset identifier.', required=True)
         .param('spawn', 'If false, create only Tale object without a corresponding '
@@ -201,6 +209,15 @@ class Tale(Resource):
             days=0.5,
             scope=(TokenScope.USER_AUTH, REST_CREATE_JOB_TOKEN_SCOPE)
         )
+
+        if cherrypy.request.body.length > 0:
+            with tempfile.NamedTemporaryFile() as fp:
+                for chunk in iterBody(2 * 1024 ** 3):
+                    fp.write(chunk)
+                fp.seek(0)
+                # TODO: check if zip, check if Tale
+                #  shortcircut here either by running a separate job
+                #  or modifying import_tale to grab a file
 
         try:
             lookupKwargs['dataId'] = [url]
