@@ -1,11 +1,4 @@
-import httmock
-import json
-import os
-from girder.constants import AccessType
 from tests import base
-from .tests_helpers import \
-    GOOD_REPO, GOOD_COMMIT, \
-    mockOtherRequest, mockCommitRequest, mockReposRequest
 
 
 def setUpModule():
@@ -17,10 +10,10 @@ def tearDownModule():
     base.stopServer()
 
 
-class RecipeTestCase(base.TestCase):
+class LicenseTestCase(base.TestCase):
 
     def setUp(self):
-        super(RecipeTestCase, self).setUp()
+        super(LicenseTestCase, self).setUp()
 
     def testGetLicenses(self):
         resp = self.request(
@@ -34,5 +27,13 @@ class RecipeTestCase(base.TestCase):
         is_supported = all(x for x in resp.json if (x['spdx'] == 'CC-BY-4.0'))
         self.assertTrue(is_supported)
 
+    def testMinimumLicenses(self):
+        from server.lib.license import WholeTaleLicense
+        # Test that we're supporting a non-zero number of licenses
+        wholetale_license = WholeTaleLicense()
+        self.assertTrue(len(wholetale_license.get_defaults()) > 0)
+        self.assertTrue(len(wholetale_license.get_spdx() > 0))
+        self.assertTrue(len(WholeTaleLicense.default_spdx()) > 0)
+
     def tearDown(self):
-        super(RecipeTestCase, self).tearDown()
+        super(LicenseTestCase, self).tearDown()

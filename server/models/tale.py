@@ -6,6 +6,7 @@ from bson.objectid import ObjectId
 
 from ..constants import WORKSPACE_NAME, DATADIRS_NAME, SCRIPTDIRS_NAME
 from ..utils import getOrCreateRootFolder
+from ..lib.license import WholeTaleLicense
 from girder.models.model_base import AccessControlledModel
 from girder.models.item import Item
 from girder.models.folder import Folder
@@ -31,12 +32,12 @@ class Tale(AccessControlledModel):
         self.modifiableFields = {
             'title', 'description', 'public', 'config', 'updated', 'authors',
             'category', 'icon', 'iframe', 'illustration', 'dataSet',
-            'published', 'doi', 'publishedURI', 'license'
+            'published', 'doi', 'publishedURI', 'licenseSPDX'
         }
         self.exposeFields(
             level=AccessType.READ,
             fields=({'_id', 'folderId', 'imageId', 'creatorId', 'created',
-                     'format', 'dataSet', 'narrative', 'narrativeId', 'license',
+                     'format', 'dataSet', 'narrative', 'narrativeId', 'licenseSPDX',
                      'doi', 'publishedURI', 'workspaceId'} | self.modifiableFields))
         self.exposeFields(level=AccessType.ADMIN, fields={'published'})
 
@@ -55,6 +56,12 @@ class Tale(AccessControlledModel):
 
         if 'dataSet' not in tale:
             tale['dataSet'] = []
+
+        if 'licenseSPDX' not in tale:
+            tale['licenseSPDX'] = WholeTaleLicense.default_spdx()
+        tale_licenses = WholeTaleLicense()
+        if tale['licenseSPDX'] not in tale_licenses.supported_spdxes():
+            tale['licenseSPDX'] = WholeTaleLicense.default_spdx()
 
         return tale
 
@@ -99,7 +106,8 @@ class Tale(AccessControlledModel):
                    description=None, public=None, config=None, published=False,
                    authors=None, icon=None, category=None, illustration=None,
                    narrative=None, doi=None, publishedURI=None,
-                   license='CC-BY-4.0'):
+                   licenseSPDX=WholeTaleLicense.default_spdx()):
+
         if creator is None:
             creatorId = None
         else:
@@ -131,7 +139,7 @@ class Tale(AccessControlledModel):
             'updated': now,
             'doi': doi,
             'publishedURI': publishedURI,
-            'license': license
+            'licenseSPDX': licenseSPDX
         }
         if public is not None and isinstance(public, bool):
             self.setPublic(tale, public, save=False)
