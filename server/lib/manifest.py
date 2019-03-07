@@ -3,6 +3,7 @@ import os
 from ..constants import CATALOG_NAME, WORKSPACE_NAME
 
 from girder.utility.model_importer import ModelImporter
+from girder.utility import path as path_util
 from girder.exceptions import ValidationException
 from girder.constants import AccessType
 
@@ -160,14 +161,10 @@ class Manifest:
                                        user=self.user,
                                        level=AccessType.READ)
             if item:
-                root = self.itemModel.parentsToRoot(item, user=self.user)
-
+                item_path = path_util.getResourcePath('item', item, user=self.user)
                 # Recreate the path
-                item_path = str()
                 data_catalog_path_root = CATALOG_NAME+'/'+CATALOG_NAME+'/'
                 workspaces_root = WORKSPACE_NAME+'/'+WORKSPACE_NAME
-                for path in root:
-                    item_path += path['object']['name'] + '/'
                 # Check if the item belongs to workspace or external data
                 if item_path.startswith(workspaces_root):
                     item_path = item_path.replace(workspaces_root, '')
