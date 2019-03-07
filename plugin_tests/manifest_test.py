@@ -31,7 +31,6 @@ class ManifestTestCase(base.TestCase):
         })
         self.admin, self.user = [self.model('user').createUser(**user)
                                  for user in self.users]
-        self.license = 'CCO-1.0'
 
         data_collection = self.model('collection').createCollection('WholeTale Catalog', self.user)
         workspace_collection = self.model('collection').createCollection('WholeTale Workspaces', self.user)
@@ -143,7 +142,7 @@ class ManifestTestCase(base.TestCase):
     def testCreateBasicAttributes(self):
         # Test that the basic attributes are correct
         from server.lib.manifest import Manifest
-        manifest_doc = Manifest(self.tale, self.license, self.user)
+        manifest_doc = Manifest(self.tale, self.user)
 
         attributes = manifest_doc.create_basic_attributes()
         self.assertEqual(attributes['schema:identifier'], str(self.tale['_id']))
@@ -156,7 +155,7 @@ class ManifestTestCase(base.TestCase):
     def testAddTaleCreator(self):
         from server.lib.manifest import Manifest
 
-        manifest_doc = Manifest(self.tale, self.license, self.user)
+        manifest_doc = Manifest(self.tale, self.user)
         manifest_creator = manifest_doc.manifest['createdBy']
         self.assertEqual(manifest_creator['schema:givenName'], self.user['firstName'])
         self.assertEqual(manifest_creator['schema:familyName'], self.user['lastName'])
@@ -168,7 +167,7 @@ class ManifestTestCase(base.TestCase):
         # get a dict back
         from server.lib.manifest import Manifest
 
-        manifest_doc = Manifest(self.tale, self.license, self.user)
+        manifest_doc = Manifest(self.tale, self.user)
         context = manifest_doc.create_context()
         self.assertEqual(type(context), type(dict()))
 
@@ -184,7 +183,7 @@ class ManifestTestCase(base.TestCase):
     def testCreateAggregationRecord(self):
         from server.lib.manifest import Manifest
         # Test without a bundle
-        manifest_doc = Manifest(self.tale, self.license, self.user)
+        manifest_doc = Manifest(self.tale, self.user)
         uri = 'doi:xx.xxxx.1234'
         agg = manifest_doc.create_aggregation_record(uri)
         self.assertEqual(agg['uri'], uri)
@@ -217,7 +216,7 @@ class ManifestTestCase(base.TestCase):
         # Test that all of the files in the workspace have aggregation records
 
         self.tale['workspaceId'] = self.workspace_folder['_id']
-        manifest_doc = Manifest(self.tale, self.license, self.user)
+        manifest_doc = Manifest(self.tale, self.user)
         aggregates_section = manifest_doc.manifest['aggregates']
 
         # Search for workspace file1.csv
@@ -240,7 +239,7 @@ class ManifestTestCase(base.TestCase):
     def testDataSet(self):
         from server.lib.manifest import Manifest
         # Test that all of the files in the dataSet are added
-        manifest_doc = Manifest(self.tale, self.license, self.user)
+        manifest_doc = Manifest(self.tale, self.user)
 
         aggregates_section = manifest_doc.manifest['aggregates']
 
@@ -270,7 +269,7 @@ class ManifestTestCase(base.TestCase):
         self.assertEqual(True, True)
         item_ids = [self.floating_item['_id'], self.workspace_top_item1['_id']]
 
-        manifest_doc = Manifest(self.tale, 'CCO-1.0', self.user, item_ids)
+        manifest_doc = Manifest(self.tale, self.user, item_ids)
         aggregates_section = manifest_doc.manifest['aggregates']
         expected_path = '../workspace/' + \
                         self.workspace_folder['name'] + '/' + \

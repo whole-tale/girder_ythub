@@ -1,6 +1,7 @@
 import os
 
 from ..constants import CATALOG_NAME, WORKSPACE_NAME
+from .license import WholeTaleLicense
 
 from girder.utility.model_importer import ModelImporter
 from girder.utility import path as path_util
@@ -17,7 +18,7 @@ class Manifest:
     create<someProperty>
     """
 
-    def __init__(self, tale, tale_license, user, item_ids=None):
+    def __init__(self, tale, user, item_ids=None):
         """
         Initialize the manifest document with base variables
         :param license:
@@ -26,7 +27,6 @@ class Manifest:
         self.manifest = dict()
         self.item_ids = item_ids
         # Holds the SPDX of the license
-        self.license = tale_license
         # Create a set that represents any external data packages
         self.datasets = set()
 
@@ -331,7 +331,9 @@ class Manifest:
         """
 
         self.manifest['aggregates'].append({'uri': '../LICENSE',
-                                            'schema:license': self.license})
+                                            'schema:license':
+                                                self.tale.get('licenseSPDX',
+                                                              WholeTaleLicense.default_spdx())})
 
         self.manifest['aggregates'].append({'uri': '../README.txt',
                                             '@type': 'schema:HowTo'})
