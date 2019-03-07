@@ -4,6 +4,7 @@ from ..constants import CATALOG_NAME, WORKSPACE_NAME
 
 from girder.utility.model_importer import ModelImporter
 from girder.exceptions import ValidationException
+from girder.constants import AccessType
 
 
 class Manifest:
@@ -116,8 +117,8 @@ class Manifest:
         """
         folder = self.folderModel.load(folder_id,
                                        user=self.user,
-                                       force=True,
-                                       exc=True)
+                                       exc=True,
+                                       level=AccessType.READ)
         try:
             meta = folder.get('meta')
             provider = meta.get('provider')
@@ -157,7 +158,7 @@ class Manifest:
         for item_id in self.item_ids:
             item = self.itemModel.load(item_id,
                                        user=self.user,
-                                       force=True)
+                                       level=AccessType.READ)
             if item:
                 root = self.itemModel.parentsToRoot(item, user=self.user)
 
@@ -195,7 +196,7 @@ class Manifest:
 
             folder = self.folderModel.load(item_id,
                                            user=self.user,
-                                           force=True)
+                                           level=AccessType.READ)
             if folder:
                 parent = self.folderModel.parentsToRoot(folder, user=self.user)
                 # Check if the folder is in the workspace
@@ -213,7 +214,7 @@ class Manifest:
         # Handle the files in the workspace
         folder = self.folderModel.load(self.tale['workspaceId'],
                                        user=self.user,
-                                       force=True)
+                                       level=AccessType.READ)
         if folder:
             workspace_folder_files = self.folderModel.fileList(folder,
                                                                user=self.user,
@@ -254,7 +255,7 @@ class Manifest:
             if obj['_modelType'] == 'folder':
                 folder = self.folderModel.load(obj['itemId'],
                                                user=self.user,
-                                               force=True)
+                                               level=AccessType.READ)
                 if folder:
                     # Check if it's a dataset by checking for meta.identifier
                     folder_meta = folder.get('meta')
@@ -283,13 +284,13 @@ class Manifest:
                 """
                 root_item = self.itemModel.load(obj['itemId'],
                                                 user=self.user,
-                                                force=True)
+                                                level=AccessType.READ)
                 if root_item:
                     # Should always be true since the item is in dataSet
                     if root_item.get('meta'):
                         item_folder = self.folderModel.load(root_item['folderId'],
                                                             user=self.user,
-                                                            force=True)
+                                                            level=AccessType.READ)
                         folder_meta = item_folder.get('meta')
                         if folder_meta:
                             self.datasets.add(root_item['folderId'])
@@ -361,7 +362,7 @@ def get_folder_identifier(folder_id, user):
     """
     folder = ModelImporter.model('folder').load(folder_id,
                                                 user=user,
-                                                force=True)
+                                                level=AccessType.READ)
     if folder:
         meta = folder.get('meta')
         if meta:
