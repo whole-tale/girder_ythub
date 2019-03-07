@@ -62,6 +62,7 @@ class TaleTestCase(base.TestCase):
             public=True)
 
     def testTaleFlow(self):
+        from server.lib.license import WholeTaleLicense
         resp = self.request(
             path='/tale', method='POST', user=self.user,
             type='application/json',
@@ -127,6 +128,7 @@ class TaleTestCase(base.TestCase):
             '/collection/{cname}/{fname}/{_id}'.format(**sc)
         )
 
+        taleLicense = WholeTaleLicense.default_spdx()
         resp = self.request(
             path='/tale/{_id}'.format(**tale), method='PUT',
             type='application/json',
@@ -140,11 +142,13 @@ class TaleTestCase(base.TestCase):
                 'public': True,
                 'published': False,
                 'doi': 'doi:10.x.x.xx',
-                'publishedURI': 'publishedURI_URL'
+                'publishedURI': 'publishedURI_URL',
+                'licenseSPDX': taleLicense
             })
         )
         self.assertStatusOk(resp)
         self.assertEqual(resp.json['title'], 'new name')
+        self.assertEqual(resp.json['licenseSPDX'], taleLicense)
         tale = resp.json
 
         resp = self.request(
@@ -458,6 +462,7 @@ class TaleTestCase(base.TestCase):
         self.assertEqual(Folder().load(tale['workspaceId'], force=True), None)
 
     def testTaleValidation(self):
+        from server.lib.license import WholeTaleLicense
         resp = self.request(
             path='/resource/lookup', method='GET', user=self.user,
             params={'path': '/user/{login}/Home'.format(**self.user)})
@@ -503,8 +508,12 @@ class TaleTestCase(base.TestCase):
         # new_data_dir = resp.json
         # self.assertEqual(str(tale['folderId']), str(new_data_dir['_id']))
         self.assertEqual(tale['dataSet'], [])
+        self.assertEqual(tale['licenseSPDX'], WholeTaleLicense.default_spdx())
         # self.assertEqual(str(tale['dataSet'][0]['itemId']), data_dir['_id'])
         # self.assertEqual(tale['dataSet'][0]['mountPath'], '/' + data_dir['name'])
+        tale['licenseSPDX']='unsupportedLicense'
+        tale = self.model('tale', 'wholetale').save(tale)
+        self.assertEqual(tale['licenseSPDX'], WholeTaleLicense.default_spdx())
         self.model('tale', 'wholetale').remove(tale)
 
     @mock.patch('gwvolman.tasks.import_tale')
@@ -528,6 +537,7 @@ class TaleTestCase(base.TestCase):
             self.assertEqual(job_call['headers']['girder_job_title'], 'Import Tale')
 
     def testTaleUpdate(self):
+        from server.lib.license import WholeTaleLicense
         # Test that Tale updating works
 
         resp = self.request(
@@ -546,6 +556,8 @@ class TaleTestCase(base.TestCase):
         published = True
         doi = 'doi:10.x.zz'
         published_uri = 'atestURI'
+        tale_licenses=WholeTaleLicense()
+        taleLicense = tale_licenses.supported_spdxes().pop()
 
         # Create a new Tale
         resp = self.request(
@@ -563,12 +575,14 @@ class TaleTestCase(base.TestCase):
                 'public': False,
                 'published': False,
                 'doi': 'doi',
-                'publishedURI': 'published_uri'
+                'publishedURI': 'published_uri',
+                'licenseSPDX': taleLicense
             })
         )
 
         self.assertStatus(resp, 200)
 
+        newLicense = tale_licenses.supported_spdxes().pop()
         # Update the Tale with new values
         resp = self.request(
             path='/tale/{}'.format(str(resp.json['_id'])),
@@ -587,7 +601,8 @@ class TaleTestCase(base.TestCase):
                 'public': public,
                 'published': published,
                 'doi': doi,
-                'publishedURI': published_uri
+                'publishedURI': published_uri,
+                'licenseSPDX': newLicense
             })
         )
 
@@ -601,6 +616,7 @@ class TaleTestCase(base.TestCase):
         self.assertEqual(resp.json['published'], published)
         self.assertEqual(resp.json['doi'], doi)
         self.assertEqual(resp.json['publishedURI'], published_uri)
+        self.assertEqual(resp.json['licenseSPDX'], newLicense)
 
     def tearDown(self):
         self.model('user').remove(self.user)

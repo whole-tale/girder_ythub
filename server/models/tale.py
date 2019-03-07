@@ -6,6 +6,7 @@ from bson.objectid import ObjectId
 
 from ..constants import WORKSPACE_NAME, DATADIRS_NAME, SCRIPTDIRS_NAME
 from ..utils import getOrCreateRootFolder
+from ..lib.license import WholeTaleLicense
 from girder.models.model_base import AccessControlledModel
 from girder.models.item import Item
 from girder.models.folder import Folder
@@ -16,7 +17,7 @@ from girder.exceptions import AccessException
 # Whenever the Tale object schema is modified (e.g. fields are added or
 # removed) increase `_currentTaleFormat` to retroactively apply those
 # changes to existing Tales.
-_currentTaleFormat = 5
+_currentTaleFormat = 6
 
 
 class Tale(AccessControlledModel):
@@ -31,12 +32,12 @@ class Tale(AccessControlledModel):
         self.modifiableFields = {
             'title', 'description', 'public', 'config', 'updated', 'authors',
             'category', 'icon', 'iframe', 'illustration', 'dataSet',
-            'published', 'doi', 'publishedURI'
+            'published', 'doi', 'publishedURI', 'licenseSPDX'
         }
         self.exposeFields(
             level=AccessType.READ,
             fields=({'_id', 'folderId', 'imageId', 'creatorId', 'created',
-                     'format', 'dataSet', 'narrative', 'narrativeId',
+                     'format', 'dataSet', 'narrative', 'narrativeId', 'licenseSPDX',
                      'doi', 'publishedURI', 'workspaceId'} | self.modifiableFields))
         self.exposeFields(level=AccessType.ADMIN, fields={'published'})
 
@@ -55,6 +56,12 @@ class Tale(AccessControlledModel):
 
         if 'dataSet' not in tale:
             tale['dataSet'] = []
+
+        if 'licenseSPDX' not in tale:
+            tale['licenseSPDX'] = WholeTaleLicense.default_spdx()
+        tale_licenses = WholeTaleLicense()
+        if tale['licenseSPDX'] not in tale_licenses.supported_spdxes():
+            tale['licenseSPDX'] = WholeTaleLicense.default_spdx()
 
         return tale
 
@@ -98,7 +105,9 @@ class Tale(AccessControlledModel):
     def createTale(self, image, data, creator=None, save=True, title=None,
                    description=None, public=None, config=None, published=False,
                    authors=None, icon=None, category=None, illustration=None,
-                   narrative=None, doi=None, publishedURI=None):
+                   narrative=None, doi=None, publishedURI=None,
+                   licenseSPDX=WholeTaleLicense.default_spdx()):
+
         if creator is None:
             creatorId = None
         else:
@@ -129,7 +138,8 @@ class Tale(AccessControlledModel):
             'published': published,
             'updated': now,
             'doi': doi,
-            'publishedURI': publishedURI
+            'publishedURI': publishedURI,
+            'licenseSPDX': licenseSPDX
         }
         if public is not None and isinstance(public, bool):
             self.setPublic(tale, public, save=False)
