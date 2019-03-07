@@ -1,6 +1,9 @@
 import os
 
+from ..constants import CATALOG_NAME, WORKSPACE_NAME
+
 from girder.utility.model_importer import ModelImporter
+from girder.exceptions import ValidationException
 
 
 class Manifest:
@@ -12,7 +15,7 @@ class Manifest:
     create<someProperty>
     """
 
-    def __init__(self, tale_license, item_ids=None):
+    def __init__(self, tale, tale_license, user, item_ids=None):
         """
         Initialize the manifest document with base variables
         :param license:
@@ -28,19 +31,18 @@ class Manifest:
         self.folderModel = ModelImporter.model('folder')
         self.itemModel = ModelImporter.model('item')
         self.userModel = ModelImporter.model('user')
-
-    def generate_manifest(self, user, tale):
+        self.tale = tale
+        self.user = user
         self.manifest.update(self.create_context())
-        self.manifest.update(self.create_basic_attributes(tale))
-        self.add_tale_creator(tale, user)
-        self.manifest['aggregates'] = []
+        self.manifest.update(self.create_basic_attributes())
+        self.add_tale_creator()
 
         if self.item_ids:
-            self.add_item_records(user, tale)
+            self.add_item_records()
         else:
-            self.add_tale_records(tale, user)
+            self.add_tale_records()
         # Add any external datasets to the manifest
-        self.add_dataset_records(user)
+        self.add_dataset_records()
         self.add_system_files()
 
     publishers = {
@@ -60,36 +62,33 @@ class Manifest:
             }
     }
 
-    def create_basic_attributes(self, tale):
+    def create_basic_attributes(self):
         """
         Returns a portion of basic attributes in the manifest
-        :param tale: A Tale that is being described
         :return: Basic information about the Tale
         """
 
         return {
-            "@id": 'https://data.wholetale.org/api/v1/tale/' + str(tale['_id']),
-            "createdOn": str(tale['created']),
-            "schema:name": tale['title'],
-            "schema:description": tale.get('description', str()),
-            "schema:category": tale['category'],
-            "schema:identifier": str(tale['_id']),
-            "schema:version": tale['format'],
-            "schema:image": tale['illustration'],
+            "@id": 'https://data.wholetale.org/api/v1/tale/' + str(self.tale['_id']),
+            "createdOn": str(self.tale['created']),
+            "schema:name": self.tale['title'],
+            "schema:description": self.tale.get('description', str()),
+            "schema:category": self.tale['category'],
+            "schema:identifier": str(self.tale['_id']),
+            "schema:version": self.tale['format'],
+            "schema:image": self.tale['illustration'],
             "aggregates": list(),
             "Datasets": list()
         }
 
-    def add_tale_creator(self, tale, user):
+    def add_tale_creator(self):
         """
         Adds basic information about the Tale author
-        :param tale: The Tale being described
-        :param user: The user whose information is being used
         """
 
-        tale_user = self.userModel.load(tale['creatorId'], user=user)
+        tale_user = self.userModel.load(self.tale['creatorId'], user=self.user)
         self.manifest['createdBy'] = {
-            "@id": tale['authors'],
+            "@id": self.tale['authors'],
             "@type": "schema:Person",
             "schema:givenName": tale_user.get('firstName', ''),
             "schema:familyName": tale_user.get('lastName', ''),
@@ -109,27 +108,28 @@ class Manifest:
             ]
         }
 
-    def create_dataset_record(self, user, folder_id):
+    def create_dataset_record(self, folder_id):
         """
         Creates a record that describes a Dataset
-        :param user: The user
         :param folder_id: Folder that represents a dataset
         :return: Dictionary that describes a dataset
         """
         folder = self.folderModel.load(folder_id,
-                                       user=user,
-                                       force=True)
-        if folder:
+                                       user=self.user,
+                                       force=True,
+                                       exc=True)
+        try:
             meta = folder.get('meta')
-            if meta:
-                provider = meta.get('provider')
-                if provider:
-                    return {
-                        "@id": meta.get('identifier'),
-                        "@type": "Dataset",
-                        "name": folder['name'],
-                        "identifier": meta.get('identifier'),
-                        "publisher": self.publishers[provider]}
+            provider = meta.get('provider')
+            return {
+                "@id": meta.get('identifier'),
+                "@type": "Dataset",
+                "name": folder['name'],
+                "identifier": meta.get('identifier'),
+                "publisher": self.publishers[provider]}
+
+        except (KeyError, ValidationException):
+            pass
 
     def create_aggregation_record(self, uri, bundle=None, parent_dataset=None):
         """
@@ -148,80 +148,79 @@ class Manifest:
             aggregation['schema:isPartOf'] = parent_dataset
         return aggregation
 
-    def add_item_records(self, user, tale):
+    def add_item_records(self):
         """
         Creates records for a set of item ids. This is desired when the mainfest is being generated
         for a subset of files in a Tale. Note that these records get added to the internal manifest
         object.
-        :param user: The user that is creating the manifest
-        :param tale: The tale whose information is being used
         """
         for item_id in self.item_ids:
             item = self.itemModel.load(item_id,
-                                       user=user,
+                                       user=self.user,
                                        force=True)
             if item:
-                root = self.itemModel.parentsToRoot(item, user=user)
+                root = self.itemModel.parentsToRoot(item, user=self.user)
 
                 # Recreate the path
                 item_path = str()
+                data_catalog_path_root = CATALOG_NAME+'/'+CATALOG_NAME+'/'
+                workspaces_root = WORKSPACE_NAME+'/'+WORKSPACE_NAME
                 for path in root:
                     item_path += path['object']['name'] + '/'
                 # Check if the item belongs to workspace or external data
-                if 'WholeTale Workspaces/WholeTale Workspaces' in item_path:
-                    item_path = item_path.replace('WholeTale Workspaces/WholeTale Workspaces', '')
-                    full_path = '../workspace' + clean_workspace_path(tale['_id'],
+                if item_path.startswith(workspaces_root):
+                    item_path = item_path.replace(workspaces_root, '')
+                    full_path = '../workspace' + clean_workspace_path(self.tale['_id'],
                                                                       item_path + item['name'])
                     self.manifest['aggregates'].append({'uri': full_path})
                     continue
-                elif 'WholeTale Catalog/WholeTale Catalog/' in item_path:
-                    item_path = item_path.replace('WholeTale Catalog/WholeTale Catalog/', '')
+                elif item_path.startswith(data_catalog_path_root):
+                    item_path = item_path.replace(data_catalog_path_root, '')
                     bundle = self.create_bundle('../data/' + item_path,
-                                                clean_workspace_path(tale['_id'], item['name']))
+                                                clean_workspace_path(self.tale['_id'],
+                                                                     item['name']))
 
                     # Get the linkURL from the file object
                     item_files = self.itemModel.fileList(item,
-                                                         user=user,
+                                                         user=self.user,
                                                          data=False)
                     for file_item in item_files:
                         agg_record = self.create_aggregation_record(
                             file_item[1]['linkUrl'],
                             bundle,
                             get_folder_identifier(item['folderId'],
-                                                  user))
+                                                  self.user))
                         self.manifest['aggregates'].append(agg_record)
                     self.datasets.add(item['folderId'])
 
             folder = self.folderModel.load(item_id,
-                                           user=user,
+                                           user=self.user,
                                            force=True)
             if folder:
-                parent = self.folderModel.parentsToRoot(folder, user=user)
+                parent = self.folderModel.parentsToRoot(folder, user=self.user)
                 # Check if the folder is in the workspace
-                if parent[0].get('object').get('name') == 'WholeTale Workspaces':
-                    folder_items = self.folderModel.fileList(folder, user=user)
+                if parent[0].get('object').get('name') == WORKSPACE_NAME:
+                    folder_items = self.folderModel.fileList(folder, user=self.user)
                     for folder_item in folder_items:
                         self.manifest['aggregates'].append({'uri':
                                                             '../workspace/' + folder_item[0]})
 
-    def add_tale_records(self, tale, user):
+    def add_tale_records(self):
         """
         Creates and adds file records to the internal manifest object for an entire Tale.
-        :param tale: The Tale being described
-        :param user: The user requesting the manifest
         """
 
         # Handle the files in the workspace
-        folder = self.folderModel.load(tale['workspaceId'],
-                                       user=user,
+        folder = self.folderModel.load(self.tale['workspaceId'],
+                                       user=self.user,
                                        force=True)
         if folder:
             workspace_folder_files = self.folderModel.fileList(folder,
-                                                               user=user,
+                                                               user=self.user,
                                                                data=False)
             for workspace_file in workspace_folder_files:
                 self.manifest['aggregates'].append(
-                    {'uri': '../workspace/' + clean_workspace_path(tale['_id'],
+                    {'uri': '../workspace/' + clean_workspace_path(self.tale['_id'],
                                                                    workspace_file[0])})
 
         folder_files = list()
@@ -231,7 +230,7 @@ class Manifest:
         Some of these sources may be datasets from publishers. We need to save information
         about the source so that they can added to the Datasets section.
         """
-        folder_files = self.add_tale_datasets(tale, user, folder_files)
+        folder_files = self.add_tale_datasets(folder_files)
 
         # Add records for the remote files that exist under a folder
         for folder_record in folder_files:
@@ -240,21 +239,21 @@ class Manifest:
             for file_record in folder_record['file_iterator']:
                 # Check if the file points to an external resource
                 if 'linkUrl' in file_record[1]:
-                    bundle = self.create_bundle('../data/' + get_dataset_file_path(file_record),
+                    bundle = self.create_bundle('../data/' + os.path.dirname(file_record[0]),
                                                 file_record[1]['name'])
                     record = self.create_aggregation_record(file_record[1]['linkUrl'],
                                                             bundle,
                                                             folder_record.get('dataset_identifier'))
                     self.manifest['aggregates'].append(record)
 
-    def add_tale_datasets(self, tale, user, folder_files):
+    def add_tale_datasets(self, folder_files):
         """
         Adds information about the contents of `dataSet` to the manifest
         """
-        for obj in tale['dataSet']:
+        for obj in self.tale['dataSet']:
             if obj['_modelType'] == 'folder':
                 folder = self.folderModel.load(obj['itemId'],
-                                               user=user,
+                                               user=self.user,
                                                force=True)
                 if folder:
                     # Check if it's a dataset by checking for meta.identifier
@@ -266,13 +265,16 @@ class Manifest:
                             folder_files.append(
                                 {"dataset_identifier": dataset_identifier,
                                  "provider": folder_meta.get('provider'),
-                                 "file_iterator": get_folder_files(folder,
-                                                                   user)
+                                 "file_iterator": self.folderModel.fileList(folder,
+                                                                            user=self.user,
+                                                                            data=False)
                                  })
 
                     else:
-                        folder_files.append({"file_iterator": get_folder_files(folder,
-                                                                               user)})
+                        folder_files.append({"file_iterator": self.folderModel.fileList(
+                            folder,
+                            user=self.user,
+                            data=False)})
             elif obj['_modelType'] == 'item':
                 """
                 If there is a file that was added to a tale that came from a dataset, but outside
@@ -280,13 +282,13 @@ class Manifest:
 
                 """
                 root_item = self.itemModel.load(obj['itemId'],
-                                                user=user,
+                                                user=self.user,
                                                 force=True)
                 if root_item:
                     # Should always be true since the item is in dataSet
                     if root_item.get('meta'):
                         item_folder = self.folderModel.load(root_item['folderId'],
-                                                            user=user,
+                                                            user=self.user,
                                                             force=True)
                         folder_meta = item_folder.get('meta')
                         if folder_meta:
@@ -297,19 +299,18 @@ class Manifest:
                                                      folder_meta.get('provider'),
                                                  "file_iterator":
                                                      self.itemModel.fileList(root_item,
-                                                                             user=user,
+                                                                             user=self.user,
                                                                              data=False)
                                                  })
         return folder_files
 
-    def add_dataset_records(self, user):
+    def add_dataset_records(self):
         """
         Adds dataset records to the manifest document
-        :param user: The user requesting the manifest
         :return: None
         """
         for folder_id in self.datasets:
-            self.manifest['Datasets'].append(self.create_dataset_record(user, folder_id))
+            self.manifest['Datasets'].append(self.create_dataset_record(folder_id))
 
     def create_bundle(self, folder, filename):
         """
@@ -369,21 +370,3 @@ def get_folder_identifier(folder_id, user):
                 return identifier
 
         get_folder_identifier(folder['parentID'], user)
-
-
-def get_folder_files(folder, user):
-    return ModelImporter.model('folder').fileList(folder,
-                                                  user=user,
-                                                  data=False)
-
-
-def get_dataset_file_path(file_info):
-    """
-    Given a full path, remove the filename
-    :param file_info:
-    :return: The full path without the filename
-    """
-    res = file_info[0].replace('/' + file_info[1]['name'], '')
-    if res != file_info[0]:
-        return res
-    return ''

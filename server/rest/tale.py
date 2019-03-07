@@ -347,7 +347,6 @@ class Tale(Resource):
         :return: A JSON structure representing the Tale
         """
 
-        manifest_doc = Manifest(license, itemIds)
         user = self.getCurrentUser()
-        manifest_doc.generate_manifest(user, tale)
+        manifest_doc = Manifest(tale, license, user, itemIds)
         return manifest_doc.manifest
