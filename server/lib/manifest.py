@@ -21,20 +21,22 @@ class Manifest:
     def __init__(self, tale, user, item_ids=None):
         """
         Initialize the manifest document with base variables
-        :param license:
-        :param item_ids:
+        :param tale: The Tale whose data is being serialized
+        :param user: The user requesting the manifest document
+        :param item_ids: An optional list of items to include in the manifest
         """
+        self.tale = tale
+        self.user = user
+
         self.manifest = dict()
         self.item_ids = item_ids
-        # Holds the SPDX of the license
         # Create a set that represents any external data packages
         self.datasets = set()
 
         self.folderModel = ModelImporter.model('folder')
         self.itemModel = ModelImporter.model('item')
         self.userModel = ModelImporter.model('user')
-        self.tale = tale
-        self.user = user
+
         self.manifest.update(self.create_context())
         self.manifest.update(self.create_basic_attributes())
         self.add_tale_creator()
@@ -137,9 +139,9 @@ class Manifest:
         """
         Creates an aggregation record. Externally defined aggregations should include
         a bundle and a parent_dataset if it belongs to one
-        :param uri:
-        :param bundle:
-        :param parent_dataset:
+        :param uri: The item's URI in the manifest, typically it's path
+        :param bundle: An optional bundle that's needed for externally defined data
+        :param parent_dataset: The ID of an optional parent dataset
         :return: Dictionary representing an aggregated file
         """
         aggregation = dict()
@@ -163,17 +165,17 @@ class Manifest:
             if item:
                 item_path = path_util.getResourcePath('item', item, user=self.user)
                 # Recreate the path
-                data_catalog_path_root = CATALOG_NAME+'/'+CATALOG_NAME+'/'
-                workspaces_root = WORKSPACE_NAME+'/'+WORKSPACE_NAME
+                data_catalog_root = '/collection/' + CATALOG_NAME+'/'+CATALOG_NAME+'/'
+                workspaces_root = '/collection/' + WORKSPACE_NAME+'/'+WORKSPACE_NAME
                 # Check if the item belongs to workspace or external data
                 if item_path.startswith(workspaces_root):
                     item_path = item_path.replace(workspaces_root, '')
                     full_path = '../workspace' + clean_workspace_path(self.tale['_id'],
-                                                                      item_path + item['name'])
+                                                                      item_path)
                     self.manifest['aggregates'].append({'uri': full_path})
                     continue
-                elif item_path.startswith(data_catalog_path_root):
-                    item_path = item_path.replace(data_catalog_path_root, '')
+                elif item_path.startswith(data_catalog_root):
+                    item_path = item_path.replace(data_catalog_root, '')
                     bundle = self.create_bundle('../data/' + item_path,
                                                 clean_workspace_path(self.tale['_id'],
                                                                      item['name']))
@@ -221,17 +223,17 @@ class Manifest:
                     {'uri': '../workspace/' + clean_workspace_path(self.tale['_id'],
                                                                    workspace_file[0])})
 
-        folder_files = list()
+        external_folders_files = list()
 
         """
         Handle objects that are in the dataSet, ie files that point to external sources.
         Some of these sources may be datasets from publishers. We need to save information
         about the source so that they can added to the Datasets section.
         """
-        folder_files = self.add_tale_datasets(folder_files)
+        external_folders_files = self.add_tale_datasets(external_folders_files)
 
         # Add records for the remote files that exist under a folder
-        for folder_record in folder_files:
+        for folder_record in external_folders_files:
             if folder_record['file_iterator'] is None:
                 continue
             for file_record in folder_record['file_iterator']:
@@ -247,6 +249,8 @@ class Manifest:
     def add_tale_datasets(self, folder_files):
         """
         Adds information about the contents of `dataSet` to the manifest
+
+        :param folder_files: A list of objects that represent externally defined data
         """
         for obj in self.tale['dataSet']:
             if obj['_modelType'] == 'folder':
@@ -357,12 +361,15 @@ def get_folder_identifier(folder_id, user):
     folder, it will navigate to the folder above until it reaches the collection
     :param folder_id: The ID of the folder
     :param user: The user that is creating the manifest
+    :param check_parent: Checks the parent folder if there isn't metadata for folder_id
     :return: The identifier of a dataset
     """
-    folder = ModelImporter.model('folder').load(folder_id,
-                                                user=user,
-                                                level=AccessType.READ)
-    if folder:
+    try:
+        folder = ModelImporter.model('folder').load(folder_id,
+                                                    user=user,
+                                                    level=AccessType.READ,
+                                                    exc=True)
+
         meta = folder.get('meta')
         if meta:
             identifier = meta.get('identifier')
@@ -370,3 +377,6 @@ def get_folder_identifier(folder_id, user):
                 return identifier
 
         get_folder_identifier(folder['parentID'], user)
+
+    except ValidationException:
+        pass
