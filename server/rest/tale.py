@@ -21,6 +21,7 @@ from ..schema.tale import taleModel as taleSchema
 from ..models.tale import Tale as taleModel
 from ..models.image import Image as imageModel
 from ..lib.manifest import Manifest
+from ..lib.license import WholeTaleLicense
 
 addModel('tale', taleSchema, resources='tale')
 
@@ -264,16 +265,12 @@ class Tale(Resource):
     @autoDescribeRoute(
         Description('Export a tale.')
         .modelParam('id', model='tale', plugin='wholetale', level=AccessType.READ)
-        .param(name='license',
-               required=False,
-               description='The SPDX of the license that the Tale is under.'
-                           'For example, `CC0-1.0`')
         .responseClass('tale')
         .produces('application/zip')
         .errorResponse('ID was invalid.', 404)
         .errorResponse('You are not authorized to export this tale.', 403)
     )
-    def exportTale(self, tale, tale_license='CCO-1.0'):
+    def exportTale(self, tale):
         user = self.getCurrentUser()
 
         # Construct a sanitized name for the ZIP archive using a whitelist
@@ -297,10 +294,9 @@ class Tale(Resource):
                     yield data
 
             # Add manifest.json
-            manifest_doc = Manifest(tale_license)
-            manifest_doc.generate_manifest(user, tale)
-            manifest = manifest_doc.manifest
-            for data in zip_generator.addFile(lambda: json.dumps(manifest, indent=4),
+            manifest_doc = Manifest(tale, user)
+            for data in zip_generator.addFile(lambda: json.dumps(manifest_doc.manifest,
+                                                                 indent=4),
                                               'metadata/manifest.json'):
                 yield data
 
@@ -315,6 +311,20 @@ class Tale(Resource):
                                               'environment.txt'):
                 yield data
 
+            # Add the license
+            tale_license = tale.get('licenseSPDX')
+            if not tale_license:
+                tale_license = WholeTaleLicense.default_spdx()
+
+            # Search the supported licenses for the Tale's
+            tale_licenses = WholeTaleLicense()
+            license_object = (x for x in tale_licenses.supported_licenses() if
+                              (x['spdx'] == tale_license))
+
+            for data in zip_generator.addFile(lambda: next(license_object)['text'],
+                                              'LICENSE'):
+                yield data
+                
             yield zip_generator.footer()
 
         return stream
