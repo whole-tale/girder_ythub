@@ -107,6 +107,10 @@ taleModel = {
             "type": "string",
             "description": "A URL to an image icon"
         },
+        "license": {
+            "type": "string",
+            "description": "The license that the Tale is under"
+        },
         "doi": {
             "type": ["string", "null"],
             "description": "A unique identifier assigned to this tale from a "
@@ -150,6 +154,7 @@ taleModel = {
         "publishedURI": "https://dev.nceas.ucsb.edu/view/urn:uuid:939e48ec-1107-45d9"
                         "-baa7-05cef08e51cd",
         "title": "My Tale",
+        "license": "CC0-1.0",
         "updated": "2019-01-23T15:48:17.476000+00:00"
     }
 }
