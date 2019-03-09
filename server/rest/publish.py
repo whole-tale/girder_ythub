@@ -38,20 +38,13 @@ class Publish(Resource):
                            'DataONE API. In DataONE\'s case, this is the user\'s JWT'
                            'token.',
                required=True)
-        .jsonParam('provInfo',
-                   description='A string representation of a dictionary that can describe '
-                               'additional information about the tale. The contents of '
-                               'this query are placed in the tale.yaml file.\n'
-                               'Example: '
-                               '{\"entryPoint\": \"/home/data/main.py\"}',
                    required=False)
     )
     def dataonePublish(self,
                        itemIds,
                        taleId,
                        remoteMemberNode,
-                       authToken,
-                       provInfo=dict()):
+                       authToken):
 
         user = self.getCurrentUser()
         token = self.getCurrentToken()
@@ -64,8 +57,7 @@ class Publish(Resource):
                 remoteMemberNode,
                 authToken,
                 str(token['_id']),
-                str(user['_id']),
-                provInfo)
+                str(user['_id']))
         job = jobModel.createJob(
             title=jobTitle, type='publish', handler='worker_handler',
             user=user, public=False, args=args, kwargs={},
