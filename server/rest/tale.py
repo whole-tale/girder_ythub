@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import json
+from datetime import datetime, timedelta
 
 from girder.api import access
 from girder.api.docs import addModel
@@ -13,11 +14,13 @@ from girder.utility import ziputil
 from girder.utility.progress import ProgressContext
 from girder.models.token import Token
 from girder.models.folder import Folder
+from girder.models.user import User
 from girder.plugins.jobs.constants import REST_CREATE_JOB_TOKEN_SCOPE
 from girder import events
 from gwvolman.tasks import import_tale, build_tale_image
 
 from girder.plugins.jobs.constants import JobStatus
+from girder.models.notification import Notification
 
 from ..schema.tale import taleModel as taleSchema
 from ..models.tale import Tale as taleModel
@@ -367,6 +370,10 @@ class Tale(Resource):
         return buildTask.job
 
     def updateBuildStatus(self, event):
+        """
+        Event handler that updates the Tale object based on the build_tale_image task.
+        Creates notifications when image build status changes.
+        """
         job = event.info['job']
         if job['title'] == 'Build Tale Image' and job.get('status') is not None:
             status = int(job['status'])
@@ -376,15 +383,30 @@ class Tale(Resource):
             if 'imageInfo' not in tale:
                 tale['imageInfo'] = {}
 
+            # Store the previous status, if present.
+            previousStatus = -1
+            try: 
+                previousStatus = tale['imageInfo']['status']
+            except KeyError:
+                pass
+
             if status == JobStatus.SUCCESS:
                 result = getCeleryApp().AsyncResult(job['celeryTaskId']).get()
-                tale['imageInfo']['digest'] = result
+                tale['imageInfo']['digest'] = result['image_digest']
+                tale['imageInfo']['repo2docker_version'] = result['repo2docker_version']
+                tale['imageInfo']['last_build'] = result['last_build']
                 tale['imageInfo']['status'] = ImageStatus.AVAILABLE
             elif status == JobStatus.ERROR:
                 tale['imageInfo']['status'] = ImageStatus.INVALID
             elif status in (JobStatus.QUEUED, JobStatus.RUNNING):
+                tale['imageInfo']['jobId'] = job['_id']
                 tale['imageInfo']['status'] = ImageStatus.BUILDING
-            tale['imageInfo']['jobId'] = job['_id']
-            self.model('tale', 'wholetale').updateTale(tale)
 
-            events.trigger('wholetale.image.status.update', info=tale)
+            # If the status changed, save the object and send a notification
+            if 'status' in tale['imageInfo'] and tale['imageInfo']['status'] != previousStatus:
+                self.model('tale', 'wholetale').updateTale(tale)
+                user = User().load(job['userId'], force=True)
+                expires = datetime.now() + timedelta(minutes = 10)
+                Notification().createNotification(type="wt_image_build_status", 
+                                                  data=tale, 
+                                                  user=user, expires=expires)
