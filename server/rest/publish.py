@@ -38,9 +38,6 @@ class Publish(Resource):
                            'DataONE API. In DataONE\'s case, this is the user\'s JWT'
                            'token.',
                required=True)
-        .param('licenseSPDX',
-               description='The SPDX of the license that the package is under.',
-               required=True)
         .jsonParam('provInfo',
                    description='A string representation of a dictionary that can describe '
                                'additional information about the tale. The contents of '
@@ -54,7 +51,6 @@ class Publish(Resource):
                        taleId,
                        remoteMemberNode,
                        authToken,
-                       licenseSPDX,
                        provInfo=dict()):
 
         user = self.getCurrentUser()
@@ -69,8 +65,7 @@ class Publish(Resource):
                 authToken,
                 str(token['_id']),
                 str(user['_id']),
-                provInfo,
-                licenseSPDX)
+                provInfo)
         job = jobModel.createJob(
             title=jobTitle, type='publish', handler='worker_handler',
             user=user, public=False, args=args, kwargs={},
