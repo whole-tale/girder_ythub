@@ -38,7 +38,6 @@ class Publish(Resource):
                            'DataONE API. In DataONE\'s case, this is the user\'s JWT'
                            'token.',
                required=True)
-                   required=False)
     )
     def dataonePublish(self,
                        itemIds,
