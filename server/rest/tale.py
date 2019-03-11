@@ -275,7 +275,7 @@ class Tale(Resource):
 
         # Construct a sanitized name for the ZIP archive using a whitelist
         # approach
-        zip_name = re.sub('[^a-zA-Z0-9-]', '_', tale['title'])
+        zip_name = str(tale['_id'])
 
         setResponseHeader('Content-Type', 'application/zip')
         setContentDisposition(zip_name + '.zip')
