@@ -305,16 +305,16 @@ class Manifest:
                                                                          data=False)})
 
                     else:
-                            self.datasets.add(root_item['folderId'])
-                            folder_files.append({"dataset_identifier":
-                                                item_folder['meta']['identifier'],
-                                                 "provider":
-                                                     item_folder['meta']['provider'],
-                                                 "file_iterator":
-                                                     self.itemModel.fileList(root_item,
-                                                                             user=self.user,
-                                                                             data=False)
-                                                 })
+                        self.datasets.add(root_item['folderId'])
+                        folder_files.append({"dataset_identifier":
+                                            item_folder['meta']['identifier'],
+                                             "provider":
+                                                 item_folder['meta']['provider'],
+                                             "file_iterator":
+                                             self.itemModel.fileList(root_item,
+                                                                     user=self.user,
+                                                                     data=False)
+                                             })
                 except (ValidationException, KeyError):
                     pass
         return folder_files
