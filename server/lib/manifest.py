@@ -118,21 +118,21 @@ class Manifest:
         :param folder_id: Folder that represents a dataset
         :return: Dictionary that describes a dataset
         """
-        folder = self.folderModel.load(folder_id,
-                                       user=self.user,
-                                       exc=True,
-                                       level=AccessType.READ)
         try:
-            meta = folder.get('meta')
-            provider = meta.get('provider')
+            folder = self.folderModel.load(folder_id,
+                                           user=self.user,
+                                           exc=True,
+                                           level=AccessType.READ)
+            provider = folder['meta']['provider']
+            identifier = folder['meta']['identifier']
             return {
-                "@id": meta.get('identifier'),
+                "@id": identifier,
                 "@type": "Dataset",
                 "name": folder['name'],
-                "identifier": meta.get('identifier'),
+                "identifier": identifier,
                 "publisher": self.publishers[provider]}
 
-        except (KeyError, ValidationException):
+        except (KeyError, TypeError, ValidationException):
             pass
 
     def create_aggregation_record(self, uri, bundle=None, parent_dataset=None):
@@ -254,56 +254,69 @@ class Manifest:
         """
         for obj in self.tale['dataSet']:
             if obj['_modelType'] == 'folder':
-                folder = self.folderModel.load(obj['itemId'],
-                                               user=self.user,
-                                               level=AccessType.READ)
-                if folder:
-                    # Check if it's a dataset by checking for meta.identifier
-                    folder_meta = folder.get('meta')
-                    if folder_meta:
-                        dataset_identifier = folder_meta.get('identifier')
-                        if dataset_identifier:
-                            self.datasets.add(obj['itemId'])
-                            folder_files.append(
-                                {"dataset_identifier": dataset_identifier,
-                                 "provider": folder_meta.get('provider'),
-                                 "file_iterator": self.folderModel.fileList(folder,
-                                                                            user=self.user,
-                                                                            data=False)
-                                 })
+                try:
+                    folder = self.folderModel.load(obj['itemId'],
+                                                   user=self.user,
+                                                   level=AccessType.READ,
+                                                   exc=True)
+                    folder_files_obj = {
+                        'file_iterator': self.folderModel.fileList(folder,
+                                                                   user=self.user,
+                                                                   data=False)
+                    }
 
-                    else:
-                        folder_files.append({"file_iterator": self.folderModel.fileList(
-                            folder,
-                            user=self.user,
-                            data=False)})
+                    try:
+                        folder_files_obj['dataset_identifier'] = folder['meta']['identifier']
+                        folder_files_obj['provider'] = folder['meta'].get('provider')
+                        self.datasets.add(obj['itemId'])
+                    except (KeyError, TypeError):
+                        pass
+
+                    folder_files.append(folder_files_obj)
+                except ValidationException:
+                    pass
             elif obj['_modelType'] == 'item':
                 """
                 If there is a file that was added to a tale that came from a dataset, but outside
-                the dataset folder, we need to get metadata about the parent folder and the file.
-
+                a folder under the dataset folder, we need to get metadata about the parent folder
+                and the file.
                 """
-                root_item = self.itemModel.load(obj['itemId'],
-                                                user=self.user,
-                                                level=AccessType.READ)
-                if root_item:
-                    # Should always be true since the item is in dataSet
-                    if root_item.get('meta'):
-                        item_folder = self.folderModel.load(root_item['folderId'],
-                                                            user=self.user,
-                                                            level=AccessType.READ)
-                        folder_meta = item_folder.get('meta')
-                        if folder_meta:
+                try:
+                    root_item = self.itemModel.load(obj['itemId'],
+                                                    user=self.user,
+                                                    level=AccessType.READ,
+                                                    exc=True)
+                    item_folder = self.folderModel.load(root_item['folderId'],
+                                                        user=self.user,
+                                                        level=AccessType.READ,
+                                                        exc=True)
+                    # Check if the item was added from a dataset folder, or if it was
+                    # registered directly into the Catalog root
+                    if item_folder['name'].startswith(CATALOG_NAME):
+                        # Use the item's metadata
+
+                        folder_files.append({"dataset_identifier":
+                                            root_item['meta']['identifier'],
+                                             "provider":
+                                                 root_item['meta']['provider'],
+                                             "file_iterator":
+                                                 self.itemModel.fileList(root_item,
+                                                                         user=self.user,
+                                                                         data=False)})
+
+                    else:
                             self.datasets.add(root_item['folderId'])
                             folder_files.append({"dataset_identifier":
-                                                folder_meta.get('identifier'),
+                                                item_folder['meta']['identifier'],
                                                  "provider":
-                                                     folder_meta.get('provider'),
+                                                     item_folder['meta']['provider'],
                                                  "file_iterator":
                                                      self.itemModel.fileList(root_item,
                                                                              user=self.user,
                                                                              data=False)
                                                  })
+                except (ValidationException, KeyError):
+                    pass
         return folder_files
 
     def add_dataset_records(self):
@@ -361,7 +374,6 @@ def get_folder_identifier(folder_id, user):
     folder, it will navigate to the folder above until it reaches the collection
     :param folder_id: The ID of the folder
     :param user: The user that is creating the manifest
-    :param check_parent: Checks the parent folder if there isn't metadata for folder_id
     :return: The identifier of a dataset
     """
     try:
