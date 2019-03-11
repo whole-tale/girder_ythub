@@ -108,7 +108,8 @@ class Manifest:
         return {
             "@context": [
                 "https://w3id.org/bundle/context",
-                {"schema": "http://schema.org/"}
+                {"schema": "http://schema.org/"},
+                {"Datasets": {"@type": "@id"}}
             ]
         }
 
