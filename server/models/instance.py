@@ -77,7 +77,7 @@ class Instance(AccessControlledModel):
                 limit=limit, offset=offset):
             yield r
 
-    def updateAndRestartInstance(self, instance, token, imageId, digest):
+    def updateAndRestartInstance(self, instance, token, digest):
         """
         Updates and restarts an instance.
 
@@ -94,9 +94,8 @@ class Instance(AccessControlledModel):
             }
         ).apply_async()
         instanceTask.get(timeout=TASK_TIMEOUT)
-        # TODO: Ensure valid imageId / digest?
+        # TODO: Ensure valid digest?
         instance['containerInfo']['digest'] = digest
-        instance['containerInfo']['imageId'] = imageId
         return self.updateInstance(instance)
 
     def updateInstance(self, instance):
