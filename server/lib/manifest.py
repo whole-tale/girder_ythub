@@ -90,7 +90,9 @@ class Manifest:
         Adds basic information about the Tale author
         """
 
-        tale_user = self.userModel.load(self.tale['creatorId'], user=self.user)
+        tale_user = self.userModel.load(self.tale['creatorId'],
+                                        user=self.user,
+                                        force=True)
         self.manifest['createdBy'] = {
             "@id": self.tale['authors'],
             "@type": "schema:Person",

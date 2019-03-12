@@ -1,6 +1,6 @@
 from tests import base
 from bson import ObjectId
-
+from girder.exceptions import AccessException
 
 def setUpModule():
     base.enabledPlugins.append('wholetale')
@@ -28,9 +28,17 @@ class ManifestTestCase(base.TestCase):
             'firstName': 'Joe',
             'lastName': 'Regular',
             'password': 'secret'
-        })
-        self.admin, self.user = [self.model('user').createUser(**user)
-                                 for user in self.users]
+        },
+            {
+              'email': 'henry@dev.null',
+              'login': 'henryCoolLogin',
+              'firstName': 'Henry',
+              'lastName': 'CoolLast',
+              'password': 'secret1'
+                      }
+        )
+        self.admin, self.user, self.userHenry = [self.model('user').createUser(**user)
+                                                 for user in self.users]
 
         self.data_collection = self.model('collection').createCollection('WholeTale Catalog', self.user)
         workspace_collection = self.model('collection').createCollection('WholeTale Workspaces', self.user)
@@ -330,10 +338,18 @@ class ManifestTestCase(base.TestCase):
             authors=tale_info['authors'])
 
         manifest_doc = Manifest(tale, self.user)
-        print(manifest_doc.manifest)
 
-    def test_globus(self):
-        self.assertEqual(1,1)
+        key_present = 'schema:isPartOf' in manifest_doc.manifest['aggregates'][0]
+        self.assertFalse(key_present)
+        self.assertEqual(len(manifest_doc.manifest['Datasets']), 0)
+
+    def test_different_user(self):
+        from server.lib.manifest import Manifest
+
+        try:
+            Manifest(self.tale, self.userHenry)
+        except AccessException:
+            self.assertFalse(1)
 
     def tearDown(self):
         self.model('user').remove(self.user)
