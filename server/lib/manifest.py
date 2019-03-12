@@ -124,6 +124,8 @@ class Manifest:
                                            exc=True,
                                            level=AccessType.READ)
             provider = folder['meta']['provider']
+            if provider == 'HTTP':
+                return None
             identifier = folder['meta']['identifier']
             return {
                 "@id": identifier,
@@ -325,7 +327,9 @@ class Manifest:
         :return: None
         """
         for folder_id in self.datasets:
-            self.manifest['Datasets'].append(self.create_dataset_record(folder_id))
+            dataset_record = self.create_dataset_record(folder_id)
+            if dataset_record:
+                self.manifest['Datasets'].append(dataset_record)
 
     def create_bundle(self, folder, filename):
         """
@@ -384,6 +388,8 @@ def get_folder_identifier(folder_id, user):
 
         meta = folder.get('meta')
         if meta:
+            if meta['provider'] == 'HTTP':
+                return None
             identifier = meta.get('identifier')
             if identifier:
                 return identifier

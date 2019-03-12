@@ -32,14 +32,14 @@ class ManifestTestCase(base.TestCase):
         self.admin, self.user = [self.model('user').createUser(**user)
                                  for user in self.users]
 
-        data_collection = self.model('collection').createCollection('WholeTale Catalog', self.user)
+        self.data_collection = self.model('collection').createCollection('WholeTale Catalog', self.user)
         workspace_collection = self.model('collection').createCollection('WholeTale Workspaces', self.user)
         self.workspace_folder = self.model('folder').createFolder(
             workspace_collection, 'WholeTale Workspaces', parentType='collection')
         self.data_folder = self.model('folder').createFolder(
-            data_collection, 'Data', parentType='collection')
+            self.data_collection, 'Data', parentType='collection')
         self.data_folder2 = self.model('folder').createFolder(
-            data_collection, 'WholeTale Catalog', parentType='collection')
+            self.data_collection, 'WholeTale Catalog', parentType='collection')
 
         self.workspace_top_item1 = self.model('item').createItem('workspace file1.csv',
                                                                  self.user,
@@ -287,6 +287,53 @@ class ManifestTestCase(base.TestCase):
         datasets = manifest_doc.manifest['Datasets']
         file_check = all(x for x in datasets if (x['publisher']['legalName'] == 'DataONE'))
         self.assertTrue(file_check)
+
+    def test_http(self):
+        from server.lib.manifest import Manifest
+        # Test that HTTP files do not have schema:isPartOf and Dataset records
+        data_folder = self.model('folder').createFolder(
+            self.data_collection,
+            'HTTP Parent Folder',
+            parentType='collection')
+        remote_item = self.model('item').createItem('Dockerfile',
+                                                        self.user,
+                                                        data_folder)
+
+        self.model('folder').setMetadata(data_folder,
+                                         {'provider': 'HTTP'})
+        self.model('item').setMetadata(remote_item, {'provider': 'HTTP'})
+        remote_file = self.model('file').createLinkFile('Dockerfile',
+                                                        remote_item,
+                                                          'item',
+                                                          'https://github.com/whole-tale/dashboard/README',
+                                                          self.user)
+
+        tale_info = {'_id': ObjectId(),
+                     'name': 'HTTP File Tale',
+                     'description': 'Tale that uses an HTTP file',
+                     'authors': self.user['firstName'] + ' ' + self.user['lastName'],
+                     'creator': self.user,
+                     'public': True,
+                     'data': [{'itemId': data_folder['_id'],
+                               '_mountPath': self.data_folder['name'],
+                               '_modelType': 'folder'}],
+                     'illustration': 'linkToImage',
+                     'workspaceId': self.workspace_folder['_id']}
+
+        tale = self.model('tale', 'wholetale').createTale(
+            {'_id': tale_info['_id']},
+            data=tale_info['data'],
+            creator=tale_info['creator'],
+            title=tale_info['name'],
+            public=tale_info['public'],
+            description=tale_info['description'],
+            authors=tale_info['authors'])
+
+        manifest_doc = Manifest(tale, self.user)
+        print(manifest_doc.manifest)
+
+    def test_globus(self):
+        self.assertEqual(1,1)
 
     def tearDown(self):
         self.model('user').remove(self.user)
