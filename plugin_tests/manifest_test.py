@@ -48,6 +48,8 @@ class ManifestTestCase(base.TestCase):
             self.data_collection, 'Data', parentType='collection')
         self.data_folder2 = self.model('folder').createFolder(
             self.data_collection, 'WholeTale Catalog', parentType='collection')
+        self.globus_folder = self.model('folder').createFolder(
+            self.data_collection, 'Globus Data Dir', parentType='collection')
 
         self.workspace_top_item1 = self.model('item').createItem('workspace file1.csv',
                                                                  self.user,
@@ -67,15 +69,21 @@ class ManifestTestCase(base.TestCase):
                                                             self.user,
                                                             self.data_folder2)
 
+        self.globus_item = self.model('item').createItem('globus_data.csv',
+                                                            self.user,
+                                                            self.globus_folder)
+
         # Add meta sections to dataSet items
         self.model('item').setMetadata(self.data_top_item1, {'identifier': '1234'})
         self.model('item').setMetadata(self.data_top_item2, {'identifier': '4321'})
         self.model('item').setMetadata(self.floating_item, {'identifier': '4321a'})
+        self.model('item').setMetadata(self.globus_item, {'identifier': 'doi:xx4321a'})
         self.model('folder').setMetadata(self.data_folder, {'identifier': '123456',
                                                             'provider': 'DataONE'})
         self.model('folder').setMetadata(self.data_folder2, {'identifier': '1234516',
                                                             'provider': 'Globus'})
-
+        self.model('folder').setMetadata(self.globus_folder, {'identifier': '654hgfd',
+                                                            'provider': 'Globus'})
         # Create files for each item
         assetstore = {'_id': 0}
         self.ws_fl1 = self.model('file').createFile(self.user,
@@ -111,6 +119,11 @@ class ManifestTestCase(base.TestCase):
                                                           self.fake_url3,
                                                           self.user)
 
+        self.globus_file = self.model('file').createLinkFile('Globus_file.csv',
+                                                          self.globus_item,
+                                                          'item',
+                                                          self.fake_url3,
+                                                          self.user)
         # Tale map of values to check against in tests
         self.tale_info = {'_id': ObjectId(),
                           'name': 'Main Tale',
@@ -123,7 +136,10 @@ class ManifestTestCase(base.TestCase):
                                     '_modelType': 'folder'},
                                    {'itemId': self.floating_item['_id'],
                                     '_mountPath': self.floating_item['name'],
-                                    '_modelType': 'item'}],
+                                    '_modelType': 'item'},
+                                   {'itemId': self.globus_folder['_id'],
+                                    '_mountPath': self.globus_folder['name'],
+                                    '_modelType': 'folder'}],
                           'illustration': 'linkToImage',
                           'workspaceId': self.workspace_folder['_id']}
 
@@ -250,26 +266,16 @@ class ManifestTestCase(base.TestCase):
         manifest_doc = Manifest(self.tale, self.user)
 
         aggregates_section = manifest_doc.manifest['aggregates']
-
-        file_check = (x for x in aggregates_section if (x['uri'] == self.fake_url1))
-        for record in file_check:
-            self.assertEqual(record['uri'], self.fake_url1)
-            self.assertEqual(record['schema:isPartOf'], self.data_folder['meta']['identifier'])
-            self.assertEqual(record['bundledAs']['filename'], self.data_fl1['name'])
-
-        file_check = (x for x in aggregates_section if (x['uri'] == self.fake_url2))
-        for record in file_check:
-            self.assertEqual(record['uri'], self.fake_url2)
-            self.assertEqual(record['schema:isPartOf'], self.data_folder['meta']['identifier'])
-            self.assertEqual(record['bundledAs']['filename'], self.data_fl2['name'])
-
+        file_check = any(x for x in aggregates_section if (x['uri'] == self.fake_url1))
+        # Since we're dealing with folders, check that the dataset items are left out of aggregates
+        self.assertFalse(file_check)
         # Check the datasets
         datasets = manifest_doc.manifest['Datasets']
-        file_check = all(x for x in datasets if (x['publisher']['legalName'] == 'DataONE'))
+        file_check = any(x for x in datasets if (x['publisher']['legalName'] == 'DataONE'))
+        self.assertTrue(file_check)
+        file_check = any(x for x in datasets if (x['publisher']['legalName'] == 'Materials Data Facility'))
         self.assertTrue(file_check)
 
-        file_check = all(x for x in datasets if (x['publisher']['legalName'] == 'Globus'))
-        self.assertTrue(file_check)
 
     def testItems(self):
         from server.lib.manifest import Manifest

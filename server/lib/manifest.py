@@ -259,27 +259,7 @@ class Manifest:
         """
         for obj in self.tale['dataSet']:
             if obj['_modelType'] == 'folder':
-                try:
-                    folder = self.folderModel.load(obj['itemId'],
-                                                   user=self.user,
-                                                   level=AccessType.READ,
-                                                   exc=True)
-                    folder_files_obj = {
-                        'file_iterator': self.folderModel.fileList(folder,
-                                                                   user=self.user,
-                                                                   data=False)
-                    }
-
-                    try:
-                        folder_files_obj['dataset_identifier'] = folder['meta']['identifier']
-                        folder_files_obj['provider'] = folder['meta'].get('provider')
-                        self.datasets.add(obj['itemId'])
-                    except (KeyError, TypeError):
-                        pass
-
-                    folder_files.append(folder_files_obj)
-                except ValidationException:
-                    pass
+                self.datasets.add(obj['itemId'])
             elif obj['_modelType'] == 'item':
                 """
                 If there is a file that was added to a tale that came from a dataset, but outside
