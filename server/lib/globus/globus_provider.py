@@ -98,7 +98,7 @@ class GlobusImportProvider(ImportProvider):
                     url='globus://%s/%s%s' % (endpoint, path, entry['name']))
 
 
-TRANSFER_URL_PREFIX = 'https://www.globus.org/app/transfer?'
+TRANSFER_URL_PREFIX = 'https://app.globus.org/file-manager?'
 
 
 class DocParser(HTMLParser):
