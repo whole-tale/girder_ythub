@@ -379,5 +379,5 @@ def get_folder_identifier(folder_id, user):
 
         get_folder_identifier(folder['parentID'], user)
 
-    except ValidationException:
+    except (ValidationException, KeyError):
         pass
