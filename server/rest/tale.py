@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import re
 import json
 
 from girder.api import access
@@ -324,7 +323,7 @@ class Tale(Resource):
             for data in zip_generator.addFile(lambda: next(license_object)['text'],
                                               'LICENSE'):
                 yield data
-                
+
             yield zip_generator.footer()
 
         return stream

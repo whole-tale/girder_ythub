@@ -641,13 +641,58 @@ class TaleTestCase(base.TestCase):
 
         self.assertStatus(resp, 200)
         pth ='/tale/{}/manifest'.format(str(resp.json['_id']))
-        print(pth)
         resp = self.request(
             path=pth, method='GET', user=self.user)
         # The contents of the manifes are checked in the manifest tests, so
         # just make sure that we get the right response
         self.assertStatus(resp, 200)
 
+    def testExport(self):
+        from server.lib.license import WholeTaleLicense
+        import zipfile
+        import tempfile
+
+        tale = self.request(
+            path='/tale', method='POST', user=self.user,
+            type='application/json',
+            body=json.dumps({
+                'folderId': '1234',
+                'imageId': str(self.image['_id']),
+                'dataSet': [],
+                'title': 'tale tile',
+                'description': 'description',
+                'config': {},
+                'public': False,
+                'published': False,
+                'doi': 'doi',
+                'publishedURI': 'published_uri',
+                'licenseSPDX': WholeTaleLicense.default_spdx()
+            })
+        )
+        self.assertStatus(tale, 200)
+        export_path = '/tale/{}/export'.format(str(tale.json['_id']))
+        resp = self.request(
+            path=export_path, method='GET', isJson=False, user=self.user)
+        with tempfile.NamedTemporaryFile() as fp:
+            for content in resp.body:
+                fp.write(content)
+            fp.seek(0)
+            zip_archive = zipfile.ZipFile(fp, 'r')
+            zip_files = zip_archive.namelist()
+        # Check the the manifest.json is present
+        manifest_path = str(tale.json['_id']) + '/metadata/manifest.json'
+        is_present = manifest_path in zip_files
+        self.assertTrue(is_present)
+
+        # Check that the top level README is present
+        readme_path = str(tale.json['_id']) + '/README.txt'
+        is_present = readme_path in zip_files
+        self.assertTrue(is_present)
+
+        # Check that the LICENSE is present
+        license_path = str(tale.json['_id']) + '/LICENSE'
+        is_present = license_path in zip_files
+        self.assertTrue(is_present)
 
     def tearDown(self):
         self.model('user').remove(self.user)
