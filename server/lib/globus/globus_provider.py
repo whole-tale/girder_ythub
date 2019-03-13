@@ -76,7 +76,7 @@ class GlobusImportProvider(ImportProvider):
     def _listRecursive(self, user, pid: str, name: str, base_url: str = None, progress=None):
         doc = self._getDocument(pid)
         (endpoint, path, doi, title) = self._extractMeta(doc)
-        yield ImportItem(ImportItem.FOLDER, name=title)
+        yield ImportItem(ImportItem.FOLDER, name=title, identifier='doi:' + doi)
         tc = self.clients.getUserTransferClient(user)
         yield from self._listRecursive2(tc, endpoint, path, progress)
         yield ImportItem(ImportItem.END_FOLDER)
