@@ -21,11 +21,6 @@ class Publish(Resource):
     @autoDescribeRoute(
         Description('Publish a tale to a repository running Metacat')
         .notes('')
-        .jsonParam(name='itemIds',
-                   required=True,
-                   description='A list of item ids of files that are going to be included in '
-                               'the package.\n'
-                               'Example: ["item1", "item2", "item3"]')
         .param('taleId',
                description='The ID of the tale that is going to be published.',
                required=True)
@@ -39,7 +34,6 @@ class Publish(Resource):
                            'token.',
                required=True))
     def dataonePublish(self,
-                       itemIds,
                        taleId,
                        remoteMemberNode,
                        authToken):
@@ -50,8 +44,7 @@ class Publish(Resource):
         jobTitle = 'Publishing Tale to DataONE'
         jobModel = Job()
 
-        args = (itemIds,
-                taleId,
+        args = (taleId,
                 remoteMemberNode,
                 authToken,
                 str(token['_id']),
