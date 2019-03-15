@@ -76,8 +76,10 @@ class ImportProvider:
     def _registerFile(self, stack, item: ImportItem, user):
         (parent, parentType) = stack[-1]
         gitem = self.itemModel.createItem(item.name, user, parent, reuseExisting=True)
+        meta = {'provider': self.getName()}
         if item.identifier:
-            gitem = self.itemModel.setMetadata(gitem, {'identifier': item.identifier})
+            meta['identifier'] = item.identifier
+        gitem = self.itemModel.setMetadata(gitem, meta)
 
         # girder does not allow anything else than http and https. So we need a better
         # mechanism here to communicate relevant information to WTDM
