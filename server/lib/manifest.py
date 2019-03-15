@@ -2,7 +2,10 @@ import os
 
 from ..constants import CATALOG_NAME, WORKSPACE_NAME
 from .license import WholeTaleLicense
+from . import IMPORT_PROVIDERS
 
+from girder import logger
+from girder.models.folder import Folder
 from girder.utility.model_importer import ModelImporter
 from girder.utility import path as path_util
 from girder.exceptions import ValidationException
@@ -137,7 +140,11 @@ class Manifest:
                 "identifier": identifier,
                 "publisher": self.publishers[provider]}
 
-        except (KeyError, TypeError, ValidationException):
+        except (KeyError, TypeError, ValidationException) as e:
+            msg = 'While creating a manifest for Tale "{}" '.format(str(self.tale['_id']))
+            msg += 'encountered a following error:\n'
+            msg += str(e)
+            logger.warning(msg)
             pass
 
     def create_aggregation_record(self, uri, bundle=None, parent_dataset_identifier=None):
@@ -263,51 +270,47 @@ class Manifest:
 
         :param folder_files: A list of objects that represent externally defined data
         """
+        dataset_top_identifiers = set()
         for obj in self.tale['dataSet']:
-            if obj['_modelType'] == 'folder':
-                self.datasets.add(obj['itemId'])
-            elif obj['_modelType'] == 'item':
-                """
-                If there is a file that was added to a tale that came from a dataset, but outside
-                a folder under the dataset folder, we need to get metadata about the parent folder
-                and the file.
-                """
-                try:
-                    root_item = self.itemModel.load(obj['itemId'],
-                                                    user=self.user,
-                                                    level=AccessType.READ,
-                                                    exc=True)
-                    item_folder = self.folderModel.load(root_item['folderId'],
-                                                        user=self.user,
-                                                        level=AccessType.READ,
-                                                        exc=True)
-                    # Check if the item was added from a dataset folder, or if it was
-                    # registered directly into the Catalog root
-                    if item_folder['name'].startswith(CATALOG_NAME):
-                        # Use the item's metadata
+            try:
+                if obj['_modelType'] == 'folder':
+                    model = self.folderModel
+                elif obj['_modelType'] == 'item':
+                    model = self.itemModel
 
-                        folder_files.append({"dataset_identifier":
-                                            root_item['meta']['identifier'],
-                                             "provider":
-                                                 root_item['meta']['provider'],
-                                             "file_iterator":
-                                                 self.itemModel.fileList(root_item,
-                                                                         user=self.user,
-                                                                         data=False)})
+                doc = model.load(obj['itemId'], user=self.user, level=AccessType.READ, exc=True)
+                provider_name = doc['meta']['provider']
+                if provider_name.startswith('HTTP'):
+                    provider_name = 'HTTP'  # TODO: handle HTTPS to make it unnecessary
+                provider = IMPORT_PROVIDERS.providerMap[provider_name]
+                top_identifier = provider.getDatasetUID(doc, self.user)
+                dataset_top_identifiers.add(top_identifier)
 
-                    else:
-                        self.datasets.add(root_item['folderId'])
-                        folder_files.append({"dataset_identifier":
-                                            item_folder['meta']['identifier'],
-                                             "provider":
-                                                 item_folder['meta']['provider'],
-                                             "file_iterator":
-                                             self.itemModel.fileList(root_item,
+                if obj['_modelType'] == 'item':
+                    folder_files.append(
+                        {
+                            "dataset_identifier": top_identifier,
+                            "provider": provider_name,
+                            "file_iterator": self.itemModel.fileList(doc,
                                                                      user=self.user,
                                                                      data=False)
-                                             })
-                except (ValidationException, KeyError):
-                    pass
+                        }
+                    )
+            except (ValidationException, KeyError) as e:
+                msg = 'While creating a manifest for Tale "{}" '.format(str(self.tale['_id']))
+                msg += 'encountered a following error:\n'
+                msg += str(e)
+                logger.warning(msg)
+                pass
+
+        # Combine all datasets that were used
+        for identifier in dataset_top_identifiers:
+            # Assuming Folder model implicitly ignores "datasets" that are
+            # single HTTP files which is intended behavior
+            for folder in Folder().findWithPermissions(
+                    {'meta.identifier': identifier}, limit=1, user=self.user
+            ):
+                self.datasets.add(folder['_id'])
         return folder_files
 
     def add_dataset_records(self):
