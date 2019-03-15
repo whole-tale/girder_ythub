@@ -138,7 +138,8 @@ class Manifest:
                 "@type": "Dataset",
                 "name": folder['name'],
                 "identifier": identifier,
-                "publisher": self.publishers[provider]}
+                # "publisher": self.publishers[provider]
+            }
 
         except (KeyError, TypeError, ValidationException) as e:
             msg = 'While creating a manifest for Tale "{}" '.format(str(self.tale['_id']))
