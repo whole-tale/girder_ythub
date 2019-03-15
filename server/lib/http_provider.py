@@ -64,20 +64,23 @@ class HTTPImportProvider(ImportProvider):
         uri = dataMap.getDataId()
         url = urlparse(uri)
         progress.update(increment=1, message='Processing file {}.'.format(uri))
+        # Request basic info via HEAD, use 'identity' to avoid grabbing info about
+        # zipped content
         headers = requests.head(
             uri, headers={'Accept-Encoding': 'identity'}).headers
         size = headers.get('Content-Length') or \
             headers.get('Content-Range').split('/')[-1]
 
+        # Split url into hierarchy of folders to avoid name collisions
+        # See whole-tale/girder_wholetale#266
         parent = Folder().createFolder(
             parent,
-            url.netloc,
+            url.netloc,  # netloc, e.g. www.google.com, will be used as a root
             description='',
             parentType=parentType,
             creator=user,
             reuseExisting=True,
         )
-        parentType = 'folder'
         parent = Folder().setMetadata(
             parent,
             {
@@ -86,20 +89,25 @@ class HTTPImportProvider(ImportProvider):
             }
         )
 
+        # Iterate over the path component of the url, creating a folder for each
+        # part of the path
         path = pathlib.Path(url.path)
         for part in path.parts:
             parent_url = parent['meta']['identifier']
             new_url = parent_url + '/' + part
             part = unquote(part)
+            # Path always starts with '/' which we ignore,
+            # We also don't create a folder if the last part of the path has the same
+            # name as the registered resource.
             if part in {'/', dataMap.getName()}:
                 continue
             parent = Folder().createFolder(
                 parent,
                 part,
                 description='',
-                parentType=parentType,
+                parentType='folder',
                 creator=user,
-                            reuseExisting=True,
+                reuseExisting=True,
             )
             parent = Folder().setMetadata(
                 parent,
@@ -111,7 +119,7 @@ class HTTPImportProvider(ImportProvider):
 
         fileModel = ModelImporter.model('file')
         fileDoc = fileModel.createLinkFile(
-            url=uri, parent=parent, name=dataMap.getName(), parentType=parentType,
+            url=uri, parent=parent, name=dataMap.getName(), parentType='folder',
             creator=user, size=int(size),
             mimeType=headers.get('Content-Type', 'application/octet-stream'),
             reuseExisting=True)
