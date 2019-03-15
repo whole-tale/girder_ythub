@@ -235,42 +235,48 @@ class Manifest:
                     {'uri': '../workspace/' + clean_workspace_path(self.tale['_id'],
                                                                    workspace_file[0])})
 
-        external_folders_files = list()
-
         """
         Handle objects that are in the dataSet, ie files that point to external sources.
         Some of these sources may be datasets from publishers. We need to save information
         about the source so that they can added to the Datasets section.
         """
-        external_folders_files = self.add_tale_datasets(external_folders_files)
+        external_objects, dataset_top_identifiers = self._parse_dataSet()
 
-        # Add records for the remote files that exist under a folder
-        for folder_record in external_folders_files:
-            if folder_record['file_iterator'] is None:
-                continue
+        # Add records of all top-level dataset identifiers that were used in the Tale:
+        # "Datasets"
+        for identifier in dataset_top_identifiers:
+            # Assuming Folder model implicitly ignores "datasets" that are
+            # single HTTP files which is intended behavior
+            for folder in Folder().findWithPermissions(
+                    {'meta.identifier': identifier}, limit=1, user=self.user
+            ):
+                self.datasets.add(folder['_id'])
+
+        # Add records for the remote files that exist under a folder: "aggregates"
+        for obj in external_objects:
             # Grab identifier of a parent folder
-            parent_dataset_identifier = folder_record.get('dataset_identifier')
-            if folder_record['provider'] in {'HTTP', 'HTTPS'}:
+            parent_dataset_identifier = obj.get('dataset_identifier')
+            if obj['provider'] in {'HTTP', 'HTTPS'}:
                 # In case of http(s) prevent the creation of schema:isPartOf entry,
                 # by setting parent ds identifier to None.
                 parent_dataset_identifier = None
-            for file_record in folder_record['file_iterator']:
-                # Check if the file points to an external resource
-                if 'linkUrl' in file_record[1]:
-                    bundle = self.create_bundle('../data/' + os.path.dirname(file_record[0]),
-                                                file_record[1]['name'])
-                    record = self.create_aggregation_record(file_record[1]['linkUrl'],
-                                                            bundle,
-                                                            parent_dataset_identifier)
-                    self.manifest['aggregates'].append(record)
+            bundle = self.create_bundle('../data/', obj['name'])
+            record = self.create_aggregation_record(
+                obj['linkUrl'], bundle, parent_dataset_identifier)
+            self.manifest['aggregates'].append(record)
 
-    def add_tale_datasets(self, folder_files):
+    def _parse_dataSet(self):
         """
-        Adds information about the contents of `dataSet` to the manifest
+        Get the basic info about the contents of `dataSet`
 
-        :param folder_files: A list of objects that represent externally defined data
+        Returns:
+            external_objects: A list of objects that represent externally defined data
+            dataset_top_identifiers: A set of DOIs for top-level packages that contain
+                objects from external_objects
+
         """
         dataset_top_identifiers = set()
+        external_objects = []
         for obj in self.tale['dataSet']:
             try:
                 if obj['_modelType'] == 'folder':
@@ -287,15 +293,17 @@ class Manifest:
                 dataset_top_identifiers.add(top_identifier)
 
                 if obj['_modelType'] == 'item':
-                    folder_files.append(
+                    fileObj = model.childFiles(doc)[0]
+                    external_objects.append(
                         {
                             "dataset_identifier": top_identifier,
                             "provider": provider_name,
-                            "file_iterator": self.itemModel.fileList(doc,
-                                                                     user=self.user,
-                                                                     data=False)
+                            "name": fileObj['name'],
+                            "linkUrl": fileObj['linkUrl']
                         }
                     )
+                # elif obj['_modelType'] == 'folder':
+                #  Find path to root?
             except (ValidationException, KeyError) as e:
                 msg = 'While creating a manifest for Tale "{}" '.format(str(self.tale['_id']))
                 msg += 'encountered a following error:\n'
@@ -303,15 +311,7 @@ class Manifest:
                 logger.warning(msg)
                 pass
 
-        # Combine all datasets that were used
-        for identifier in dataset_top_identifiers:
-            # Assuming Folder model implicitly ignores "datasets" that are
-            # single HTTP files which is intended behavior
-            for folder in Folder().findWithPermissions(
-                    {'meta.identifier': identifier}, limit=1, user=self.user
-            ):
-                self.datasets.add(folder['_id'])
-        return folder_files
+        return external_objects, dataset_top_identifiers
 
     def add_dataset_records(self):
         """
