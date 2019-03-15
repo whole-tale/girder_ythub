@@ -78,3 +78,7 @@ class HTTPImportProvider(ImportProvider):
         gc_item['meta'] = {'identifier': None, 'provider': 'HTTP'}
         gc_item = ModelImporter.model('item').updateItem(gc_item)
         return ('item', gc_item)
+
+    def getDatasetUID(self, doc: object, user: object) -> str:
+        if 'folderId' in doc:
+            return doc['meta']['identifier']  # for http that's it...

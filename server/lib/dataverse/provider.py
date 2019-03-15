@@ -6,6 +6,8 @@ from urllib.request import urlopen, Request
 from urllib.error import HTTPError
 
 from girder import events, logger
+from girder.constants import AccessType
+from girder.models.folder import Folder
 from girder.models.setting import Setting
 
 from ..import_providers import ImportProvider
@@ -112,6 +114,13 @@ class DataverseImportProvider(ImportProvider):
             return re.compile("^" + "|".join(urls) + ".*$")
         else:
             return re.compile("^$")
+
+    def getDatasetUID(self, doc: object, user: object) -> str:
+        if 'folderId' in doc:
+            # It's an item, grab the parent which should contain all the info
+            doc = Folder().load(doc['folderId'], user=user, level=AccessType.READ)
+        # obj is a folder at this point use its meta
+        return doc['meta']['identifier']
 
     def setting_changed(self, event):
         triggers = {

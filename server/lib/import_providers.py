@@ -40,6 +40,10 @@ class ImportProvider:
     def listFiles(self, entity: Entity) -> FileMap:
         raise NotImplementedError()
 
+    def getDatasetUID(self, doc: object, user: object) -> str:
+        """Given a registered object, return dataset DOI"""
+        raise NotImplementedError()
+
     def register(self, parent: object, parentType: str, progress, user, dataMap: DataMap,
                  base_url: str = None):
         stack = [(parent, parentType)]
