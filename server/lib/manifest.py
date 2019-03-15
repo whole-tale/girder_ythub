@@ -127,7 +127,7 @@ class Manifest:
                                            exc=True,
                                            level=AccessType.READ)
             provider = folder['meta']['provider']
-            if provider == 'HTTP':
+            if provider in {'HTTP', 'HTTPS'}:
                 return None
             identifier = folder['meta']['identifier']
             return {
@@ -140,21 +140,21 @@ class Manifest:
         except (KeyError, TypeError, ValidationException):
             pass
 
-    def create_aggregation_record(self, uri, bundle=None, parent_dataset=None):
+    def create_aggregation_record(self, uri, bundle=None, parent_dataset_identifier=None):
         """
         Creates an aggregation record. Externally defined aggregations should include
         a bundle and a parent_dataset if it belongs to one
         :param uri: The item's URI in the manifest, typically it's path
         :param bundle: An optional bundle that's needed for externally defined data
-        :param parent_dataset: The ID of an optional parent dataset
+        :param parent_dataset_identifier: The ID of an optional parent dataset
         :return: Dictionary representing an aggregated file
         """
         aggregation = dict()
         aggregation['uri'] = uri
         if bundle:
             aggregation['bundledAs'] = bundle
-        if parent_dataset:
-            aggregation['schema:isPartOf'] = parent_dataset
+        if parent_dataset_identifier:
+            aggregation['schema:isPartOf'] = parent_dataset_identifier
         return aggregation
 
     def add_item_records(self):
@@ -241,6 +241,12 @@ class Manifest:
         for folder_record in external_folders_files:
             if folder_record['file_iterator'] is None:
                 continue
+            # Grab identifier of a parent folder
+            parent_dataset_identifier = folder_record.get('dataset_identifier')
+            if folder_record['provider'] in {'HTTP', 'HTTPS'}:
+                # In case of http(s) prevent the creation of schema:isPartOf entry,
+                # by setting parent ds identifier to None.
+                parent_dataset_identifier = None
             for file_record in folder_record['file_iterator']:
                 # Check if the file points to an external resource
                 if 'linkUrl' in file_record[1]:
@@ -248,7 +254,7 @@ class Manifest:
                                                 file_record[1]['name'])
                     record = self.create_aggregation_record(file_record[1]['linkUrl'],
                                                             bundle,
-                                                            folder_record.get('dataset_identifier'))
+                                                            parent_dataset_identifier)
                     self.manifest['aggregates'].append(record)
 
     def add_tale_datasets(self, folder_files):
@@ -371,7 +377,7 @@ def get_folder_identifier(folder_id, user):
 
         meta = folder.get('meta')
         if meta:
-            if meta['provider'] == 'HTTP':
+            if meta['provider'] in {'HTTP', 'HTTPS'}:
                 return None
             identifier = meta.get('identifier')
             if identifier:
