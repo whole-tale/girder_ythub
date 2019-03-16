@@ -12,7 +12,11 @@ add_python_test(tale PLUGIN wholetale)
 add_python_test(instance PLUGIN wholetale)
 add_python_test(constants PLUGIN wholetale)
 add_python_test(utils PLUGIN wholetale)
-add_python_test(manifest PLUGIN wholetale)
+add_python_test(manifest
+  PLUGIN wholetale
+  EXTERNAL_DATA
+  plugins/wholetale/manifest_mock_catalog.json
+)
 add_python_test(dataone_register
   PLUGIN wholetale
   EXTERNAL_DATA

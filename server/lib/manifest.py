@@ -1,13 +1,11 @@
 import os
 
-from ..constants import CATALOG_NAME, WORKSPACE_NAME
 from .license import WholeTaleLicense
 from . import IMPORT_PROVIDERS
 
 from girder import logger
 from girder.models.folder import Folder
 from girder.utility.model_importer import ModelImporter
-from girder.utility import path as path_util
 from girder.exceptions import ValidationException
 from girder.constants import AccessType
 
