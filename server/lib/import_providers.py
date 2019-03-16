@@ -44,6 +44,10 @@ class ImportProvider:
         """Given a registered object, return dataset DOI"""
         raise NotImplementedError()
 
+    def getURI(self, doc: object, user: object) -> str:
+        """Given a registered object, return a URI for it"""
+        raise NotImplementedError()
+
     def register(self, parent: object, parentType: str, progress, user, dataMap: DataMap,
                  base_url: str = None):
         stack = [(parent, parentType)]
