@@ -21,18 +21,16 @@ class Manifest:
     create<someProperty>
     """
 
-    def __init__(self, tale, user, item_ids=None):
+    def __init__(self, tale, user):
         """
         Initialize the manifest document with base variables
         :param tale: The Tale whose data is being serialized
         :param user: The user requesting the manifest document
-        :param item_ids: An optional list of items to include in the manifest
         """
         self.tale = tale
         self.user = user
 
         self.manifest = dict()
-        self.item_ids = item_ids
         # Create a set that represents any external data packages
         self.datasets = set()
 
@@ -43,11 +41,7 @@ class Manifest:
         self.manifest.update(self.create_context())
         self.manifest.update(self.create_basic_attributes())
         self.add_tale_creator()
-
-        if self.item_ids:
-            self.add_item_records()
-        else:
-            self.add_tale_records()
+        self.add_tale_records()
         # Add any external datasets to the manifest
         self.add_dataset_records()
         self.add_system_files()
@@ -164,59 +158,6 @@ class Manifest:
         if parent_dataset_identifier and parent_dataset_identifier != uri:
             aggregation['schema:isPartOf'] = parent_dataset_identifier
         return aggregation
-
-    def add_item_records(self):
-        """
-        Creates records for a set of item ids. This is desired when the mainfest is being generated
-        for a subset of files in a Tale. Note that these records get added to the internal manifest
-        object.
-        """
-        for item_id in self.item_ids:
-            item = self.itemModel.load(item_id,
-                                       user=self.user,
-                                       level=AccessType.READ)
-            if item:
-                item_path = path_util.getResourcePath('item', item, user=self.user)
-                # Recreate the path
-                data_catalog_root = '/collection/' + CATALOG_NAME+'/'+CATALOG_NAME+'/'
-                workspaces_root = '/collection/' + WORKSPACE_NAME+'/'+WORKSPACE_NAME
-                # Check if the item belongs to workspace or external data
-                if item_path.startswith(workspaces_root):
-                    item_path = item_path.replace(workspaces_root, '')
-                    full_path = '../workspace' + clean_workspace_path(self.tale['_id'],
-                                                                      item_path)
-                    self.manifest['aggregates'].append({'uri': full_path})
-                    continue
-                elif item_path.startswith(data_catalog_root):
-                    item_path = item_path.replace(data_catalog_root, '')
-                    bundle = self.create_bundle('../data/' + item_path,
-                                                clean_workspace_path(self.tale['_id'],
-                                                                     item['name']))
-
-                    # Get the linkURL from the file object
-                    item_files = self.itemModel.fileList(item,
-                                                         user=self.user,
-                                                         data=False)
-                    for file_item in item_files:
-                        agg_record = self.create_aggregation_record(
-                            file_item[1]['linkUrl'],
-                            bundle,
-                            get_folder_identifier(item['folderId'],
-                                                  self.user))
-                        self.manifest['aggregates'].append(agg_record)
-                    self.datasets.add(item['folderId'])
-
-            folder = self.folderModel.load(item_id,
-                                           user=self.user,
-                                           level=AccessType.READ)
-            if folder:
-                parent = self.folderModel.parentsToRoot(folder, user=self.user)
-                # Check if the folder is in the workspace
-                if parent[0].get('object').get('name') == WORKSPACE_NAME:
-                    folder_items = self.folderModel.fileList(folder, user=self.user)
-                    for folder_item in folder_items:
-                        self.manifest['aggregates'].append({'uri':
-                                                            '../workspace/' + folder_item[0]})
 
     def add_tale_records(self):
         """

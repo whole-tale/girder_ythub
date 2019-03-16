@@ -328,13 +328,9 @@ class Tale(Resource):
     @autoDescribeRoute(
         Description('Generate the Tale manifest')
         .modelParam('id', model='tale', plugin='wholetale', level=AccessType.READ)
-        .jsonParam(name='itemIds',
-                   required=False,
-                   description='A list of item ids of files that are aggregated.\n'
-                               'Example: ["item1", "item2", "item3"]')
         .errorResponse('ID was invalid.')
     )
-    def generateManifest(self, tale, itemIds=list()):
+    def generateManifest(self, tale):
         """
         Creates a manifest document and returns the contents.
         :param tale: The Tale whose information is being used
@@ -343,5 +339,5 @@ class Tale(Resource):
         """
 
         user = self.getCurrentUser()
-        manifest_doc = Manifest(tale, user, itemIds)
+        manifest_doc = Manifest(tale, user)
         return manifest_doc.manifest
