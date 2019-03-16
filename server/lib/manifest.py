@@ -141,12 +141,11 @@ class Manifest:
                 # "publisher": self.publishers[provider]
             }
 
-        except (KeyError, TypeError, ValidationException) as e:
+        except (KeyError, TypeError, ValidationException):
             msg = 'While creating a manifest for Tale "{}" '.format(str(self.tale['_id']))
             msg += 'encountered a following error:\n'
-            msg += str(e)
             logger.warning(msg)
-            pass
+            raise  # We don't want broken manifests, do we?
 
     def create_aggregation_record(self, uri, bundle=None, parent_dataset_identifier=None):
         """
@@ -161,7 +160,8 @@ class Manifest:
         aggregation['uri'] = uri
         if bundle:
             aggregation['bundledAs'] = bundle
-        if parent_dataset_identifier:
+        # TODO: in case parent_dataset_id == uri do something special?
+        if parent_dataset_identifier and parent_dataset_identifier != uri:
             aggregation['schema:isPartOf'] = parent_dataset_identifier
         return aggregation
 
@@ -256,17 +256,14 @@ class Manifest:
         # Add records for the remote files that exist under a folder: "aggregates"
         for obj in external_objects:
             # Grab identifier of a parent folder
-            parent_dataset_identifier = obj.get('dataset_identifier')
-            if obj['provider'] in {'HTTP', 'HTTPS'}:
-                # In case of http(s) prevent the creation of schema:isPartOf entry,
-                # by setting parent ds identifier to None.
-                parent_dataset_identifier = None
-            bundle = self.create_bundle('../data/', obj['name'])
-            record = self.create_aggregation_record(
-                obj['linkUrl'], bundle, parent_dataset_identifier)
+            if obj['_modelType'] == 'item':
+                bundle = self.create_bundle(os.path.join('../data/', obj['relpath']), obj['name'])
+            else:
+                bundle = self.create_bundle('../data/' + obj['name'], None)
+            record = self.create_aggregation_record(obj['uri'], bundle, obj['dataset_identifier'])
             self.manifest['aggregates'].append(record)
 
-    def _parse_dataSet(self):
+    def _parse_dataSet(self, dataSet=None, relpath=''):
         """
         Get the basic info about the contents of `dataSet`
 
@@ -276,41 +273,78 @@ class Manifest:
                 objects from external_objects
 
         """
+
+        def _handle_http_folder(folder, user, relpath=''):
+            """
+            Recursively handle HTTP folder and return all child items as ext objs
+
+            In a perfect world there should be a better place for this...
+            """
+            curpath = os.path.join(relpath, folder['name'])
+            dataSet = []
+            for item in Folder().childItems(folder, user=user):
+                dataSet.append({
+                    'itemId': item['_id'],
+                    '_modelType': 'item',
+                    'mountPath': os.path.join(curpath, item['name'])
+                })
+            ext, _ = self._parse_dataSet(dataSet=dataSet, relpath=curpath)
+
+            for subfolder in Folder().childFolders(
+                    folder, parentType='folder', user=user
+            ):
+                ext += _handle_http_folder(subfolder, user, relpath=curpath)
+            return ext
+
+        if not dataSet:
+            dataSet = self.tale['dataSet']
+
         dataset_top_identifiers = set()
         external_objects = []
-        for obj in self.tale['dataSet']:
+        for obj in dataSet:
             try:
-                if obj['_modelType'] == 'folder':
-                    model = self.folderModel
-                elif obj['_modelType'] == 'item':
-                    model = self.itemModel
-
-                doc = model.load(obj['itemId'], user=self.user, level=AccessType.READ, exc=True)
+                doc = ModelImporter.model(obj['_modelType']).load(
+                    obj['itemId'], user=self.user, level=AccessType.READ, exc=True)
                 provider_name = doc['meta']['provider']
                 if provider_name.startswith('HTTP'):
                     provider_name = 'HTTP'  # TODO: handle HTTPS to make it unnecessary
                 provider = IMPORT_PROVIDERS.providerMap[provider_name]
                 top_identifier = provider.getDatasetUID(doc, self.user)
-                dataset_top_identifiers.add(top_identifier)
+                if top_identifier:
+                    dataset_top_identifiers.add(top_identifier)
 
-                if obj['_modelType'] == 'item':
-                    fileObj = model.childFiles(doc)[0]
-                    external_objects.append(
-                        {
-                            "dataset_identifier": top_identifier,
-                            "provider": provider_name,
-                            "name": fileObj['name'],
-                            "linkUrl": fileObj['linkUrl']
-                        }
-                    )
-                # elif obj['_modelType'] == 'folder':
-                #  Find path to root?
-            except (ValidationException, KeyError) as e:
+                ext_obj = {
+                    'dataset_identifier': top_identifier,
+                    'provider': provider_name,
+                    '_modelType': obj['_modelType'],
+                    'relpath': relpath
+                }
+
+                if obj['_modelType'] == 'folder':
+                    ext_obj['name'] = doc['name']
+
+                    if provider_name == 'HTTP':
+                        external_objects += _handle_http_folder(doc, self.user)
+                        continue
+
+                    if doc['meta'].get('identifier') == top_identifier:
+                        ext_obj['uri'] = top_identifier
+                    else:
+                        ext_obj['uri'] = provider.getURI(doc, self.user)
+                        #  Find path to root?
+
+                elif obj['_modelType'] == 'item':
+                    fileObj = self.itemModel.childFiles(doc)[0]
+                    ext_obj.update({
+                        'name': fileObj['name'],
+                        'uri': fileObj['linkUrl']
+                    })
+                external_objects.append(ext_obj)
+            except (ValidationException, KeyError):
                 msg = 'While creating a manifest for Tale "{}" '.format(str(self.tale['_id']))
                 msg += 'encountered a following error:\n'
-                msg += str(e)
                 logger.warning(msg)
-                pass
+                raise  # We don't want broken manifests, do we?
 
         return external_objects, dataset_top_identifiers
 
@@ -333,11 +367,14 @@ class Manifest:
         """
 
         # Add a trailing slash to the path if there isn't one (RO spec)
-        os.path.join(folder, '')
-        return {
-            'folder': folder,
-            'filename': filename
-        }
+        bundle = {}
+        if folder:
+            if not folder.endswith('/'):
+                folder += '/'
+            bundle['folder'] = folder
+        if filename:
+            bundle['filename'] = filename
+        return bundle
 
     def add_system_files(self):
         """
