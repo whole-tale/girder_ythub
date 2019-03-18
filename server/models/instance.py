@@ -22,7 +22,6 @@ from ..constants import InstanceStatus
 from ..schema.misc import containerInfoSchema
 
 from girder.plugins.wholetale.models.tale import Tale
-from girder.plugins.wholetale.models.image import Image
 
 
 TASK_TIMEOUT = 15.0
@@ -221,7 +220,6 @@ def finalizeInstance(event):
             # Preserve the imageId / current digest in containerInfo
             tale = Tale().load(instance['taleId'], force=True)
             containerInfo['imageId'] = tale['imageId']
-            image = Image().load(tale['imageId'], force=True)
             containerInfo['digest'] = tale['imageInfo']['digest']
 
             instance.update({

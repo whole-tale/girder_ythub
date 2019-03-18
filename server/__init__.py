@@ -331,6 +331,7 @@ def load(info):
     events.bind('jobs.job.update.after', 'wholetale', finalizeInstance)
     events.bind('model.file.validate', 'wholetale', validateFileLink)
     events.unbind('model.user.save.created', CoreEventHandler.USER_DEFAULT_FOLDERS)
+    events.bind('model.user.save.created', 'wholetale', addDefaultFolders)
     events.bind('model.file.save', 'wholetale', tale.updateWorkspaceModTime)
     events.bind('model.file.save.created', 'wholetale', tale.updateWorkspaceModTime)
     events.bind('model.file.remove', 'wholetale', tale.updateWorkspaceModTime)

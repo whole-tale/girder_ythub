@@ -135,9 +135,6 @@ class Instance(Resource):
         taleId = instance['taleId']
         tale = self.model('tale', 'wholetale').load(
             taleId, user=currentUser, level=AccessType.READ)
-        imageId = tale['imageId']
-        image = self.model('image', 'wholetale').load(
-            imageId, user=currentUser, level=AccessType.READ)
 
         # TODO: Only continue if digest has changed
         # if image['digest'] != instance['containerInfo']['digest']:

@@ -3,6 +3,7 @@ import json
 import copy
 import mock
 import six
+from bson import ObjectId
 from tests import base
 from girder.exceptions import ValidationException
 
@@ -83,10 +84,26 @@ class InstanceTestCase(base.TestCase):
         self.tale_one = self.model('tale', 'wholetale').createTale(
             self.image, data, creator=self.user,
             title='tale one', public=True, config={'memLimit': '2g'})
+
+        fake_imageInfo = {
+            "digest": (
+                "registry.local.wholetale.org/5c8fe826da39aa00013e9609/1552934951@"
+                "sha256:4f604e6fab47f79e28251657347ca20ee89b737b4b1048c18ea5cf2fe9a9f098"
+            ),
+            "jobId": ObjectId("5c9009deda39aa0001d702b7"),
+            "last_build": 1552943449,
+            "repo2docker_version": "craigwillis/repo2docker:latest",
+            "status": 3
+        }
+        self.tale_one["imageInfo"] = fake_imageInfo
+        self.model('tale', 'wholetale').save(self.tale_one)
+
         data = [{'type': 'folder', 'id': self.userPublicFolder['_id']}]
         self.tale_two = self.model('tale', 'wholetale').createTale(
             self.image, data, creator=self.user,
             title='tale two', public=True, config={'memLimit': '1g'})
+        self.tale_two["imageInfo"] = fake_imageInfo
+        self.model('tale', 'wholetale').save(self.tale_two)
 
     def testInstanceFromImage(self):
         return  # FIXME
@@ -233,7 +250,7 @@ class InstanceTestCase(base.TestCase):
             path='/instance/{_id}'.format(**instance), method='GET', user=self.user
         )
         self.assertEqual(resp.json['containerInfo']['imageId'], str(self.image['_id']))
-        self.assertEqual(resp.json['containerInfo']['digest'], self.image['digest'])
+        self.assertEqual(resp.json['containerInfo']['digest'], self.tale_one['imageInfo']['digest'])
         self.assertEqual(resp.json['containerInfo']['nodeId'], '123456')
         self.assertEqual(resp.json['containerInfo']['volumeName'], 'blah_volume')
         self.assertEqual(resp.json['status'], InstanceStatus.RUNNING)

@@ -4,7 +4,6 @@ import json
 from datetime import datetime, timedelta
 import time
 
-from girder import logger
 from girder.api import access
 from girder.api.docs import addModel
 from girder.api.describe import Description, autoDescribeRoute
@@ -16,11 +15,9 @@ from girder.utility import ziputil
 from girder.utility.path import getResourcePath
 from girder.utility.progress import ProgressContext
 from girder.models.token import Token
-from girder.models.item import Item
 from girder.models.folder import Folder
 from girder.models.user import User
 from girder.plugins.jobs.constants import REST_CREATE_JOB_TOKEN_SCOPE
-from girder import events
 from gwvolman.tasks import import_tale, build_tale_image
 
 from girder.plugins.jobs.constants import JobStatus
@@ -389,7 +386,7 @@ class Tale(Resource):
 
             # Store the previous status, if present.
             previousStatus = -1
-            try: 
+            try:
                 previousStatus = tale['imageInfo']['status']
             except KeyError:
                 pass
@@ -410,16 +407,16 @@ class Tale(Resource):
             if 'status' in tale['imageInfo'] and tale['imageInfo']['status'] != previousStatus:
                 self.model('tale', 'wholetale').updateTale(tale)
                 user = User().load(job['userId'], force=True)
-                expires = datetime.now() + timedelta(minutes = 10)
-                Notification().createNotification(type="wt_image_build_status", 
-                                                  data=tale, 
+                expires = datetime.now() + timedelta(minutes=10)
+                Notification().createNotification(type="wt_image_build_status",
+                                                  data=tale,
                                                   user=user, expires=expires)
 
     def updateWorkspaceModTime(self, event):
         """
-        Handler for model.file.save, model.file.save.created and 
-        model.file.remove events When files in a workspace are modified or 
-        deleted, update the associated Tale with a workspaceModified  time. 
+        Handler for model.file.save, model.file.save.created and
+        model.file.remove events When files in a workspace are modified or
+        deleted, update the associated Tale with a workspaceModified time.
         This is used to determine whether to rebuild or not.
         """
 
@@ -427,10 +424,11 @@ class Tale(Resource):
         path = getResourcePath('file', event.info, force=True)
 
         # If the file is in a workspace, parse the Tale ID
-        # e.g., "/collection/WholeTale Workspaces/WholeTale Workspaces/5c848784912a470001e9545d/file.txt"
+        # e.g., "/collection/WholeTale Workspaces/
+        #  WholeTale Workspaces/5c848784912a470001e9545d/file.txt"
         if path.startswith('/collection/WholeTale Workspaces/WholeTale Workspaces'):
             elems = path.split('/')
-            taleId = elems[4] 
-            tale = self.model('tale', 'wholetale').load( elems[4], force=True)
+            taleId = elems[4]
+            tale = self.model('tale', 'wholetale').load(taleId, force=True)
             tale['workspaceModified'] = int(time.time())
             self.model('tale', 'wholetale').save(tale)

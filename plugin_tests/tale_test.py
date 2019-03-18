@@ -23,7 +23,11 @@ class FakeAsyncResult(object):
         self.tale_id = tale_id
 
     def get(self, timeout=None):
-        return str('image_digest')
+        return {
+            'image_digest': 'digest123',
+            'repo2docker_version': 1,
+            'last_build': 123
+        }
 
 
 def setUpModule():
@@ -708,8 +712,7 @@ class TaleTestCase(base.TestCase):
             type='application/json',
             body=json.dumps({
                 'imageId': str(self.image['_id']),
-                'involatileData': [
-                ]
+                'dataSet': []
             })
         )
         self.assertStatusOk(resp)
@@ -771,7 +774,7 @@ class TaleTestCase(base.TestCase):
 
             tale = Tale().load(tale['_id'], force=True)
             self.assertEqual(tale['imageInfo']['status'], ImageStatus.AVAILABLE)
-            self.assertEqual(tale['imageInfo']['digest'], 'image_digest')
+            self.assertEqual(tale['imageInfo']['digest'], 'digest123')
 
             # Set status to ERROR
             #job = jobModel.load(job['_id'], force=True)
@@ -781,7 +784,7 @@ class TaleTestCase(base.TestCase):
             #tale = Tale().load(tale['_id'], force=True)
             #self.assertEqual(tale['imageInfo']['status'], ImageStatus.INVALID)
 
-   def tearDown(self):
+    def tearDown(self):
         self.model('user').remove(self.user)
         self.model('user').remove(self.admin)
         self.model('image', 'wholetale').remove(self.image)

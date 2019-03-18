@@ -38,7 +38,7 @@ class Tale(AccessControlledModel):
             level=AccessType.READ,
             fields=({'_id', 'folderId', 'imageId', 'creatorId', 'created',
                      'format', 'dataSet', 'narrative', 'narrativeId', 'licenseSPDX',
-                     'imageInfo', 'doi', 'publishedURI', 'workspaceId', 
+                     'imageInfo', 'doi', 'publishedURI', 'workspaceId',
                      'workspaceModified'} | self.modifiableFields))
         self.exposeFields(level=AccessType.ADMIN, fields={'published'})
 
