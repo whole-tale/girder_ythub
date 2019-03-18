@@ -284,7 +284,7 @@ class DataONEHarversterTestCase(base.TestCase):
         # TODO: check if it's that method is still used anywhere
         resp = self.request('/folder/registered', method='GET', user=self.user)
         self.assertStatusOk(resp)
-        self.assertEqual(len(resp.json), 1)
+        self.assertEqual(len(resp.json), 4)
         # self.assertEqual(folder, resp.json[0])
 
         ds_item = next((_ for _ in datasets if _['_modelType'] == 'item'), None)

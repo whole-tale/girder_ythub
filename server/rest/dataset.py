@@ -7,6 +7,7 @@ from girder.api.describe import Description, autoDescribeRoute
 from girder.api.rest import Resource
 from girder.constants import AccessType, SortDir, TokenScope
 from girder.exceptions import ValidationException
+from girder.models.item import Item
 from girder.models.user import User
 from girder.utility.progress import ProgressContext
 from ..constants import CATALOG_NAME
@@ -126,11 +127,13 @@ class Dataset(Resource):
             folder['_modelType'] = 'folder'
             datasets.append(_itemOrFolderToDataset(folder))
 
-        for item in folderModel.childItems(
-                folder=parent, limit=limit, offset=offset, sort=sort,
-                filters=filters):
-            item['_modelType'] = 'item'
-            datasets.append(_itemOrFolderToDataset(item))
+        if myData:
+            cursor = Item().find(filters)
+            for item in Item().filterResultsByPermission(
+                    cursor, user, AccessType.READ, limit=limit, offset=offset
+            ):
+                item['_modelType'] = 'item'
+                datasets.append(_itemOrFolderToDataset(item))
         return datasets
 
     def _getResource(self, id, type):
