@@ -262,7 +262,7 @@ class Tale(Resource):
 
     @access.user
     @autoDescribeRoute(
-        Description('Export a tale.')
+        Description('Export a tale as a zipfile')
         .modelParam('id', model='tale', plugin='wholetale', level=AccessType.READ)
         .responseClass('tale')
         .produces('application/zip')
@@ -271,21 +271,13 @@ class Tale(Resource):
     )
     def exportTale(self, tale):
         user = self.getCurrentUser()
-
-        # Construct a sanitized name for the ZIP archive using a whitelist
-        # approach
         zip_name = str(tale['_id'])
-
-        setResponseHeader('Content-Type', 'application/zip')
-        setContentDisposition(zip_name + '.zip')
 
         def stream():
             zip_generator = ziputil.ZipGenerator(zip_name)
 
             # Add files from the workspace
-            folder = self.model('folder').load(tale['workspaceId'],
-                                               user=user,
-                                               force=True)
+            folder = self.model('folder').load(tale['workspaceId'], user=user)
             for (path, f) in self.model('folder').fileList(folder,
                                                            user=user,
                                                            subpath=False):
@@ -326,6 +318,8 @@ class Tale(Resource):
 
             yield zip_generator.footer()
 
+        setResponseHeader('Content-Type', 'application/zip')
+        setContentDisposition(zip_name + '.zip')
         return stream
 
     @access.public
