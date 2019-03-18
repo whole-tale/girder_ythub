@@ -618,6 +618,37 @@ class TaleTestCase(base.TestCase):
         self.assertEqual(resp.json['publishedURI'], published_uri)
         self.assertEqual(resp.json['licenseSPDX'], newLicense)
 
+    def testManifest(self):
+        from server.lib.license import WholeTaleLicense
+
+        resp = self.request(
+            path='/tale', method='POST', user=self.user,
+            type='application/json',
+            body=json.dumps({
+                'folderId': '1234',
+                'imageId': str(self.image['_id']),
+                'dataSet': [],
+                'title': 'tale tile',
+                'description': 'description',
+                'config': {},
+                'public': False,
+                'published': False,
+                'doi': 'doi',
+                'publishedURI': 'published_uri',
+                'licenseSPDX': WholeTaleLicense.default_spdx()
+            })
+        )
+
+        self.assertStatus(resp, 200)
+        pth ='/tale/{}/manifest'.format(str(resp.json['_id']))
+        print(pth)
+        resp = self.request(
+            path=pth, method='GET', user=self.user)
+        # The contents of the manifes are checked in the manifest tests, so
+        # just make sure that we get the right response
+        self.assertStatus(resp, 200)
+
+
     def tearDown(self):
         self.model('user').remove(self.user)
         self.model('user').remove(self.admin)

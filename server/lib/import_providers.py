@@ -40,6 +40,14 @@ class ImportProvider:
     def listFiles(self, entity: Entity) -> FileMap:
         raise NotImplementedError()
 
+    def getDatasetUID(self, doc: object, user: object) -> str:
+        """Given a registered object, return dataset DOI"""
+        raise NotImplementedError()
+
+    def getURI(self, doc: object, user: object) -> str:
+        """Given a registered object, return a URI for it"""
+        raise NotImplementedError()
+
     def register(self, parent: object, parentType: str, progress, user, dataMap: DataMap,
                  base_url: str = None):
         stack = [(parent, parentType)]
@@ -76,8 +84,10 @@ class ImportProvider:
     def _registerFile(self, stack, item: ImportItem, user):
         (parent, parentType) = stack[-1]
         gitem = self.itemModel.createItem(item.name, user, parent, reuseExisting=True)
+        meta = {'provider': self.getName()}
         if item.identifier:
-            gitem = self.itemModel.setMetadata(gitem, {'identifier': item.identifier})
+            meta['identifier'] = item.identifier
+        gitem = self.itemModel.setMetadata(gitem, meta)
 
         # girder does not allow anything else than http and https. So we need a better
         # mechanism here to communicate relevant information to WTDM

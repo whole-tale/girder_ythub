@@ -20,6 +20,7 @@ from gwvolman.tasks import import_tale
 from ..schema.tale import taleModel as taleSchema
 from ..models.tale import Tale as taleModel
 from ..models.image import Image as imageModel
+from ..lib.manifest import Manifest
 
 addModel('tale', taleSchema, resources='tale')
 
@@ -40,6 +41,7 @@ class Tale(Resource):
         self.route('GET', (':id', 'access'), self.getTaleAccess)
         self.route('PUT', (':id', 'access'), self.updateTaleAccess)
         self.route('GET', (':id', 'export'), self.exportTale)
+        self.route('GET', (':id', 'manifest'), self.generateManifest)
 
     @access.public
     @filtermodel(model='tale', plugin='wholetale')
@@ -321,3 +323,21 @@ class Tale(Resource):
             yield zip.footer()
 
         return stream
+
+    @access.public
+    @autoDescribeRoute(
+        Description('Generate the Tale manifest')
+        .modelParam('id', model='tale', plugin='wholetale', level=AccessType.READ)
+        .errorResponse('ID was invalid.')
+    )
+    def generateManifest(self, tale):
+        """
+        Creates a manifest document and returns the contents.
+        :param tale: The Tale whose information is being used
+        :param itemIds: An optional list of items to include in the manifest
+        :return: A JSON structure representing the Tale
+        """
+
+        user = self.getCurrentUser()
+        manifest_doc = Manifest(tale, user)
+        return manifest_doc.manifest

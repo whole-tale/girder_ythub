@@ -1,5 +1,7 @@
 from girder import logger
 from girder.api.rest import RestException
+from girder.constants import AccessType
+from girder.models.folder import Folder
 
 from . import DataONELocations
 from ..import_providers import ImportProvider
@@ -45,6 +47,13 @@ class DataOneImportProvider(ImportProvider):
     def listFiles(self, entity: Entity) -> FileMap:
         result = get_package_list(entity.getValue(), entity['base_url'])
         return FileMap.fromDict(result)
+
+    def getDatasetUID(self, doc: object, user: object) -> str:
+        if 'folderId' in doc:
+            # It's an item, grab the parent which should contain all the info
+            doc = Folder().load(doc['folderId'], user=user, level=AccessType.READ)
+        # obj is a folder at this point use its meta
+        return doc['meta']['identifier']
 
     def _listRecursive(self, user, pid: str, name: str, base_url: str = DataONELocations.prod_cn,
                        progress=None):
