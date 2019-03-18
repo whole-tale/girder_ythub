@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import re
-import requests
+import json
 
 from girder.api import access
 from girder.api.docs import addModel
@@ -21,6 +20,7 @@ from ..schema.tale import taleModel as taleSchema
 from ..models.tale import Tale as taleModel
 from ..models.image import Image as imageModel
 from ..lib.manifest import Manifest
+from ..lib.license import WholeTaleLicense
 
 addModel('tale', taleSchema, resources='tale')
 
@@ -262,66 +262,64 @@ class Tale(Resource):
 
     @access.user
     @autoDescribeRoute(
-        Description('Export a tale.')
+        Description('Export a tale as a zipfile')
         .modelParam('id', model='tale', plugin='wholetale', level=AccessType.READ)
         .responseClass('tale')
         .produces('application/zip')
         .errorResponse('ID was invalid.', 404)
         .errorResponse('You are not authorized to export this tale.', 403)
     )
-    def exportTale(self, tale, params):
+    def exportTale(self, tale):
         user = self.getCurrentUser()
-        folder = self.model('folder').load(
-            tale['folderId'],
-            user=user,
-            level=AccessType.READ,
-            exc=True)
-        image = self.model('image', 'wholetale').load(
-            tale['imageId'], user=user, level=AccessType.READ, exc=True)
-        recipe = self.model('recipe', 'wholetale').load(
-            image['recipeId'], user=user, level=AccessType.READ, exc=True)
-
-        # Construct a sanitized name for the ZIP archive using a whitelist
-        # approach
-        zip_name = re.sub('[^a-zA-Z0-9-]', '_', tale['title'])
-
-        setResponseHeader('Content-Type', 'application/zip')
-        setContentDisposition(zip_name + '.zip')
-
-        # Temporary: Fetch the GitHub archive of the recipe. Note that this is
-        # done in a streaming fashion because ziputil makes use of generators
-        # when files are added to the zip
-        url = '{}/archive/{}.tar.gz'.format(recipe['url'], recipe['commitId'])
-        req = requests.get(url, stream=True)
+        zip_name = str(tale['_id'])
 
         def stream():
-            zip = ziputil.ZipGenerator(zip_name)
+            zip_generator = ziputil.ZipGenerator(zip_name)
 
-            # Add files from the Tale folder
+            # Add files from the workspace
+            folder = self.model('folder').load(tale['workspaceId'], user=user)
             for (path, f) in self.model('folder').fileList(folder,
                                                            user=user,
                                                            subpath=False):
-
-                for data in zip.addFile(f, path):
+                for data in zip_generator.addFile(f, 'workspace/' + path):
                     yield data
 
-            # Temporary: Add Image metadata
-            for data in zip.addFile(lambda: image.__str__(), 'image.txt'):
+            # Add manifest.json
+            manifest_doc = Manifest(tale, user)
+            for data in zip_generator.addFile(lambda: json.dumps(manifest_doc.manifest,
+                                                                 indent=4),
+                                              'metadata/manifest.json'):
                 yield data
 
-            # Temporary: Add Recipe metadata
-            for data in zip.addFile(lambda: recipe.__str__(), 'recipe.txt'):
+            # Add top level README
+            for data in zip_generator.addFile(lambda: 'Instructions on running the'
+                                                      'docker container',
+                                              'README.txt'):
                 yield data
 
-            # Temporary: Add a zip of the recipe archive
-            # TODO: Grab proper filename from header
-            # e.g. 'Content-Disposition': 'attachment; filename= \
-            # jupyter-base-b45f9a575602e6038b4da6333f2c3e679ee01c58.tar.gz'
-            for data in zip.addFile(req.iter_content, 'archive.tar.gz'):
+            # Add the environment
+            for data in zip_generator.addFile(lambda: str(tale['imageId']),
+                                              'environment.txt'):
                 yield data
 
-            yield zip.footer()
+            # Add the license
+            tale_license = tale.get('licenseSPDX')
+            if not tale_license:
+                tale_license = WholeTaleLicense.default_spdx()
 
+            # Search the supported licenses for the Tale's
+            tale_licenses = WholeTaleLicense()
+            license_object = (x for x in tale_licenses.supported_licenses() if
+                              (x['spdx'] == tale_license))
+
+            for data in zip_generator.addFile(lambda: next(license_object)['text'],
+                                              'LICENSE'):
+                yield data
+
+            yield zip_generator.footer()
+
+        setResponseHeader('Content-Type', 'application/zip')
+        setContentDisposition(zip_name + '.zip')
         return stream
 
     @access.public
