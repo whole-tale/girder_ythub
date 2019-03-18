@@ -320,8 +320,8 @@ class ManifestTestCase(base.TestCase):
                 },
             },
             {'uri': '../LICENSE', 'schema:license': 'CC-BY-4.0'},
-            # {'uri': '../README.txt', '@type': 'schema:HowTo'},
-            # {'uri': '../environment.txt'},
+            {'uri': '../README.txt', '@type': 'schema:HowTo'},
+            {'uri': '../environment.txt'},
         ]
         from operator import itemgetter
 
