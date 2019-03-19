@@ -39,12 +39,25 @@ def stream(tale, user):
         yield from dump_and_checksum(payload, fname)
 
     manifest_doc = Manifest(tale, user)
+    manifest = manifest_doc.manifest
+    fetch_file = ""
+    # Update manifest with hashes
+    for bundle in manifest['aggregates']:
+        if 'bundledAs' not in bundle:
+            continue
+        folder = bundle['bundledAs']['folder']
+        fetch_file += "{uri} {size} {folder}".format(
+            uri=bundle['uri'], size=bundle['size'], folder=folder.replace('..', 'data'))
+        fetch_file += bundle['bundledAs'].get('filename', '')
+        fetch_file += '\n'
+
     for payload, fname in (
         (lambda: json.dumps(manifest_doc.manifest, indent=4), 'metadata/manifest.json'),
         (lambda: str(tale['imageId']), 'metadata/environment.txt'),
         (lambda: state['sha256'], 'manifest-sha256.txt'),
         (lambda: state['md5'], 'manifest-md5.txt'),
-        (lambda: default_bagit, 'bagit.txt')
+        (lambda: fetch_file, 'fetch.txt'),
+        (lambda: default_bagit, 'bagit.txt'),
     ):
         yield from zip_generator.addFile(payload, fname)
 
