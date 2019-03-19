@@ -237,7 +237,7 @@ class Manifest:
                 objects from external_objects
 
         """
-        if not dataSet:
+        if dataSet is None:
             dataSet = self.tale['dataSet']
 
         dataset_top_identifiers = set()
