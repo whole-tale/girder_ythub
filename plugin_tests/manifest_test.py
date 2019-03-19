@@ -55,6 +55,19 @@ class ManifestTestCase(base.TestCase):
             self.model('user').createUser(**user) for user in self.users
         ]
 
+        self.new_authors = [
+            {
+                "firstName": self.admin['firstName'],
+                "lastName": self.admin['lastName'],
+                "orcid": 'https://orcid.org/1234'
+            },
+            {
+                "firstName": self.user['firstName'],
+                "lastName": self.user['lastName'],
+                "orcid": 'https://orcid.org/9876'
+            }
+        ]
+
         data_collection = self.model('collection').createCollection(
             'WholeTale Catalog', public=True, reuseExisting=True
         )
@@ -136,7 +149,7 @@ class ManifestTestCase(base.TestCase):
             '_id': ObjectId(),
             'name': 'Main Tale',
             'description': 'Tale Desc',
-            'authors': self.user['firstName'] + ' ' + self.user['lastName'],
+            'authors': self.new_authors,
             'creator': self.user,
             'public': True,
             'data': dataSet,
@@ -240,6 +253,11 @@ class ManifestTestCase(base.TestCase):
         parent_dataset = 'urn:uuid:100.99.xx'
         agg = manifest_doc.create_aggregation_record(uri, bundle, parent_dataset)
         self.assertEqual(agg['schema:isPartOf'], parent_dataset)
+
+    def _testAddTaleCreator(self):
+        from server.lib.manifest import Manifest
+        manifest_doc = Manifest(self.tale, self.user)
+        self.assertTrue(len(manifest_doc.manifest['schema:author']))
 
     def _testGetFolderIdentifier(self):
         from server.lib.manifest import get_folder_identifier
