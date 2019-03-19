@@ -7,6 +7,8 @@ from girder.constants import TokenScope
 from girder.api.rest import Resource
 from girder.plugins.jobs.models.job import Job
 
+from gwvolman.tasks import publish
+
 
 class Publish(Resource):
     """
@@ -41,19 +43,11 @@ class Publish(Resource):
         user = self.getCurrentUser()
         token = self.getCurrentToken()
 
-        jobTitle = 'Publishing Tale to DataONE'
-        jobModel = Job()
-
-        args = (taleId,
-                remoteMemberNode,
-                authToken,
-                str(token['_id']),
-                str(user['_id']))
-        job = jobModel.createJob(
-            title=jobTitle, type='publish', handler='worker_handler',
-            user=user, public=False, args=args, kwargs={},
-            otherFields={
-                'celeryTaskName': 'gwvolman.tasks.publish'
-            })
-        jobModel.scheduleJob(job)
-        return job
+        publishTask = publish.delay(
+            tale=taleId,
+            dataone_node=remoteMemberNode,
+            dataone_auth_token=authToken,
+            user_id=str(user['_id']),
+            girder_client_token=str(token['_id'])
+        )
+        return publishTask.job
