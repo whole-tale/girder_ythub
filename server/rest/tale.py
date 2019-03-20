@@ -239,8 +239,7 @@ class Tale(Resource):
                                      'images/demo-graph2.jpg')),
                 authors=tale.get('authors', default_author),
                 category=tale.get('category', 'science'),
-                published=False, narrative=tale.get('narrative'),
-                doi=tale.get('doi'), publishedURI=tale.get('publishedURI'),
+                narrative=tale.get('narrative'),
                 licenseSPDX=tale.get('licenseSPDX')
             )
 

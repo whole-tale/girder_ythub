@@ -168,11 +168,16 @@ class TaleTestCase(base.TestCase):
                 'title': 'new name',
                 'description': 'new description',
                 'config': {'memLimit': '2g'},
-                'public': True,
-                'published': False,
-                'doi': 'doi:10.x.x.xx',
-                'publishedURI': 'publishedURI_URL',
-                'licenseSPDX': taleLicense
+                'public': False,
+                'licenseSPDX': taleLicense,
+                'publishInfo': [
+                    {
+                
+                       'pid': 'published_pid',
+                       'uri': 'published_url',
+                       'date': '2019-01-23T15:48:17.476000+00:00',
+                    }
+                ]
             })
         )
         self.assertStatusOk(resp)
@@ -512,7 +517,7 @@ class TaleTestCase(base.TestCase):
             "folderId": data_dir['_id'],
             "imageId": "5873dcdbaec030000144d233",
             "public": True,
-            "published": False,
+            "publishInfo": [],
             "title": "Fake Unvalidated Tale"
         }
         tale = self.model('tale', 'wholetale').save(tale)  # get's id
@@ -572,9 +577,6 @@ class TaleTestCase(base.TestCase):
         description = 'new description'
         config = {'memLimit': '2g'}
         public = True
-        published = True
-        doi = 'doi:10.x.zz'
-        published_uri = 'atestURI'
         tale_licenses = WholeTaleLicense()
         taleLicense = tale_licenses.supported_spdxes().pop()
 
@@ -592,10 +594,14 @@ class TaleTestCase(base.TestCase):
                 'description': 'description',
                 'config': {},
                 'public': False,
-                'published': False,
-                'doi': 'doi',
-                'publishedURI': 'published_uri',
-                'licenseSPDX': taleLicense
+                'licenseSPDX': taleLicense,
+                'publishInfo': [
+                    {
+                       'pid': 'published_pid',
+                       'uri': 'published_url',
+                       'date': '2019-01-23T15:48:17.476000+00:00',
+                    }
+                ]
             })
         )
 
@@ -618,10 +624,14 @@ class TaleTestCase(base.TestCase):
                 'description': description,
                 'config': config,
                 'public': public,
-                'published': published,
-                'doi': doi,
-                'publishedURI': published_uri,
-                'licenseSPDX': newLicense
+                'licenseSPDX': newLicense,
+                'publishInfo': [
+                    {
+                        'pid': 'published_pid',
+                        'uri': 'published_url',
+                        'date': '2019-01-23T15:48:17.476000+00:00',
+                    }
+                ]
             })
         )
 
@@ -632,9 +642,9 @@ class TaleTestCase(base.TestCase):
         self.assertEqual(resp.json['description'], description)
         self.assertEqual(resp.json['config'], config)
         self.assertEqual(resp.json['public'], public)
-        self.assertEqual(resp.json['published'], published)
-        self.assertEqual(resp.json['doi'], doi)
-        self.assertEqual(resp.json['publishedURI'], published_uri)
+        self.assertEqual(resp.json['publishInfo'][0]['pid'], 'published_pid')
+        self.assertEqual(resp.json['publishInfo'][0]['uri'], 'published_url')
+        self.assertEqual(resp.json['publishInfo'][0]['date'], '2019-01-23T15:48:17.476000+00:00')
         self.assertEqual(resp.json['licenseSPDX'], newLicense)
 
     def testManifest(self):
@@ -650,9 +660,7 @@ class TaleTestCase(base.TestCase):
                 'description': 'description',
                 'config': {},
                 'public': False,
-                'published': False,
-                'doi': 'doi',
-                'publishedURI': 'published_uri',
+                'publishInfo': [],
                 'licenseSPDX': WholeTaleLicense.default_spdx()
             })
         )
@@ -661,7 +669,7 @@ class TaleTestCase(base.TestCase):
         pth = '/tale/{}/manifest'.format(str(resp.json['_id']))
         resp = self.request(
             path=pth, method='GET', user=self.user)
-        # The contents of the manifes are checked in the manifest tests, so
+        # The contents of the manifest are checked in the manifest tests, so
         # just make sure that we get the right response
         self.assertStatus(resp, 200)
 
@@ -765,9 +773,7 @@ class TaleTestCase(base.TestCase):
                 'description': 'description',
                 'config': {},
                 'public': False,
-                'published': False,
-                'doi': 'doi',
-                'publishedURI': 'published_uri',
+                'publishInfo': [],
                 'licenseSPDX': WholeTaleLicense.default_spdx()
             })
         )

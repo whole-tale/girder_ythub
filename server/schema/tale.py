@@ -1,13 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from .misc import containerConfigSchema, dataSetSchema, imageInfoSchema
+from .misc import containerConfigSchema, \
+    dataSetSchema, \
+    imageInfoSchema, \
+    publishInfoListSchema
 
 taleModel = {
     "definitions": {
         "containerConfig": containerConfigSchema,
         "dataSet": dataSetSchema,
-        'imageInfo': imageInfoSchema
+        'imageInfo': imageInfoSchema,
+        "publishInfo": publishInfoListSchema,
     },
     "description": "Object representing a Tale.",
     "required": [
@@ -66,11 +70,6 @@ taleModel = {
             "description": "If set to true the Tale is accessible by anyone.",
             "default": True
         },
-        "published": {
-            "type": "boolean",
-            "default": False,
-            "description": "If set to true the Tale cannot be deleted or made unpublished."
-        },
         "config": {
             "$ref": "#/definitions/containerConfig"
         },
@@ -115,15 +114,8 @@ taleModel = {
             "type": "string",
             "description": "The license that the Tale is under"
         },
-        "doi": {
-            "type": ["string", "null"],
-            "description": "A unique identifier assigned to this tale from a "
-                           "publishing source."
-        },
-        "publishedURI": {
-            "type": ["string", "null"],
-            "description": "A URI pointing to the location of the published "
-                           "Tale."
+        "publishInfo": {
+            "$ref": "#/definitions/publishInfo"
         }
     },
     'example': {
@@ -159,9 +151,13 @@ taleModel = {
         "narrative": [],
         "narrativeId": "5c4887409759c200017b2319",
         "public": False,
-        "published": False,
-        "publishedURI": "https://dev.nceas.ucsb.edu/view/urn:uuid:939e48ec-1107-45d9"
-                        "-baa7-05cef08e51cd",
+        "publishInfo": [
+            {
+                "pid": "urn:uuid:939e48ec-1107-45d9-baa7-05cef08e51cd",
+                "uri": "https://dev.nceas.ucsb.edu/view/urn:uuid:8ec-1107-45d9-baa7-05cef08e51cd",
+                "date": "2019-01-23T15:48:17.476000+00:00"
+            }
+        ],
         "title": "My Tale",
         "license": "CC0-1.0",
         "updated": "2019-01-23T15:48:17.476000+00:00"

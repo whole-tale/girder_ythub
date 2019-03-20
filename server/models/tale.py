@@ -31,16 +31,15 @@ class Tale(AccessControlledModel):
         })
         self.modifiableFields = {
             'title', 'description', 'public', 'config', 'updated', 'authors',
-            'category', 'icon', 'iframe', 'illustration', 'dataSet',
-            'published', 'doi', 'publishedURI', 'licenseSPDX', 'workspaceModified'
+            'category', 'icon', 'iframe', 'illustration', 'dataSet', 'licenseSPDX',
+            'workspaceModified', 'publishInfo'
         }
         self.exposeFields(
             level=AccessType.READ,
             fields=({'_id', 'folderId', 'imageId', 'creatorId', 'created',
                      'format', 'dataSet', 'narrative', 'narrativeId', 'licenseSPDX',
-                     'imageInfo', 'doi', 'publishedURI', 'workspaceId',
+                     'imageInfo', 'publishInfo', 'workspaceId',
                      'workspaceModified'} | self.modifiableFields))
-        self.exposeFields(level=AccessType.ADMIN, fields={'published'})
 
     def validate(self, tale):
         if 'iframe' not in tale:
@@ -49,11 +48,8 @@ class Tale(AccessControlledModel):
         if '_id' not in tale:
             return tale
 
-        if 'doi' not in tale:
-            tale['doi'] = None
-
-        if 'publishedURI' not in tale:
-            tale['publishedURI'] = None
+        if 'publishInfo' not in tale:
+            tale['publishInfo'] = []
 
         if 'dataSet' not in tale:
             tale['dataSet'] = []
@@ -64,13 +60,6 @@ class Tale(AccessControlledModel):
         if tale['licenseSPDX'] not in tale_licenses.supported_spdxes():
             tale['licenseSPDX'] = WholeTaleLicense.default_spdx()
 
-        return tale
-
-    def setPublished(self, tale, publish, save=False):
-        assert isinstance(publish, bool)
-        tale['published'] = publish or tale['published']
-        if save:
-            tale = self.save(tale)
         return tale
 
     def list(self, user=None, data=None, image=None, limit=0, offset=0,
@@ -104,9 +93,8 @@ class Tale(AccessControlledModel):
             yield r
 
     def createTale(self, image, data, creator=None, save=True, title=None,
-                   description=None, public=None, config=None, published=False,
-                   authors=None, icon=None, category=None, illustration=None,
-                   narrative=None, doi=None, publishedURI=None,
+                   description=None, public=None, config=None, authors=None,
+                   icon=None, category=None, illustration=None, narrative=None,
                    licenseSPDX=WholeTaleLicense.default_spdx()):
 
         if creator is None:
@@ -136,10 +124,7 @@ class Tale(AccessControlledModel):
             'narrative': narrative or [],
             'title': title,
             'public': public,
-            'published': published,
             'updated': now,
-            'doi': doi,
-            'publishedURI': publishedURI,
             'licenseSPDX': licenseSPDX
         }
         if public is not None and isinstance(public, bool):
