@@ -229,17 +229,6 @@ class DataONEHarversterTestCase(base.TestCase):
                 }]
         )
 
-        resp = self.request(
-            path='/folder', method='GET', user=self.user, params={
-                'parentType': 'user',
-                'parentId': str(self.user['_id']),
-                'text': 'Data',
-                'sort': 'name',
-                'sortdir': -1
-            })
-        self.assertStatusOk(resp)
-        dataFolder = resp.json[0]
-
         with httmock.HTTMock(mockSearchDataONE, mockCurldrop,
                              self.mockOtherRequest):
             resp = self.request(

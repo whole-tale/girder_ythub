@@ -32,13 +32,14 @@ class Tale(AccessControlledModel):
         self.modifiableFields = {
             'title', 'description', 'public', 'config', 'updated', 'authors',
             'category', 'icon', 'iframe', 'illustration', 'dataSet',
-            'published', 'doi', 'publishedURI', 'licenseSPDX'
+            'published', 'doi', 'publishedURI', 'licenseSPDX', 'workspaceModified'
         }
         self.exposeFields(
             level=AccessType.READ,
             fields=({'_id', 'folderId', 'imageId', 'creatorId', 'created',
                      'format', 'dataSet', 'narrative', 'narrativeId', 'licenseSPDX',
-                     'doi', 'publishedURI', 'workspaceId'} | self.modifiableFields))
+                     'imageInfo', 'doi', 'publishedURI', 'workspaceId',
+                     'workspaceModified'} | self.modifiableFields))
         self.exposeFields(level=AccessType.ADMIN, fields={'published'})
 
     def validate(self, tale):
@@ -114,7 +115,7 @@ class Tale(AccessControlledModel):
             creatorId = creator.get('_id', None)
 
         if title is None:
-            title = '{} with {}'.format(image['fullName'], DATADIRS_NAME)
+            title = '{} with {}'.format(image['name'], DATADIRS_NAME)
         # if illustration is None:
             # Get image from SILS
 

@@ -5,20 +5,13 @@ from girder.api.docs import addModel
 from girder.api.describe import Description, autoDescribeRoute
 from girder.api.rest import Resource, filtermodel, RestException
 from girder.constants import AccessType, SortDir, TokenScope
-from girder.plugins.jobs.constants import JobStatus
-from girder.plugins.jobs.models.job import Job
-from girder.plugins.worker import getCeleryApp
-from ..constants import ImageStatus
 from ..schema.misc import containerConfigSchema, tagsSchema
 
 imageModel = {
     "description": "Object representing a WT Image.",
     "required": [
         "_id",
-        "fullName",
-        "status",
-        "imageId",
-        "digest",
+        "name",
         "tags",
         "parentId"
     ],
@@ -30,11 +23,6 @@ imageModel = {
         "name": {
             "type": "string",
             "description": "A user-friendly name"
-        },
-        "fullName": {
-            "type": "string",
-            "description": ("An image name following docker format: "
-                            "namespace/repository(@digest)"),
         },
         "description": {
             "type": "string"
@@ -50,36 +38,16 @@ imageModel = {
             "type": "boolean",
             "description": "If 'true', the tale can be embedded in an iframe"
         },
-        "digest": {
-            "type": "string",
-            "description": ("Checksum of a successfully built image "
-                            "that can be used to pull a specific version "
-                            " of the image."),
-        },
         "tags": {
             "type": "array",
             "items": {
                 "type": "string"
             },
-            "description": "A human readable identification of the Recipe.",
-            "default": [
-                "latest"
-            ]
+            "description": "A human readable identification of the environment."
         },
         "parentId": {
             "type": "string",
             "description": "ID of a previous version of the Image"
-        },
-        "status": {
-            "type": "string",
-            "default": "unavailable",
-            "description": "Status of the image.",
-            "enum": [
-                "invalid",
-                "unavailable",
-                "building",
-                "available"
-            ]
         },
         "public": {
             "type": "boolean",
@@ -105,15 +73,13 @@ imageModel = {
         '_accessLevel': 2,
         '_id': '5873dcdbaec030000144d233',
         '_modelType': 'image',
-        'fullName': 'Xarthisius/wt_image',
+        'name': 'Jupyter Notebook',
         'creatorId': '18312dcdbaec030000144d233',
         'created': '2017-01-09T18:56:27.262000+00:00',
-        'description': 'My fancy image',
-        'digest': '123456',
+        'description': 'Jupyter Notebook environment',
         'parentId': 'null',
         'public': True,
-        'tags': ['latest', 'py3'],
-        'status': 'building',
+        'tags': ['jupyter', 'py3'],
         'updated': '2017-01-10T16:15:17.313000+00:00',
     },
 }
@@ -131,9 +97,6 @@ class Image(Resource):
         self.route('GET', (':id',), self.getImage)
         self.route('PUT', (':id',), self.updateImage)
         self.route('DELETE', (':id',), self.deleteImage)
-        self.route('PUT', (':id', 'build'), self.buildImage)
-        self.route('PUT', (':id', 'check'), self.checkImage)
-        self.route('POST', (':id', 'copy'), self.copyImage)
         self.route('GET', (':id', 'access'), self.getImageAccess)
         self.route('PUT', (':id', 'access'), self.updateImageAccess)
 
@@ -242,10 +205,6 @@ class Image(Resource):
     @filtermodel(model='image', plugin='wholetale')
     @autoDescribeRoute(
         Description('Create a new image.')
-        .param('recipeId', 'The ID of a recipe used to build the image',
-               dataType='string', required=True)
-        .param('fullName', 'An image name conforming to docker standard',
-               dataType='string', required=True)
         .param('name', 'A name of the image.', required=False)
         .param('description', 'A description of the image.',
                required=False)
@@ -262,102 +221,13 @@ class Image(Resource):
         .responseClass('image')
         .errorResponse('Query parameter was invalid')
     )
-    def createImage(self, recipeId, fullName, name, description, public, icon,
+    def createImage(self, name, description, public, icon,
                     iframe, tags, config, params):
         user = self.getCurrentUser()
-        recipe = self.model('recipe', 'wholetale').load(
-            recipeId, user=user, level=AccessType.READ, exc=True)
         return self.model('image', 'wholetale').createImage(
-            recipe, fullName, name=name, tags=tags, creator=user,
+            name=name, tags=tags, creator=user,
             save=True, parent=None, description=description, public=public,
             config=config, icon=icon, iframe=iframe)
-
-    @access.user
-    @autoDescribeRoute(
-        Description('Build an existing image')
-        .modelParam('id', model='image', plugin='wholetale', level=AccessType.WRITE,
-                    description='The ID of the image.')
-        .errorResponse('ID was invalid.')
-        .errorResponse('Admin access was denied for the image.', 403)
-    )
-    def buildImage(self, image, params):
-        user = self.getCurrentUser()
-        recipe = self.model('recipe', 'wholetale').load(
-            image['recipeId'], user=user, level=AccessType.READ, exc=True)
-        jobTitle = 'Building image %s' % image['fullName']
-        jobModel = Job()
-
-        # Create a job to be handled by the worker plugin
-        args = (
-            str(image['_id']),
-            recipe['url'],
-            recipe['commitId']
-        )
-        job = jobModel.createJob(
-            title=jobTitle, type='build_image', handler='worker_handler',
-            user=user, public=False, args=args, kwargs={},
-            otherFields={
-                'celeryTaskName': 'gwvolman.tasks.build_image',
-                'celeryQueue': 'manager'
-            })
-        jobModel.scheduleJob(job)
-        return job
-
-    def updateImageStatus(self, event):
-        job = event.info['job']
-        if job['type'] == 'build_image' and job.get('status') is not None:
-            status = int(job['status'])
-            # FIXME: Who should be able to build images?
-            image = self.model('image', 'wholetale').load(
-                job['args'][0], force=True)
-            if status == JobStatus.SUCCESS:
-                result = getCeleryApp().AsyncResult(job['celeryTaskId']).get()
-                digest = result['image_digest']
-                if digest:
-                    if '@' in digest:
-                        # Grab just the SHA from the end of the digest
-                        image['digest'] = digest.split('@')[1]
-                        image['status'] = ImageStatus.AVAILABLE
-                    else:
-                        image['status'] = ImageStatus.INVALID
-                        print(
-                            'Invalid image digest produced for ' + str(image['_id']) + ': ' + digest
-                        )
-                else:
-                    image['status'] = ImageStatus.INVALID
-                    print('No image digest produced for ' + str(image['_id']))
-            elif status == JobStatus.ERROR:
-                image['status'] = ImageStatus.INVALID
-            elif status in (JobStatus.QUEUED, JobStatus.RUNNING):
-                image['status'] = ImageStatus.BUILDING
-            self.model('image', 'wholetale').updateImage(image)
-
-    @access.admin
-    @autoDescribeRoute(
-        Description('Update/verify the status of the image')
-        .modelParam('id', model='image', plugin='wholetale', level=AccessType.WRITE,
-                    description='The ID of the image.')
-        .errorResponse('ID was invalid.')
-        .errorResponse('Admin access was denied for the image.', 403)
-    )
-    def checkImage(self, image, params):
-        return self.model('image', 'wholetale').checkImage(image)
-
-    @access.user
-    @autoDescribeRoute(
-        Description('Create a copy of an image using an updated recipe')
-        .notes('Create a copy of an image preserving original fullName. '
-               'Operation will only succeed if the new recipe is '
-               'a descendant of the recipe used by the original image.')
-        .modelParam('id', model='image', plugin='wholetale', level=AccessType.READ,
-                    description='The ID of the image.')
-        .param('recipeId', 'The ID of the new recipe', required=True)
-    )
-    def copyImage(self, image, recipeId, params):
-        user = self.getCurrentUser()
-        recipe = self.model('recipe', 'wholetale').load(
-            recipeId, user=user, level=AccessType.READ, exc=True)
-        return self.model('image', 'wholetale').copyImage(image, recipe, creator=user)
 
     @access.user(scope=TokenScope.DATA_OWN)
     @autoDescribeRoute(

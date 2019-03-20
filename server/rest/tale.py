@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import json
+from datetime import datetime, timedelta
+import time
 
 from girder.api import access
 from girder.api.docs import addModel
@@ -10,17 +12,27 @@ from girder.api.rest import Resource, filtermodel, RestException,\
 
 from girder.constants import AccessType, SortDir, TokenScope
 from girder.utility import ziputil
+from girder.utility.path import getResourcePath
 from girder.utility.progress import ProgressContext
 from girder.models.token import Token
 from girder.models.folder import Folder
+from girder.models.user import User
 from girder.plugins.jobs.constants import REST_CREATE_JOB_TOKEN_SCOPE
-from gwvolman.tasks import import_tale
+from gwvolman.tasks import import_tale, build_tale_image
+
+from girder.plugins.jobs.constants import JobStatus
+from girder.models.notification import Notification
 
 from ..schema.tale import taleModel as taleSchema
 from ..models.tale import Tale as taleModel
 from ..models.image import Image as imageModel
 from ..lib.manifest import Manifest
 from ..lib.license import WholeTaleLicense
+
+from girder.plugins.worker import getCeleryApp
+
+from ..constants import ImageStatus
+
 
 addModel('tale', taleSchema, resources='tale')
 
@@ -42,6 +54,7 @@ class Tale(Resource):
         self.route('PUT', (':id', 'access'), self.updateTaleAccess)
         self.route('GET', (':id', 'export'), self.exportTale)
         self.route('GET', (':id', 'manifest'), self.generateManifest)
+        self.route('PUT', (':id', 'build'), self.buildImage)
 
     @access.public
     @filtermodel(model='tale', plugin='wholetale')
@@ -339,3 +352,83 @@ class Tale(Resource):
         user = self.getCurrentUser()
         manifest_doc = Manifest(tale, user)
         return manifest_doc.manifest
+
+    @access.user
+    @autoDescribeRoute(
+        Description('Build the image for the Tale')
+        .modelParam('id', model='tale', plugin='wholetale', level=AccessType.WRITE,
+                    description='The ID of the Tale.')
+        .errorResponse('ID was invalid.')
+        .errorResponse('Admin access was denied for the tale.', 403)
+    )
+    def buildImage(self, tale, params):
+        token = self.getCurrentToken()
+
+        buildTask = build_tale_image.delay(
+            str(tale['_id']),
+            girder_client_token=str(token['_id'])
+        )
+        return buildTask.job
+
+    def updateBuildStatus(self, event):
+        """
+        Event handler that updates the Tale object based on the build_tale_image task.
+        Creates notifications when image build status changes.
+        """
+        job = event.info['job']
+        if job['title'] == 'Build Tale Image' and job.get('status') is not None:
+            status = int(job['status'])
+            tale = self.model('tale', 'wholetale').load(
+                job['args'][0], force=True)
+
+            if 'imageInfo' not in tale:
+                tale['imageInfo'] = {}
+
+            # Store the previous status, if present.
+            previousStatus = -1
+            try:
+                previousStatus = tale['imageInfo']['status']
+            except KeyError:
+                pass
+
+            if status == JobStatus.SUCCESS:
+                result = getCeleryApp().AsyncResult(job['celeryTaskId']).get()
+                tale['imageInfo']['digest'] = result['image_digest']
+                tale['imageInfo']['repo2docker_version'] = result['repo2docker_version']
+                tale['imageInfo']['last_build'] = result['last_build']
+                tale['imageInfo']['status'] = ImageStatus.AVAILABLE
+            elif status == JobStatus.ERROR:
+                tale['imageInfo']['status'] = ImageStatus.INVALID
+            elif status in (JobStatus.QUEUED, JobStatus.RUNNING):
+                tale['imageInfo']['jobId'] = job['_id']
+                tale['imageInfo']['status'] = ImageStatus.BUILDING
+
+            # If the status changed, save the object and send a notification
+            if 'status' in tale['imageInfo'] and tale['imageInfo']['status'] != previousStatus:
+                self.model('tale', 'wholetale').updateTale(tale)
+                user = User().load(job['userId'], force=True)
+                expires = datetime.now() + timedelta(minutes=10)
+                Notification().createNotification(type="wt_image_build_status",
+                                                  data=tale,
+                                                  user=user, expires=expires)
+
+    def updateWorkspaceModTime(self, event):
+        """
+        Handler for model.file.save, model.file.save.created and
+        model.file.remove events When files in a workspace are modified or
+        deleted, update the associated Tale with a workspaceModified time.
+        This is used to determine whether to rebuild or not.
+        """
+
+        # Get the path
+        path = getResourcePath('file', event.info, force=True)
+
+        # If the file is in a workspace, parse the Tale ID
+        # e.g., "/collection/WholeTale Workspaces/
+        #  WholeTale Workspaces/5c848784912a470001e9545d/file.txt"
+        if path.startswith('/collection/WholeTale Workspaces/WholeTale Workspaces'):
+            elems = path.split('/')
+            taleId = elems[4]
+            tale = self.model('tale', 'wholetale').load(taleId, force=True)
+            tale['workspaceModified'] = int(time.time())
+            self.model('tale', 'wholetale').save(tale)
