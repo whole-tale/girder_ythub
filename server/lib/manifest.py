@@ -202,6 +202,31 @@ class Manifest:
             record = self.create_aggregation_record(obj['uri'], bundle, obj['dataset_identifier'])
             self.manifest['aggregates'].append(record)
 
+    def _handle_http_folder(self, folder, user, relpath=''):
+        """
+        Recursively handle HTTP folder and return all child items as ext objs
+
+        In a perfect world there should be a better place for this...
+        """
+        curpath = os.path.join(relpath, folder['name'])
+        dataSet = []
+        ext = []
+        for item in Folder().childItems(folder, user=user):
+            dataSet.append({
+                'itemId': item['_id'],
+                '_modelType': 'item',
+                'mountPath': os.path.join(curpath, item['name'])
+            })
+
+        if dataSet:
+            ext, _ = self._parse_dataSet(dataSet=dataSet, relpath=curpath)
+
+        for subfolder in Folder().childFolders(
+            folder, parentType='folder', user=user
+        ):
+            ext += self._handle_http_folder(subfolder, user, relpath=curpath)
+        return ext
+
     def _parse_dataSet(self, dataSet=None, relpath=''):
         """
         Get the basic info about the contents of `dataSet`
@@ -212,30 +237,7 @@ class Manifest:
                 objects from external_objects
 
         """
-
-        def _handle_http_folder(folder, user, relpath=''):
-            """
-            Recursively handle HTTP folder and return all child items as ext objs
-
-            In a perfect world there should be a better place for this...
-            """
-            curpath = os.path.join(relpath, folder['name'])
-            dataSet = []
-            for item in Folder().childItems(folder, user=user):
-                dataSet.append({
-                    'itemId': item['_id'],
-                    '_modelType': 'item',
-                    'mountPath': os.path.join(curpath, item['name'])
-                })
-            ext, _ = self._parse_dataSet(dataSet=dataSet, relpath=curpath)
-
-            for subfolder in Folder().childFolders(
-                    folder, parentType='folder', user=user
-            ):
-                ext += _handle_http_folder(subfolder, user, relpath=curpath)
-            return ext
-
-        if not dataSet:
+        if dataSet is None:
             dataSet = self.tale['dataSet']
 
         dataset_top_identifiers = set()
@@ -263,7 +265,7 @@ class Manifest:
                     ext_obj['name'] = doc['name']
 
                     if provider_name == 'HTTP':
-                        external_objects += _handle_http_folder(doc, self.user)
+                        external_objects += self._handle_http_folder(doc, self.user)
                         continue
 
                     if doc['meta'].get('identifier') == top_identifier:
