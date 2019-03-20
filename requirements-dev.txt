@@ -1,2 +1,3 @@
 # dependencies for tests
 vcrpy
+bdbag
