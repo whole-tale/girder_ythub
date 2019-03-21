@@ -19,15 +19,6 @@ Payload-Oxum: {oxum}
 
 run_tpl = r"""#!/bin/sh
 
-# Run the built image
-docker run -p {port}:{port} \
-  -v `pwd`/data/data:/WholeTale/data \
-  -v `pwd`/data/workspace:/WholeTale/workspace \
-  wholetale/tale_{taleId} {command}
-"""
-
-build_tpl = r"""#!/bin/sh
-
 # Use repo2docker to build the image from the workspace
 docker run  \
   -v /var/run/docker.sock:/var/run/docker.sock \
@@ -43,6 +34,22 @@ docker run  \
     --no-clean --no-run --debug \
     --image-name wholetale/tale_{taleId} \
     /WholeTale/workspace
+
+docker run --rm \
+    -v `pwd`:/bag \
+    -ti jfloff/alpine-python:2.7-slim \
+      -p bdbag -- bdbag --resolve-fetch all /bag
+
+echo "========================================================================"
+echo " Open your browser and go to: http://localhost:{port}/{urlPath} "
+echo "========================================================================"
+
+# Run the built image
+docker run -p {port}:{port} \
+  -v `pwd`/data/data:/WholeTale/data \
+  -v `pwd`/data/workspace:/WholeTale/workspace \
+  wholetale/tale_{taleId} {command}
+
 """
 
 
@@ -52,24 +59,8 @@ readme_tpl = """# Tale: "{title}" in BDBag Format
 
 # How to run?
 
-Install `bdbag`:
 ```
-pip install bdbag
-```
-
-Build the image using my `repo2docker` fork:
-```
-./build.sh
-```
-
-Fetch the missing data using bdbag:
-```
-bdbag --resolve-fetch all .
-```
-
-Run the built image:
-```
-./run.sh
+sh ./run.sh
 ```
 
 Access on http://localhost:{port}/{urlPath}
@@ -84,16 +75,14 @@ class BagTaleExporter(TaleExporter):
             base_path='', port=container_config['port'], ip='0.0.0.0', token=token
         )
         urlPath = container_config['urlPath'].format(token=token)
-        build_file = build_tpl.format(
-            taleId=self.tale['_id'],
+        run_file = run_tpl.format(
             template=container_config['template'],
             buildpack=container_config['buildpack'],
             user=container_config['user'],
-        )
-        run_file = run_tpl.format(
             port=container_config['port'],
             taleId=self.tale['_id'],
             command=rendered_command,
+            urlPath=urlPath,
         )
         top_readme = readme_tpl.format(
             title=self.tale['title'],
@@ -105,7 +94,6 @@ class BagTaleExporter(TaleExporter):
             'data/LICENSE': self.tale_license['text'],
             'README.md': top_readme,
             'run.sh': run_file,
-            'build.sh': build_file,
         }
         oxum = dict(size=0, num=0)
 
