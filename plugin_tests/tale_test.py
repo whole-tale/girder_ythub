@@ -734,7 +734,7 @@ class TaleTestCase(base.TestCase):
         item = resp.json[0]
 
         tale = self.model('tale', 'wholetale').createTale(
-            {'_id': ObjectId()},
+            self.image,
             [{
                 'itemId': item['_id'],
                 '_modelType': 'item',
