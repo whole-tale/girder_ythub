@@ -788,7 +788,7 @@ class TaleTestCase(base.TestCase):
         self.assertTrue(is_present)
 
         # Check that the top level README is present
-        readme_path = str(tale['_id']) + '/README.txt'
+        readme_path = str(tale['_id']) + '/README.md'
         is_present = readme_path in zip_files
         self.assertTrue(is_present)
 

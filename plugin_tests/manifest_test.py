@@ -328,8 +328,7 @@ class ManifestTestCase(base.TestCase):
                 'size': 1005007,
             },
             {'uri': '../LICENSE', 'schema:license': 'CC-BY-4.0'},
-            {'uri': '../README.txt', '@type': 'schema:HowTo'},
-            {'uri': '../environment.txt'},
+            {'uri': '../README.md', '@type': 'schema:HowTo'},
         ]
         from operator import itemgetter
 

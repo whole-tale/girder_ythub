@@ -334,10 +334,8 @@ class Manifest:
                                                 self.tale.get('licenseSPDX',
                                                               WholeTaleLicense.default_spdx())})
 
-        self.manifest['aggregates'].append({'uri': '../README.txt',
+        self.manifest['aggregates'].append({'uri': '../README.md',
                                             '@type': 'schema:HowTo'})
-
-        self.manifest['aggregates'].append({'uri': '../environment.txt'})
 
 
 def clean_workspace_path(tale_id, path):

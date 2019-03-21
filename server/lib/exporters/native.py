@@ -7,7 +7,7 @@ from . import TaleExporter
 class NativeTaleExporter(TaleExporter):
     def stream(self):
         extra_files = {
-            'README.txt': self.default_top_readme,
+            'README.md': self.default_top_readme,
             'LICENSE': self.tale_license['text'],
             'metadata/environment.json': json.dumps(
                 self.image, indent=4, cls=JsonEncoder, sort_keys=True, allow_nan=False
