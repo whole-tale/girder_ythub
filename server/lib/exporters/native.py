@@ -1,81 +1,81 @@
 import json
-from girder.constants import AccessType
 from girder.models.folder import Folder
-from girder.utility import ziputil
-from . import default_top_readme, HashFileStream
-from ..license import WholeTaleLicense
-from ..manifest import Manifest
+from girder.utility import JsonEncoder
+from . import TaleExporter
 
 
-def stream(tale, user):
-    zip_generator = ziputil.ZipGenerator(str(tale['_id']))
+class NativeTaleExporter(TaleExporter):
+    def stream(self):
+        extra_files = {
+            'README.txt': self.default_top_readme,
+            'LICENSE': self.tale_license['text'],
+            'metadata/environment.json': json.dumps(
+                self.image, indent=4, cls=JsonEncoder, sort_keys=True, allow_nan=False
+            ),
+        }
 
-    state = {}
-    # Add the license
-    tale_license = WholeTaleLicense().license_from_spdx(
-        tale.get('licenseSPDX', WholeTaleLicense.default_spdx())
-    )
-    extra_files = {
-        'README.txt': default_top_readme,
-        'LICENSE': tale_license['text'],
-        'environment.txt': str(tale['imageId'])
-    }
+        # Add files from the workspace
+        for path, fobj in Folder().fileList(
+            self.workspace, user=self.user, subpath=False
+        ):
+            yield from self.dump_and_checksum(fobj, 'workspace/' + path)
 
-    def dump_and_checksum(func, zip_path):
-        hash_file_stream = HashFileStream(func)
-        for data in zip_generator.addFile(hash_file_stream, zip_path):
+        # Compute checksums for extra files
+        for path, content in extra_files.items():
+            payload = self.stream_string(content)
+            yield from self.dump_and_checksum(payload, path)
+
+        # Update manifest with hashes
+        for path, chksum in self.state['md5']:
+            uri = '../' + path
+            index = next(
+                (
+                    i
+                    for (i, d) in enumerate(self.manifest['aggregates'])
+                    if d['uri'] == uri
+                ),
+                None,
+            )
+            if index is not None:
+                self.manifest['aggregates'][index]['md5'] = chksum
+
+        # Update manifest with filesizes and mimeTypes
+        for path, fobj in Folder().fileList(
+            self.workspace, user=self.user, subpath=False, data=False
+        ):
+            uri = '../workspace/' + path
+            index = next(
+                (
+                    i
+                    for (i, d) in enumerate(self.manifest['aggregates'])
+                    if d['uri'] == uri
+                ),
+                None,
+            )
+            if index is not None:
+                self.manifest['aggregates'][index]['mimeType'] = (
+                    fobj['mimeType'] or 'application/octet-stream'
+                )
+                self.manifest['aggregates'][index]['size'] = fobj['size']
+
+        # Need to handle extra files coming not from girder...
+        for path, content in extra_files.items():
+            uri = '../' + path
+            index = next(
+                (
+                    i
+                    for (i, d) in enumerate(self.manifest['aggregates'])
+                    if d['uri'] == uri
+                ),
+                None,
+            )
+            if index is not None:
+                self.manifest['aggregates'][index]['mimeType'] = 'text/plain'
+                self.manifest['aggregates'][index]['size'] = len(content)
+
+        for data in self.zip_generator.addFile(
+            lambda: json.dumps(self.manifest, indent=4), 'metadata/manifest.json'
+        ):
             yield data
-        state[zip_path] = hash_file_stream.md5
 
-    def stream_string(string):
-        return (_.encode() for _ in (string,))
-
-    # Add files from the workspace
-    folder = Folder().load(tale['workspaceId'], user=user, level=AccessType.READ)
-    for path, fobj in Folder().fileList(folder, user=user, subpath=False):
-        yield from dump_and_checksum(fobj, 'workspace/' + path)
-
-    # Compute checksums for extra files
-    for path, content in extra_files.items():
-        payload = stream_string(content)
-        yield from dump_and_checksum(payload, path)
-
-    # Add manifest.json
-    manifest_doc = Manifest(tale, user)
-    manifest = manifest_doc.manifest
-
-    # Update manifest with hashes
-    for path in state.keys():
-        uri = '../' + path
-        index = next(
-            (i for (i, d) in enumerate(manifest['aggregates']) if d['uri'] == uri), None
-        )
-        if index is not None:
-            manifest['aggregates'][index]['md5'] = state[path]
-
-    # Update manifest with filesizes and mimeTypes
-    for path, fobj in Folder().fileList(folder, user=user, subpath=False, data=False):
-        uri = '../workspace/' + path
-        index = next(
-            (i for (i, d) in enumerate(manifest['aggregates']) if d['uri'] == uri), None
-        )
-        if index is not None:
-            manifest['aggregates'][index]['mimeType'] = fobj['mimeType']
-            manifest['aggregates'][index]['size'] = fobj['size']
-
-    # Need to handle extra files coming not from girder...
-    for path, content in extra_files.items():
-        uri = '../' + path
-        index = next(
-            (i for (i, d) in enumerate(manifest['aggregates']) if d['uri'] == uri), None
-        )
-        if index is not None:
-            manifest['aggregates'][index]['mimeType'] = 'text/plain'
-            manifest['aggregates'][index]['size'] = len(content)
-
-    for data in zip_generator.addFile(
-        lambda: json.dumps(manifest, indent=4), 'metadata/manifest.json'
-    ):
-        yield data
-
-    yield zip_generator.footer()
+        yield self.zip_generator.footer()

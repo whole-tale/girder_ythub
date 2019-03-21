@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from datetime import datetime, timedelta
-from functools import partial
 import time
 from girder.api import access
 from girder.api.docs import addModel
@@ -25,8 +24,8 @@ from ..schema.tale import taleModel as taleSchema
 from ..models.tale import Tale as taleModel
 from ..models.image import Image as imageModel
 from ..lib.manifest import Manifest
-from ..lib.exporters.bag import stream as stream_bag
-from ..lib.exporters.native import stream as stream_native
+from ..lib.exporters.bag import BagTaleExporter
+from ..lib.exporters.native import NativeTaleExporter
 
 from girder.plugins.worker import getCeleryApp
 
@@ -288,13 +287,13 @@ class Tale(Resource):
         zip_name = str(tale['_id'])
 
         if taleFormat == 'bagit':
-            stream = stream_bag
+            exporter = BagTaleExporter(tale, user)
         elif taleFormat == 'native':
-            stream = stream_native
+            exporter = NativeTaleExporter(tale, user)
 
         setResponseHeader('Content-Type', 'application/zip')
         setContentDisposition(zip_name + '.zip')
-        return partial(stream, tale, user)
+        return exporter.stream
 
     @access.public
     @autoDescribeRoute(
