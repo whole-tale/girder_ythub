@@ -17,13 +17,95 @@ Bagging-Time: {time}
 Payload-Oxum: {oxum}
 """
 
+run_tpl = r"""#!/bin/sh
+
+# Run the built image
+docker run -p {port}:{port} \
+  -v `pwd`/data/data:/WholeTale/data \
+  -v `pwd`/data/workspace:/WholeTale/workspace \
+  wholetale/tale_{taleId} {command}
+"""
+
+build_tpl = r"""#!/bin/sh
+
+# Use repo2docker to build the image from the workspace
+docker run  \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v `pwd`/data/workspace:/WholeTale/workspace \
+  --privileged=true \
+  -e DOCKER_HOST=unix:///var/run/docker.sock \
+  wholetale/repo2docker \
+  jupyter-repo2docker \
+    --target-repo-dir=/WholeTale/workspace \
+    --template={template} \
+    --buildpack-name={buildpack} \
+    --user-id=1000 --user-name={user} \
+    --no-clean --no-run --debug \
+    --image-name wholetale/tale_{taleId} \
+    /WholeTale/workspace
+"""
+
+
+readme_tpl = """# Tale: "{title}" in BDBag Format
+
+{description}
+
+# How to run?
+
+Install `bdbag`:
+```
+pip install bdbag
+```
+
+Build the image using my `repo2docker` fork:
+```
+./build.sh
+```
+
+Fetch the missing data using bdbag:
+```
+bdbag --resolve-fetch all .
+```
+
+Run the built image:
+```
+./run.sh
+```
+
+Access on http://localhost:{port}/{urlPath}
+"""
+
 
 class BagTaleExporter(TaleExporter):
-
     def stream(self):
+        token = 'wholetale'
+        container_config = self.image['config']
+        rendered_command = container_config.get('command', '').format(
+            base_path='', port=container_config['port'], ip='0.0.0.0', token=token
+        )
+        urlPath = container_config['urlPath'].format(token=token)
+        build_file = build_tpl.format(
+            taleId=self.tale['_id'],
+            template=container_config['template'],
+            buildpack=container_config['buildpack'],
+            user=container_config['user'],
+        )
+        run_file = run_tpl.format(
+            port=container_config['port'],
+            taleId=self.tale['_id'],
+            command=rendered_command,
+        )
+        top_readme = readme_tpl.format(
+            title=self.tale['title'],
+            description=self.tale['description'],
+            port=container_config['port'],
+            urlPath=urlPath,
+        )
         extra_files = {
-            'data/README.txt': self.default_top_readme,
             'data/LICENSE': self.tale_license['text'],
+            'README.md': top_readme,
+            'run.sh': run_file,
+            'build.sh': build_file,
         }
         oxum = dict(size=0, num=0)
 
@@ -93,7 +175,11 @@ class BagTaleExporter(TaleExporter):
             (lambda: dump_checksums('sha256'), 'manifest-sha256.txt'),
             (
                 lambda: json.dumps(
-                    self.image, indent=4, cls=JsonEncoder, sort_keys=True, allow_nan=False
+                    self.image,
+                    indent=4,
+                    cls=JsonEncoder,
+                    sort_keys=True,
+                    allow_nan=False,
                 ),
                 'metadata/environment.json',
             ),

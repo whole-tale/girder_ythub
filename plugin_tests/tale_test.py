@@ -86,7 +86,9 @@ class TaleTestCase(base.TestCase):
             name="test admin image", creator=self.admin, public=True)
 
         self.image = self.model('image', 'wholetale').createImage(
-            name="test my name", creator=self.user, public=True)
+            name="test my name", creator=self.user, public=True,
+            config=dict(template='base.tpl', buildpack='SomeBuildPack',
+                        user='someUser', port=8888, urlPath=''))
 
     def testTaleFlow(self):
         from server.lib.license import WholeTaleLicense

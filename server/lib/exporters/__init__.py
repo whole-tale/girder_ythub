@@ -77,6 +77,9 @@ class TaleExporter:
         for alg in self.algs:
             self.state[alg] = []
 
+    def stream(self):
+        raise NotImplementedError
+
     @staticmethod
     def stream_string(string):
         return (_.encode() for _ in (string,))
