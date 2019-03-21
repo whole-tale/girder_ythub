@@ -107,11 +107,13 @@ class Dataset(Resource):
         .param('myData', 'If True, filters results to datasets registered by the user.'
                'Defaults to False.',
                required=False, dataType='boolean', default=False)
+        .jsonParam('identifiers', 'Filter datasets by an identifier', required=False,
+                   dataType='string', requireArray=True)
         .responseClass('dataset', array=True)
         .pagingParams(defaultSort='lowerName',
                       defaultSortDir=SortDir.ASCENDING)
     )
-    def listDatasets(self, myData, limit, offset, sort, params):
+    def listDatasets(self, myData, identifiers, limit, offset, sort):
         user = self.getCurrentUser()
         folderModel = self.model('folder')
         datasets = []
@@ -119,6 +121,17 @@ class Dataset(Resource):
         filters = {}
         if myData:
             filters = {'_id': {'$in': user.get('myData', [])}}
+
+        if identifiers:
+            filters.update(
+                {'meta.identifier': {'$in': identifiers}}
+            )
+
+            for modelType in ('folder', 'item'):
+                for obj in self.model(modelType).find(filters):
+                    obj['_modelType'] = modelType
+                    datasets.append(_itemOrFolderToDataset(obj))
+            return datasets
 
         parent = getOrCreateRootFolder(CATALOG_NAME)
         for folder in folderModel.childFolders(
