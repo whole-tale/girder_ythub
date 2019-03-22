@@ -9,14 +9,12 @@ from girder.constants import AccessType, SortDir, TokenScope
 from girder.exceptions import ValidationException
 from girder.models.item import Item
 from girder.models.user import User
-from girder.utility.progress import ProgressContext
 from ..constants import CATALOG_NAME
 
 from girder.plugins.wholetale.lib.dataone import DataONELocations
+from ..lib import register_dataMap
 from ..schema.misc import dataMapListSchema
 from ..utils import getOrCreateRootFolder
-from ..lib import IMPORT_PROVIDERS
-from ..lib.data_map import DataMap
 
 
 datasetModel = {
@@ -226,20 +224,9 @@ class Dataset(Resource):
             parent = self.model(parentType).load(
                 parentId, user=user, level=AccessType.WRITE, exc=True)
 
-        dataMaps = DataMap.fromList(dataMap)
-
-        progress = True
-        importedData = []
-        with ProgressContext(progress, user=user,
-                             title='Registering resources') as ctx:
-            for dataMap in dataMaps:
-                # probably would be nicer if Entity kept all details and the dataMap
-                # would be merged into it
-                provider = IMPORT_PROVIDERS.getFromDataMap(dataMap)
-                objType, obj = provider.register(parent, parentType, ctx, user, dataMap,
-                                                 base_url=base_url)
-                importedData.append(obj['_id'])
-
+        importedData = register_dataMap(
+            dataMap, parent, parentType, user=user, base_url=base_url
+        )
         if importedData:
             user_data = set(user.get('myData', []))
             user['myData'] = list(user_data.union(set(importedData)))
