@@ -7,7 +7,12 @@ add_python_test(harvester
   plugins/wholetale/test_list_files.txt
 )
 add_python_test(image PLUGIN wholetale)
-add_python_test(tale PLUGIN wholetale)
+add_python_test(tale
+  PLUGIN wholetale
+  EXTERNAL_DATA
+  plugins/wholetale/5c92fbd472a9910001fbff72.zip
+  plugins/wholetale/tale_import_zip.txt
+)
 add_python_test(instance PLUGIN wholetale)
 add_python_test(constants PLUGIN wholetale)
 add_python_test(utils PLUGIN wholetale)
