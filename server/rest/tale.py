@@ -406,6 +406,7 @@ class Tale(Resource):
         .errorResponse('ID was invalid.')
         .errorResponse('You are not authorized to copy this tale.', 403)
     )
+    @filtermodel(model='tale', plugin='wholetale')
     def copyTale(self, tale):
         user = self.getCurrentUser()
         image = self.model('image', 'wholetale').load(
