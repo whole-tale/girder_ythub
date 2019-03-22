@@ -27,6 +27,14 @@ IMPORT_PROVIDERS.addProvider(NullImportProvider())
 
 
 def pids_to_entities(pids, user=None, base_url=None, lookup=True):
+    """
+    Resolve unique external identifiers into WholeTale Entities or file listings
+
+    :param pids: list of external identifiers
+    :param user: User performing the resolution
+    :param base_url: DataONE's node endpoint url
+    :param lookup: If false, a list of remote files is returned instead of Entities
+    """
     results = []
     try:
         for pid in pids:
@@ -51,6 +59,16 @@ def pids_to_entities(pids, user=None, base_url=None, lookup=True):
 
 
 def register_dataMap(dataMaps, parent, parentType, user=None, base_url=None):
+    """
+    Register a list of Data Maps into a given Girder object
+
+    :param dataMaps: list of dataMaps
+    :param parent: A Collection or a Folder where data should be registered
+    :param parentType: Either a 'collection' or a 'folder'
+    :param user: User performing the registration
+    :param base_url: DataONE's node endpoint url
+    :return: List of ids of registered objects
+    """
     progress = True
     importedData = []
     with ProgressContext(progress, user=user, title='Registering resources') as ctx:
