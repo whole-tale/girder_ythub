@@ -25,7 +25,7 @@ docker run  \
   -v `pwd`/data/workspace:/WholeTale/workspace \
   --privileged=true \
   -e DOCKER_HOST=unix:///var/run/docker.sock \
-  wholetale/repo2docker \
+  {repo2docker} \
   jupyter-repo2docker \
     --target-repo-dir=/WholeTale/workspace \
     --template={template} \
@@ -60,7 +60,7 @@ readme_tpl = """# Tale: "{title}" in BDBag Format
 # How to run?
 
 ```
-sh ./run.sh
+sh ./run-local.sh
 ```
 
 Access on http://localhost:{port}/{urlPath}
@@ -78,6 +78,7 @@ class BagTaleExporter(TaleExporter):
         run_file = run_tpl.format(
             template=container_config['template'],
             buildpack=container_config['buildpack'],
+            repo2docker=container_config.get('repo2docker_version', 'wholetale/repo2docker:latest'),
             user=container_config['user'],
             port=container_config['port'],
             taleId=self.tale['_id'],
@@ -93,7 +94,7 @@ class BagTaleExporter(TaleExporter):
         extra_files = {
             'data/LICENSE': self.tale_license['text'],
             'README.md': top_readme,
-            'run.sh': run_file,
+            'run-local.sh': run_file,
         }
         oxum = dict(size=0, num=0)
 
