@@ -200,6 +200,7 @@ class Manifest:
             else:
                 bundle = self.create_bundle('../data/' + obj['name'], None)
             record = self.create_aggregation_record(obj['uri'], bundle, obj['dataset_identifier'])
+            record['size'] = obj['size']
             self.manifest['aggregates'].append(record)
 
     def _handle_http_folder(self, folder, user, relpath=''):
@@ -273,12 +274,18 @@ class Manifest:
                     else:
                         ext_obj['uri'] = provider.getURI(doc, self.user)
                         #  Find path to root?
+                    ext_obj['size'] = 0
+                    for _, f in self.folderModel.fileList(
+                        doc, user=self.user, subpath=False, data=False
+                    ):
+                        ext_obj['size'] += f['size']
 
                 elif obj['_modelType'] == 'item':
                     fileObj = self.itemModel.childFiles(doc)[0]
                     ext_obj.update({
                         'name': fileObj['name'],
-                        'uri': fileObj['linkUrl']
+                        'uri': fileObj['linkUrl'],
+                        'size': fileObj['size']
                     })
                 external_objects.append(ext_obj)
             except (ValidationException, KeyError):
@@ -327,10 +334,8 @@ class Manifest:
                                                 self.tale.get('licenseSPDX',
                                                               WholeTaleLicense.default_spdx())})
 
-        self.manifest['aggregates'].append({'uri': '../README.txt',
+        self.manifest['aggregates'].append({'uri': '../README.md',
                                             '@type': 'schema:HowTo'})
-
-        self.manifest['aggregates'].append({'uri': '../environment.txt'})
 
 
 def clean_workspace_path(tale_id, path):

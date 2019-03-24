@@ -47,3 +47,7 @@ class WholeTaleLicense:
         :return: The spdx that is applied to a Tale on default
         """
         return 'CC-BY-4.0'
+
+    def license_from_spdx(self, spdx):
+        """Return a license given its spdx"""
+        return next((_ for _ in self.licenses if _['spdx'] == spdx), None)

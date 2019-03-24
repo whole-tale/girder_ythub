@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import json
 from datetime import datetime, timedelta
 import time
-
 from girder.api import access
 from girder.api.docs import addModel
 from girder.api.describe import Description, autoDescribeRoute
@@ -11,7 +9,6 @@ from girder.api.rest import Resource, filtermodel, RestException,\
     setResponseHeader, setContentDisposition
 
 from girder.constants import AccessType, SortDir, TokenScope
-from girder.utility import ziputil
 from girder.utility.path import getResourcePath
 from girder.utility.progress import ProgressContext
 from girder.models.token import Token
@@ -27,7 +24,8 @@ from ..schema.tale import taleModel as taleSchema
 from ..models.tale import Tale as taleModel
 from ..models.image import Image as imageModel
 from ..lib.manifest import Manifest
-from ..lib.license import WholeTaleLicense
+from ..lib.exporters.bag import BagTaleExporter
+from ..lib.exporters.native import NativeTaleExporter
 
 from girder.plugins.worker import getCeleryApp
 
@@ -277,64 +275,25 @@ class Tale(Resource):
     @autoDescribeRoute(
         Description('Export a tale as a zipfile')
         .modelParam('id', model='tale', plugin='wholetale', level=AccessType.READ)
+        .param('taleFormat', 'Format of the exported Tale', required=False,
+               enum=['bagit', 'native'], strip=True, default='native')
         .responseClass('tale')
         .produces('application/zip')
         .errorResponse('ID was invalid.', 404)
         .errorResponse('You are not authorized to export this tale.', 403)
     )
-    def exportTale(self, tale):
+    def exportTale(self, tale, taleFormat):
         user = self.getCurrentUser()
         zip_name = str(tale['_id'])
 
-        def stream():
-            zip_generator = ziputil.ZipGenerator(zip_name)
-
-            # Add files from the workspace
-            folder = self.model('folder').load(tale['workspaceId'], user=user,
-                                               level=AccessType.READ)
-            for (path, f) in self.model('folder').fileList(folder,
-                                                           user=user,
-                                                           subpath=False):
-                for data in zip_generator.addFile(f, 'workspace/' + path):
-                    yield data
-
-            # Add manifest.json
-            manifest_doc = Manifest(tale, user)
-            for data in zip_generator.addFile(lambda: json.dumps(manifest_doc.manifest,
-                                                                 indent=4),
-                                              'metadata/manifest.json'):
-                yield data
-
-            # Add top level README
-            for data in zip_generator.addFile(lambda: 'Instructions on running the'
-                                                      'docker container',
-                                              'README.txt'):
-                yield data
-
-            # Add the environment
-            for data in zip_generator.addFile(lambda: str(tale['imageId']),
-                                              'environment.txt'):
-                yield data
-
-            # Add the license
-            tale_license = tale.get('licenseSPDX')
-            if not tale_license:
-                tale_license = WholeTaleLicense.default_spdx()
-
-            # Search the supported licenses for the Tale's
-            tale_licenses = WholeTaleLicense()
-            license_object = (x for x in tale_licenses.supported_licenses() if
-                              (x['spdx'] == tale_license))
-
-            for data in zip_generator.addFile(lambda: next(license_object)['text'],
-                                              'LICENSE'):
-                yield data
-
-            yield zip_generator.footer()
+        if taleFormat == 'bagit':
+            exporter = BagTaleExporter(tale, user)
+        elif taleFormat == 'native':
+            exporter = NativeTaleExporter(tale, user)
 
         setResponseHeader('Content-Type', 'application/zip')
         setContentDisposition(zip_name + '.zip')
-        return stream
+        return exporter.stream
 
     @access.public
     @autoDescribeRoute(

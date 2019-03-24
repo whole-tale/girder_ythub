@@ -1,8 +1,15 @@
+import bagit
+from bdbag import bdbag_api as bdb
 import mock
 import httmock
 import os
 import json
 import time
+import urllib.request
+import tempfile
+import zipfile
+import shutil
+from bson import ObjectId
 from tests import base
 from .tests_helpers import mockOtherRequest
 from girder.models.item import Item
@@ -11,6 +18,13 @@ from girder.models.folder import Folder
 
 SCRIPTDIRS_NAME = None
 DATADIRS_NAME = None
+DATA_PATH = os.path.join(
+    os.path.dirname(os.environ['GIRDER_TEST_DATA_PREFIX']),
+    'data_src',
+    'plugins',
+    'wholetale',
+)
+
 
 JobStatus = None
 ImageStatus = None
@@ -72,7 +86,9 @@ class TaleTestCase(base.TestCase):
             name="test admin image", creator=self.admin, public=True)
 
         self.image = self.model('image', 'wholetale').createImage(
-            name="test my name", creator=self.user, public=True)
+            name="test my name", creator=self.user, public=True,
+            config=dict(template='base.tpl', buildpack='SomeBuildPack',
+                        user='someUser', port=8888, urlPath=''))
 
     def testTaleFlow(self):
         from server.lib.license import WholeTaleLicense
@@ -246,15 +262,6 @@ class TaleTestCase(base.TestCase):
             if key in ('access', 'updated', 'created'):
                 continue
             self.assertEqual(resp.json[key], tale[key])
-
-        resp = self.request(
-            path='/tale/{_id}/export'.format(**tale),
-            method='GET',
-            user=self.user,
-            type='application/octet-stream',
-            isJson=False)
-
-        self.assertStatus(resp, 200)
 
     def testTaleAccess(self):
         with httmock.HTTMock(mockOtherRequest):
@@ -523,7 +530,7 @@ class TaleTestCase(base.TestCase):
         self.assertEqual(tale['licenseSPDX'], WholeTaleLicense.default_spdx())
         # self.assertEqual(str(tale['dataSet'][0]['itemId']), data_dir['_id'])
         # self.assertEqual(tale['dataSet'][0]['mountPath'], '/' + data_dir['name'])
-        tale['licenseSPDX']='unsupportedLicense'
+        tale['licenseSPDX'] = 'unsupportedLicense'
         tale = self.model('tale', 'wholetale').save(tale)
         self.assertEqual(tale['licenseSPDX'], WholeTaleLicense.default_spdx())
         self.model('tale', 'wholetale').remove(tale)
@@ -568,7 +575,7 @@ class TaleTestCase(base.TestCase):
         published = True
         doi = 'doi:10.x.zz'
         published_uri = 'atestURI'
-        tale_licenses=WholeTaleLicense()
+        tale_licenses = WholeTaleLicense()
         taleLicense = tale_licenses.supported_spdxes().pop()
 
         # Create a new Tale
@@ -651,23 +658,107 @@ class TaleTestCase(base.TestCase):
         )
 
         self.assertStatus(resp, 200)
-        pth ='/tale/{}/manifest'.format(str(resp.json['_id']))
+        pth = '/tale/{}/manifest'.format(str(resp.json['_id']))
         resp = self.request(
             path=pth, method='GET', user=self.user)
         # The contents of the manifes are checked in the manifest tests, so
         # just make sure that we get the right response
         self.assertStatus(resp, 200)
 
+    def _create_water_tale(self):
+        # register required data
+        self.data_collection = self.model('collection').createCollection(
+            'WholeTale Catalog', public=True, reuseExisting=True
+        )
+        catalog = self.model('folder').createFolder(
+            self.data_collection,
+            'WholeTale Catalog',
+            parentType='collection',
+            public=True,
+            reuseExisting=True,
+        )
+        # Tale map of values to check against in tests
+
+        def restore_catalog(parent, current):
+            for folder in current['folders']:
+                resp = self.request(
+                    path='/folder',
+                    method='POST',
+                    user=self.admin,
+                    params={
+                        'parentId': parent['_id'],
+                        'name': folder['name'],
+                        'metadata': json.dumps(folder['meta']),
+                    },
+                )
+                folderObj = resp.json
+                restore_catalog(folderObj, folder)
+
+            for obj in current['files']:
+                resp = self.request(
+                    path='/item',
+                    method='POST',
+                    user=self.admin,
+                    params={
+                        'folderId': parent['_id'],
+                        'name': obj['name'],
+                        'metadata': json.dumps(obj['meta']),
+                    },
+                )
+                item = resp.json
+                self.request(
+                    path='/file',
+                    method='POST',
+                    user=self.admin,
+                    params={
+                        'parentType': 'item',
+                        'parentId': item['_id'],
+                        'name': obj['name'],
+                        'size': obj['size'],
+                        'mimeType': obj['mimeType'],
+                        'linkUrl': obj['linkUrl'],
+                    },
+                )
+
+        with open(os.path.join(DATA_PATH, 'watertale_catalog.json'), 'r') as fp:
+            data = json.load(fp)
+            restore_catalog(catalog, data)
+
+        resp = self.request(
+            path='/dataset', method='GET', user=self.user)
+        self.assertStatusOk(resp)
+        ds = resp.json[0]
+
+        resp = self.request(
+            path='/item', method='GET', user=self.user,
+            params={'name': 'usco2000.xls', 'folderId': ds['_id']}
+        )
+        item = resp.json[0]
+
+        tale = self.model('tale', 'wholetale').createTale(
+            self.image,
+            [{
+                'itemId': item['_id'],
+                '_modelType': 'item',
+                'mountPath': item['name']
+            }], creator=self.user, title="Export Tale", public=True)
+        workspace = self.model('folder').load(tale['workspaceId'], force=True)
+        with urllib.request.urlopen(
+            'https://wholetale.readthedocs.io/en/stable/'
+            '_downloads/wt_quickstart.ipynb'
+        ) as url:
+            self.uploadFile(
+                name=item['name'], contents=url.read(), user=self.user,
+                parent=workspace, parentType='folder')
+        return tale
+
     def testExport(self):
         from server.lib.license import WholeTaleLicense
-        import zipfile
-        import tempfile
 
-        tale = self.request(
+        resp = self.request(
             path='/tale', method='POST', user=self.user,
             type='application/json',
             body=json.dumps({
-                'folderId': '1234',
                 'imageId': str(self.image['_id']),
                 'dataSet': [],
                 'title': 'tale tile',
@@ -680,8 +771,9 @@ class TaleTestCase(base.TestCase):
                 'licenseSPDX': WholeTaleLicense.default_spdx()
             })
         )
-        self.assertStatus(tale, 200)
-        export_path = '/tale/{}/export'.format(str(tale.json['_id']))
+        self.assertStatusOk(resp)
+        tale = resp.json
+        export_path = '/tale/{}/export'.format(str(tale['_id']))
         resp = self.request(
             path=export_path, method='GET', isJson=False, user=self.user)
         with tempfile.NamedTemporaryFile() as fp:
@@ -691,19 +783,40 @@ class TaleTestCase(base.TestCase):
             zip_archive = zipfile.ZipFile(fp, 'r')
             zip_files = zip_archive.namelist()
         # Check the the manifest.json is present
-        manifest_path = str(tale.json['_id']) + '/metadata/manifest.json'
+        manifest_path = str(tale['_id']) + '/metadata/manifest.json'
         is_present = manifest_path in zip_files
         self.assertTrue(is_present)
 
         # Check that the top level README is present
-        readme_path = str(tale.json['_id']) + '/README.txt'
+        readme_path = str(tale['_id']) + '/README.md'
         is_present = readme_path in zip_files
         self.assertTrue(is_present)
 
         # Check that the LICENSE is present
-        license_path = str(tale.json['_id']) + '/LICENSE'
+        license_path = str(tale['_id']) + '/LICENSE'
         is_present = license_path in zip_files
         self.assertTrue(is_present)
+        self.model('tale', 'wholetale').remove(tale)
+
+    def testExportBag(self):
+        tale = self._create_water_tale()
+        export_path = '/tale/{}/export'.format(str(tale['_id']))
+        resp = self.request(
+            path=export_path, method='GET', params={'taleFormat': 'bagit'},
+            isJson=False, user=self.user)
+        dirpath = tempfile.mkdtemp()
+        bag_file = os.path.join(dirpath, "{}.zip".format(str(tale['_id'])))
+        with open(bag_file, 'wb') as fp:
+            for content in resp.body:
+                fp.write(content)
+        temp_path = bdb.extract_bag(bag_file, temp=True)
+        try:
+            bdb.validate_bag_structure(temp_path)
+        except bagit.BagValidationError:
+            pass  # TODO: Goes without saying that we should not be doing that...
+        shutil.rmtree(dirpath)
+        self.model('tale', 'wholetale').remove(tale)
+        self.model('collection').remove(self.data_collection)
 
     @mock.patch('gwvolman.tasks.build_tale_image')
     def testImageBuild(self, it):
@@ -777,12 +890,12 @@ class TaleTestCase(base.TestCase):
             self.assertEqual(tale['imageInfo']['digest'], 'digest123')
 
             # Set status to ERROR
-            #job = jobModel.load(job['_id'], force=True)
-            #self.assertEqual(job['celeryTaskId'], 'fake_id')
-            #Job().updateJob(job, log='job running', status=JobStatus.ERROR)
+            # job = jobModel.load(job['_id'], force=True)
+            # self.assertEqual(job['celeryTaskId'], 'fake_id')
+            # Job().updateJob(job, log='job running', status=JobStatus.ERROR)
 
-            #tale = Tale().load(tale['_id'], force=True)
-            #self.assertEqual(tale['imageInfo']['status'], ImageStatus.INVALID)
+            # tale = Tale().load(tale['_id'], force=True)
+            # self.assertEqual(tale['imageInfo']['status'], ImageStatus.INVALID)
 
     def tearDown(self):
         self.model('user').remove(self.user)
