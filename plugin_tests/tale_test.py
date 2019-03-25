@@ -79,6 +79,19 @@ class TaleTestCase(base.TestCase):
             'lastName': 'Regular',
             'password': 'secret'
         })
+
+        self.authors = [
+            {
+                'firstName': 'Charles',
+                'lastName': 'Darwmin',
+                'orcid': 'https://orcid.org/000-000'
+            },
+            {
+                'firstName': 'Thomas',
+                'lastName': 'Edison',
+                'orcid': 'https://orcid.org/111-111'
+            }
+        ]
         self.admin, self.user = [self.model('user').createUser(**user)
                                  for user in users]
 
@@ -678,6 +691,7 @@ class TaleTestCase(base.TestCase):
             path='/tale', method='POST', user=self.user,
             type='application/json',
             body=json.dumps({
+                'authors': self.authors,
                 'folderId': '1234',
                 'imageId': str(self.image['_id']),
                 'dataSet': [],
@@ -774,7 +788,7 @@ class TaleTestCase(base.TestCase):
                 'itemId': item['_id'],
                 '_modelType': 'item',
                 'mountPath': item['name']
-            }], creator=self.user, title="Export Tale", public=True)
+            }], creator=self.user, title="Export Tale", public=True, authors=self.authors)
         workspace = self.model('folder').load(tale['workspaceId'], force=True)
         with urllib.request.urlopen(
             'https://wholetale.readthedocs.io/en/stable/'
@@ -792,6 +806,7 @@ class TaleTestCase(base.TestCase):
             path='/tale', method='POST', user=self.user,
             type='application/json',
             body=json.dumps({
+                'authors': self.authors,
                 'imageId': str(self.image['_id']),
                 'dataSet': [],
                 'title': 'tale tile',

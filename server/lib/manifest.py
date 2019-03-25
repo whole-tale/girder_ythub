@@ -31,6 +31,7 @@ class Manifest:
         self.user = user
         self.expand_folders = expand_folders
 
+        self.validate()
         self.manifest = dict()
         # Create a set that represents any external data packages
         self.datasets = set()
@@ -64,6 +65,23 @@ class Manifest:
                 "Description": "A simple way to publish, discover, and access materials datasets"
             }
     }
+
+    def validate(self):
+        """
+        Checks for the presence of required tale information so
+        that we can fail early.
+        """
+        try:
+            # Check that each author has an ORCID, first name, and last name
+            for author in self.tale['authors']:
+                if not len(author['orcid']):
+                    raise ValueError('A Tale author is missing an ORCID')
+                if not len(author['firstName']):
+                    raise ValueError('A Tale author is missing a first name')
+                if not len(author['lastName']):
+                    raise ValueError('A Tale author is missing a last name')
+        except KeyError:
+            raise ValueError('A Tale author is missing an ORCID')
 
     def create_basic_attributes(self):
         """
@@ -116,8 +134,7 @@ class Manifest:
             "@id": author['orcid'],
             "@type": "schema:Person",
             "schema:givenName": author['firstName'],
-            "schema:familyName": author['lastName'],
-            "orcid": author['orcid']
+            "schema:familyName": author['lastName']
         }
 
     def create_context(self):
