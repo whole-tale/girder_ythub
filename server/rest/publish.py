@@ -3,9 +3,14 @@
 
 from girder.api import access
 from girder.api.describe import Description, autoDescribeRoute
-from girder.constants import TokenScope
-from girder.api.rest import Resource
+from girder.constants import AccessType, TokenScope
+from girder.api.rest import Resource, filtermodel
 from girder.plugins.jobs.models.job import Job
+
+
+from ..models.tale import Tale
+
+from gwvolman.tasks import publish
 
 
 class Publish(Resource):
@@ -18,42 +23,42 @@ class Publish(Resource):
         self.route('GET', ('dataone',), self.dataonePublish)
 
     @access.user(scope=TokenScope.DATA_WRITE)
+    @filtermodel(model=Job)
     @autoDescribeRoute(
         Description('Publish a tale to a repository running Metacat')
         .notes('')
-        .param('taleId',
-               description='The ID of the tale that is going to be published.',
-               required=True)
-        .param('remoteMemberNode',
-               description='The endpoint for the Metacat instance, including the endpoint.\n'
-                           'Example: \'https://dev.nceas.ucsb.edu/knb/d1/mn/v2\'',
-               required=True)
-        .param('authToken',
-               description='The user\'s authentication token for interacting with the '
-                           'DataONE API. In DataONE\'s case, this is the user\'s JWT'
-                           'token.',
-               required=True))
-    def dataonePublish(self,
-                       taleId,
-                       remoteMemberNode,
-                       authToken):
+        .modelParam(
+            'taleId',
+            description='The ID of the tale that is going to be published.',
+            model=Tale,
+            paramType="query",
+            level=AccessType.ADMIN,
+            required=True,
+        )
+        .param(
+            'remoteMemberNode',
+            description='The endpoint for the Metacat instance, including the endpoint.\n'
+            'Example: \'https://dev.nceas.ucsb.edu/knb/d1/mn/v2\'',
+            required=True,
+        )
+        .param(
+            'authToken',
+            description='The user\'s authentication token for interacting with the '
+            'DataONE API. In DataONE\'s case, this is the user\'s JWT'
+            'token.',
+            required=True,
+        )
+    )
+    def dataonePublish(self, tale, remoteMemberNode, authToken):
 
         user = self.getCurrentUser()
         token = self.getCurrentToken()
 
-        jobTitle = 'Publishing Tale to DataONE'
-        jobModel = Job()
-
-        args = (taleId,
-                remoteMemberNode,
-                authToken,
-                str(token['_id']),
-                str(user['_id']))
-        job = jobModel.createJob(
-            title=jobTitle, type='publish', handler='worker_handler',
-            user=user, public=False, args=args, kwargs={},
-            otherFields={
-                'celeryTaskName': 'gwvolman.tasks.publish'
-            })
-        jobModel.scheduleJob(job)
-        return job
+        publishTask = publish.delay(
+            tale=str(tale['_id']),
+            dataone_node=remoteMemberNode,
+            dataone_auth_token=authToken,
+            user_id=str(user['_id']),
+            girder_client_token=str(token['_id'])
+        )
+        return publishTask.job

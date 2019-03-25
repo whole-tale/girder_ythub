@@ -2,6 +2,37 @@
 # -*- coding: utf-8 -*-
 from girder.api.docs import addModel
 
+publishInfoSchema = {
+    'title': 'publishInfo',
+    '$schema': 'http://json-schema.org/draft-04/schema#',
+    'description': 'A schema representing publishing information',
+    'type': 'object',
+    'properties': {
+        "pid": {
+            "type": ["string", "null"],
+            "description": "A unique identifier assigned to this tale from a "
+                           "publishing source."
+        },
+        "uri": {
+            "type": ["string", "null"],
+            "description": "A URI pointing to the location of the published "
+                           "Tale."
+        },
+        "date": {
+            'type': 'string',
+            'format': 'date-time',
+            "description": "Date Tale was published."
+        }
+    },
+    'required': ['pid', 'uri', 'date']
+}
+
+publishInfoListSchema = {
+    'title': 'list of publishInfos',
+    '$schema': 'http://json-schema.org/draft-04/schema#',
+    'type': 'array',
+    'items': publishInfoSchema,
+}
 
 dataResourceSchema = {
     'title': 'dataResource',
