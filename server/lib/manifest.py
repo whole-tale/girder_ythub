@@ -91,15 +91,16 @@ class Manifest:
 
         return {
             "@id": 'https://data.wholetale.org/api/v1/tale/' + str(self.tale['_id']),
-            "createdOn": str(self.tale['created']),
-            "schema:name": self.tale['title'],
-            "schema:description": self.tale.get('description', str()),
-            "schema:category": self.tale['category'],
-            "schema:identifier": str(self.tale['_id']),
-            "schema:version": self.tale['format'],
-            "schema:image": self.tale['illustration'],
+            "@type": ["DataCatalog", "ro:ResearchObject"],
+            "dateCreated": str(self.tale['created']),
+            "name": self.tale['title'],
+            "description": self.tale.get('description', str()),
+            "keywords": self.tale['category'],
+            "identifier": str(self.tale['_id']),
+            "version": self.tale['format'],
+            "image": self.tale['illustration'],
             "aggregates": list(),
-            "Datasets": list()
+            "dataset": list()
         }
 
     def add_tale_creator(self):
@@ -112,10 +113,10 @@ class Manifest:
                                         force=True)
         self.manifest['createdBy'] = {
             "@id": tale_user['email'],
-            "@type": "schema:Person",
-            "schema:givenName": tale_user.get('firstName', ''),
-            "schema:familyName": tale_user.get('lastName', ''),
-            "schema:email": tale_user.get('email', '')
+            "@type": "Person",
+            "givenName": tale_user.get('firstName', ''),
+            "familyName": tale_user.get('lastName', ''),
+            "email": tale_user.get('email', '')
         }
 
     def create_author_record(self):
@@ -124,12 +125,12 @@ class Manifest:
         :return: A dictionary listing of the authors
         """
         return {
-            'schema:author': [
+            'author': [
                 {
                     "@id": author["orcid"],
-                    "@type": "schema:Person",
-                    "schema:givenName": author["firstName"],
-                    "schema:familyName": author["lastName"]
+                    "@type": "Person",
+                    "givenName": author["firstName"],
+                    "familyName": author["lastName"]
                 }
                 for author in self.tale['authors']
             ]
@@ -144,8 +145,8 @@ class Manifest:
         return {
             "@context": [
                 "https://w3id.org/bundle/context",
-                {"schema": "http://schema.org/"},
-                {"Datasets": {"@type": "@id"}}
+                "https://schema.org/",
+                {"name": "http://schema.org/name"}
             ]
         }
 
@@ -193,7 +194,7 @@ class Manifest:
             aggregation['bundledAs'] = bundle
         # TODO: in case parent_dataset_id == uri do something special?
         if parent_dataset_identifier and parent_dataset_identifier != uri:
-            aggregation['schema:isPartOf'] = parent_dataset_identifier
+            aggregation['isPartOf'] = parent_dataset_identifier
         return aggregation
 
     def add_tale_records(self):
@@ -343,7 +344,7 @@ class Manifest:
         for folder_id in self.datasets:
             dataset_record = self.create_dataset_record(folder_id)
             if dataset_record:
-                self.manifest['Datasets'].append(dataset_record)
+                self.manifest['dataset'].append(dataset_record)
 
     def create_bundle(self, folder, filename):
         """
@@ -369,12 +370,12 @@ class Manifest:
         """
 
         self.manifest['aggregates'].append({'uri': '../LICENSE',
-                                            'schema:license':
+                                            'license':
                                                 self.tale.get('licenseSPDX',
                                                               WholeTaleLicense.default_spdx())})
 
         self.manifest['aggregates'].append({'uri': '../README.md',
-                                            '@type': 'schema:HowTo'})
+                                            '@type': 'HowTo'})
 
 
 def clean_workspace_path(tale_id, path):
