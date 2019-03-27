@@ -291,7 +291,7 @@ class ManifestTestCase(base.TestCase):
             {
                 'uri': 'doi:10.5065/D6862DM8',
                 'bundledAs': {
-                    'folder': '../data/Humans and Hydrology at High Latitudes: Water Use Information/'
+                    'folder': '../data/Humans%20and%20Hydrology%20at%20High%20Latitudes%3A%20Water%20Use%20Information/'
                 },
                 'size': 28848454,
             },
