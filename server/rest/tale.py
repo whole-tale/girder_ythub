@@ -286,7 +286,7 @@ class Tale(Resource):
         zip_name = str(tale['_id'])
 
         if taleFormat == 'bagit':
-            exporter = BagTaleExporter(tale, user)
+            exporter = BagTaleExporter(tale, user, expand_folders=True)
         elif taleFormat == 'native':
             exporter = NativeTaleExporter(tale, user)
 

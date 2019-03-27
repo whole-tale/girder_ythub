@@ -53,7 +53,7 @@ class TaleExporter:
     default_top_readme = "Instructions on running the docker container"
     default_bagit = "BagIt-Version: 0.97\nTag-File-Character-Encoding: UTF-8\n"
 
-    def __init__(self, tale, user, algs=None):
+    def __init__(self, tale, user, algs=None, expand_folders=False):
         if algs is None:
             self.algs = ["md5", "sha256"]
         self.tale = tale
@@ -68,7 +68,7 @@ class TaleExporter:
         self.workspace = Folder().load(
             tale['workspaceId'], user=user, level=AccessType.READ
         )
-        self.manifest = Manifest(tale, user).manifest
+        self.manifest = Manifest(tale, user, expand_folders).manifest
         self.zip_generator = ziputil.ZipGenerator(str(tale['_id']))
         self.tale_license = WholeTaleLicense().license_from_spdx(
             tale.get('licenseSPDX', WholeTaleLicense.default_spdx())
