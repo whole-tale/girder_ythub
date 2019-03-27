@@ -298,9 +298,12 @@ class Tale(Resource):
     @autoDescribeRoute(
         Description('Generate the Tale manifest')
         .modelParam('id', model='tale', plugin='wholetale', level=AccessType.READ)
+        .param('expandFolders', "If True, folders in Tale's dataSet are recursively "
+               "expanded to items in the 'aggregates' section",
+               required=False, dataType='boolean', default=False)
         .errorResponse('ID was invalid.')
     )
-    def generateManifest(self, tale):
+    def generateManifest(self, tale, expandFolders):
         """
         Creates a manifest document and returns the contents.
         :param tale: The Tale whose information is being used
@@ -309,7 +312,7 @@ class Tale(Resource):
         """
 
         user = self.getCurrentUser()
-        manifest_doc = Manifest(tale, user)
+        manifest_doc = Manifest(tale, user, expand_folders=expandFolders)
         return manifest_doc.manifest
 
     @access.user
