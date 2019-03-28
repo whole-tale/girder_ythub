@@ -19,14 +19,17 @@ class Manifest:
     create<someProperty>
     """
 
-    def __init__(self, tale, user):
+    def __init__(self, tale, user, expand_folders=False):
         """
         Initialize the manifest document with base variables
         :param tale: The Tale whose data is being serialized
         :param user: The user requesting the manifest document
+        :param expand_folders: If True, when encountering a folder
+            in the external data, return all child items recursively.
         """
         self.tale = tale
         self.user = user
+        self.expand_folders = expand_folders
 
         self.manifest = dict()
         # Create a set that represents any external data packages
@@ -203,9 +206,9 @@ class Manifest:
             record['size'] = obj['size']
             self.manifest['aggregates'].append(record)
 
-    def _handle_http_folder(self, folder, user, relpath=''):
+    def _expand_folder_into_items(self, folder, user, relpath=''):
         """
-        Recursively handle HTTP folder and return all child items as ext objs
+        Recursively handle data folder and return all child items as ext objs
 
         In a perfect world there should be a better place for this...
         """
@@ -225,7 +228,7 @@ class Manifest:
         for subfolder in Folder().childFolders(
             folder, parentType='folder', user=user
         ):
-            ext += self._handle_http_folder(subfolder, user, relpath=curpath)
+            ext += self._expand_folder_into_items(subfolder, user, relpath=curpath)
         return ext
 
     def _parse_dataSet(self, dataSet=None, relpath=''):
@@ -263,12 +266,12 @@ class Manifest:
                 }
 
                 if obj['_modelType'] == 'folder':
-                    ext_obj['name'] = doc['name']
 
-                    if provider_name == 'HTTP':
-                        external_objects += self._handle_http_folder(doc, self.user)
+                    if provider_name == 'HTTP' or self.expand_folders:
+                        external_objects += self._expand_folder_into_items(doc, self.user)
                         continue
 
+                    ext_obj['name'] = doc['name']
                     if doc['meta'].get('identifier') == top_identifier:
                         ext_obj['uri'] = top_identifier
                     else:
