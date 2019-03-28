@@ -20,7 +20,6 @@ from girder.utility.model_importer import ModelImporter
 
 from .constants import PluginSettings, SettingDefault
 from .rest.dataset import Dataset
-from .rest.recipe import Recipe
 from .rest.image import Image
 from .rest.integration import Integration
 from .rest.repository import Repository
@@ -30,6 +29,7 @@ from .rest.tale import Tale
 from .rest.instance import Instance
 from .rest.wholetale import wholeTale
 from .rest.workspace import Workspace
+from .rest.license import License
 from .models.instance import finalizeInstance
 
 
@@ -326,7 +326,8 @@ def getJobResult(self, job):
 def load(info):
     info['apiRoot'].wholetale = wholeTale()
     info['apiRoot'].instance = Instance()
-    info['apiRoot'].tale = Tale()
+    tale = Tale()
+    info['apiRoot'].tale = tale
 
     from girder.plugins.wholetale.models.tale import Tale as TaleModel
     from girder.plugins.wholetale.models.tale import _currentTaleFormat
@@ -341,17 +342,19 @@ def load(info):
         except GirderException as exc:
             logprint(exc)
 
-    info['apiRoot'].recipe = Recipe()
     info['apiRoot'].dataset = Dataset()
-    image = Image()
-    info['apiRoot'].image = image
-    events.bind('jobs.job.update.after', 'wholetale', image.updateImageStatus)
+    info['apiRoot'].image = Image()
+    events.bind('jobs.job.update.after', 'wholetale', tale.updateBuildStatus)
     events.bind('jobs.job.update.after', 'wholetale', finalizeInstance)
     events.bind('model.file.validate', 'wholetale', validateFileLink)
     events.unbind('model.user.save.created', CoreEventHandler.USER_DEFAULT_FOLDERS)
     events.bind('model.user.save.created', 'wholetale', addDefaultFolders)
+    events.bind('model.file.save', 'wholetale', tale.updateWorkspaceModTime)
+    events.bind('model.file.save.created', 'wholetale', tale.updateWorkspaceModTime)
+    events.bind('model.file.remove', 'wholetale', tale.updateWorkspaceModTime)
     info['apiRoot'].repository = Repository()
     info['apiRoot'].publish = Publish()
+    info['apiRoot'].license = License()
     info['apiRoot'].integration = Integration()
     info['apiRoot'].workspace = Workspace()
     info['apiRoot'].folder.route('GET', ('registered',), listImportedData)

@@ -2,6 +2,37 @@
 # -*- coding: utf-8 -*-
 from girder.api.docs import addModel
 
+publishInfoSchema = {
+    'title': 'publishInfo',
+    '$schema': 'http://json-schema.org/draft-04/schema#',
+    'description': 'A schema representing publishing information',
+    'type': 'object',
+    'properties': {
+        "pid": {
+            "type": ["string", "null"],
+            "description": "A unique identifier assigned to this tale from a "
+                           "publishing source."
+        },
+        "uri": {
+            "type": ["string", "null"],
+            "description": "A URI pointing to the location of the published "
+                           "Tale."
+        },
+        "date": {
+            'type': 'string',
+            'format': 'date-time',
+            "description": "Date Tale was published."
+        }
+    },
+    'required': ['pid', 'uri', 'date']
+}
+
+publishInfoListSchema = {
+    'title': 'list of publishInfos',
+    '$schema': 'http://json-schema.org/draft-04/schema#',
+    'type': 'array',
+    'items': publishInfoSchema,
+}
 
 dataResourceSchema = {
     'title': 'dataResource',
@@ -94,7 +125,7 @@ dataSetSchema = {
 tagsSchema = {
     'title': 'tags',
     '$schema': 'http://json-schema.org/draft-04/schema#',
-    'description': 'A schema for recipe/image tags',
+    'description': 'A schema for image tags',
     'type': 'array',
     'items': {
         'type': 'string'
@@ -184,6 +215,28 @@ containerInfoSchema = {
         }
     },
     'required': ['name', 'mountPoint', 'nodeId', 'volumeName'],
+}
+
+imageInfoSchema = {
+    'title': 'imageInfo',
+    '$schema': 'http://json-schema.org/draft-04/schema#',
+    'description': 'Attributes describing a Tale image',
+    'type': 'object',
+    'properties': {
+        'created': {
+            'type': 'string',
+            'format': 'date-time',
+        },
+        'jobId': {
+            'type': 'string',
+        },
+        'digest': {
+            'type': 'string',
+        },
+        'fullName': {
+            'type': 'string',
+        }
+    }
 }
 
 addModel('containerConfig', containerConfigSchema)

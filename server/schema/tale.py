@@ -1,12 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from .misc import containerConfigSchema, dataSetSchema
+from .misc import containerConfigSchema, \
+    dataSetSchema, \
+    imageInfoSchema, \
+    publishInfoListSchema
 
 taleModel = {
     "definitions": {
         "containerConfig": containerConfigSchema,
-        "dataSet": dataSetSchema
+        "dataSet": dataSetSchema,
+        'imageInfo': imageInfoSchema,
+        "publishInfo": publishInfoListSchema,
     },
     "description": "Object representing a Tale.",
     "required": [
@@ -29,6 +34,9 @@ taleModel = {
         "imageId": {
             "type": "string",
             "description": "ID of a WT Image used by the Tale"
+        },
+        "imageInfo": {
+            "$ref": "#/definitions/imageInfo"
         },
         "folderId": {
             "type": "string",
@@ -61,11 +69,6 @@ taleModel = {
             "type": "boolean",
             "description": "If set to true the Tale is accessible by anyone.",
             "default": True
-        },
-        "published": {
-            "type": "boolean",
-            "default": False,
-            "description": "If set to true the Tale cannot be deleted or made unpublished."
         },
         "config": {
             "$ref": "#/definitions/containerConfig"
@@ -107,15 +110,12 @@ taleModel = {
             "type": "string",
             "description": "A URL to an image icon"
         },
-        "doi": {
-            "type": ["string", "null"],
-            "description": "A unique identifier assigned to this tale from a "
-                           "publishing source."
+        "license": {
+            "type": "string",
+            "description": "The license that the Tale is under"
         },
-        "publishedURI": {
-            "type": ["string", "null"],
-            "description": "A URI pointing to the location of the published "
-                           "Tale."
+        "publishInfo": {
+            "$ref": "#/definitions/publishInfo"
         }
     },
     'example': {
@@ -143,13 +143,23 @@ taleModel = {
         "illustration": ("https://raw.githubusercontent.com/whole-tale/dashboard/"
                          "master/public/images/demo-graph2.jpg"),
         "imageId": "5c4886279759c200017b22a3",
+        'imageInfo': {
+            'jobId': '5873dcdbaec03000014x123',
+            'digest': 'sha256:9aaece098841b13cdc64ea6756767357f5c9eb1ab10f67b9e67a90960b894053',
+            'fullName': 'registry.local.wholetale.org/5c3cd7faa697bf0001ce6cc0-1547494547'
+        },
         "narrative": [],
         "narrativeId": "5c4887409759c200017b2319",
         "public": False,
-        "published": False,
-        "publishedURI": "https://dev.nceas.ucsb.edu/view/urn:uuid:939e48ec-1107-45d9"
-                        "-baa7-05cef08e51cd",
+        "publishInfo": [
+            {
+                "pid": "urn:uuid:939e48ec-1107-45d9-baa7-05cef08e51cd",
+                "uri": "https://dev.nceas.ucsb.edu/view/urn:uuid:8ec-1107-45d9-baa7-05cef08e51cd",
+                "date": "2019-01-23T15:48:17.476000+00:00"
+            }
+        ],
         "title": "My Tale",
+        "license": "CC0-1.0",
         "updated": "2019-01-23T15:48:17.476000+00:00"
     }
 }

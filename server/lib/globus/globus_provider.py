@@ -1,8 +1,12 @@
+import os
 import re
 from typing import Tuple
 from html.parser import HTMLParser
 from urllib.parse import parse_qs
 from urllib.request import OpenerDirector, HTTPSHandler
+
+from girder.models.item import Item
+from girder.models.folder import Folder
 
 from plugins.wholetale.server.lib.file_map import FileMap
 from ..import_providers import ImportProvider
@@ -96,6 +100,29 @@ class GlobusImportProvider(ImportProvider):
                     ImportItem.FILE, entry['name'], size=entry['size'],
                     mimeType='application/octet-stream',
                     url='globus://%s/%s%s' % (endpoint, path, entry['name']))
+
+    def getDatasetUID(self, doc, user):
+        if 'folderId' in doc:
+            path_to_root = Item().parentsToRoot(doc, user=user)
+        else:
+            path_to_root = Folder().parentsToRoot(doc, user=user)
+        # Collection{WT Catalog} / Folder{WT Catalog} / Folder{Globus ds root}
+        return path_to_root[2]['object']['meta']['identifier']
+
+    def getURI(self, doc, user):
+        if 'folderId' in doc:
+            fileObj = Item().childFiles(doc)[0]
+            return fileObj['linkUrl']
+        else:
+            path_to_root = Folder().parentsToRoot(doc, user=user)
+            root_folder = path_to_root[2]
+            # There's always 'globus_metadata.json'...
+            item = Folder().childItems(root_folder['object'], user=user)[0]
+            fileObj = Item().childFiles(item)[0]
+            root_path = os.path.dirname(fileObj['linkUrl'])
+            for path in path_to_root[3:]:
+                root_path = os.path.join(root_path, path['object']['name'])
+            return os.path.join(root_path, doc['name'])
 
 
 TRANSFER_URL_PREFIX = 'https://app.globus.org/file-manager?'

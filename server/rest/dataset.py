@@ -7,15 +7,14 @@ from girder.api.describe import Description, autoDescribeRoute
 from girder.api.rest import Resource
 from girder.constants import AccessType, SortDir, TokenScope
 from girder.exceptions import ValidationException
+from girder.models.item import Item
 from girder.models.user import User
-from girder.utility.progress import ProgressContext
 from ..constants import CATALOG_NAME
 
 from girder.plugins.wholetale.lib.dataone import DataONELocations
+from ..lib import register_dataMap
 from ..schema.misc import dataMapListSchema
 from ..utils import getOrCreateRootFolder
-from ..lib import IMPORT_PROVIDERS
-from ..lib.data_map import DataMap
 
 
 datasetModel = {
@@ -106,11 +105,13 @@ class Dataset(Resource):
         .param('myData', 'If True, filters results to datasets registered by the user.'
                'Defaults to False.',
                required=False, dataType='boolean', default=False)
+        .jsonParam('identifiers', 'Filter datasets by an identifier', required=False,
+                   dataType='string', requireArray=True)
         .responseClass('dataset', array=True)
         .pagingParams(defaultSort='lowerName',
                       defaultSortDir=SortDir.ASCENDING)
     )
-    def listDatasets(self, myData, limit, offset, sort, params):
+    def listDatasets(self, myData, identifiers, limit, offset, sort):
         user = self.getCurrentUser()
         folderModel = self.model('folder')
         datasets = []
@@ -119,6 +120,17 @@ class Dataset(Resource):
         if myData:
             filters = {'_id': {'$in': user.get('myData', [])}}
 
+        if identifiers:
+            filters.update(
+                {'meta.identifier': {'$in': identifiers}}
+            )
+
+            for modelType in ('folder', 'item'):
+                for obj in self.model(modelType).find(filters):
+                    obj['_modelType'] = modelType
+                    datasets.append(_itemOrFolderToDataset(obj))
+            return datasets
+
         parent = getOrCreateRootFolder(CATALOG_NAME)
         for folder in folderModel.childFolders(
                 parentType='folder', parent=parent, user=user,
@@ -126,11 +138,13 @@ class Dataset(Resource):
             folder['_modelType'] = 'folder'
             datasets.append(_itemOrFolderToDataset(folder))
 
-        for item in folderModel.childItems(
-                folder=parent, limit=limit, offset=offset, sort=sort,
-                filters=filters):
-            item['_modelType'] = 'item'
-            datasets.append(_itemOrFolderToDataset(item))
+        if myData:
+            cursor = Item().find(filters)
+            for item in Item().filterResultsByPermission(
+                    cursor, user, AccessType.READ, limit=limit, offset=offset
+            ):
+                item['_modelType'] = 'item'
+                datasets.append(_itemOrFolderToDataset(item))
         return datasets
 
     def _getResource(self, id, type):
@@ -210,20 +224,9 @@ class Dataset(Resource):
             parent = self.model(parentType).load(
                 parentId, user=user, level=AccessType.WRITE, exc=True)
 
-        dataMaps = DataMap.fromList(dataMap)
-
-        progress = True
-        importedData = []
-        with ProgressContext(progress, user=user,
-                             title='Registering resources') as ctx:
-            for dataMap in dataMaps:
-                # probably would be nicer if Entity kept all details and the dataMap
-                # would be merged into it
-                provider = IMPORT_PROVIDERS.getFromDataMap(dataMap)
-                objType, obj = provider.register(parent, parentType, ctx, user, dataMap,
-                                                 base_url=base_url)
-                importedData.append(obj['_id'])
-
+        importedData = register_dataMap(
+            dataMap, parent, parentType, user=user, base_url=base_url
+        )
         if importedData:
             user_data = set(user.get('myData', []))
             user['myData'] = list(user_data.union(set(importedData)))

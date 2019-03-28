@@ -6,6 +6,7 @@ from bson.objectid import ObjectId
 
 from ..constants import WORKSPACE_NAME, DATADIRS_NAME, SCRIPTDIRS_NAME
 from ..utils import getOrCreateRootFolder
+from ..lib.license import WholeTaleLicense
 from girder.models.model_base import AccessControlledModel
 from girder.models.item import Item
 from girder.models.folder import Folder
@@ -16,7 +17,7 @@ from girder.exceptions import AccessException
 # Whenever the Tale object schema is modified (e.g. fields are added or
 # removed) increase `_currentTaleFormat` to retroactively apply those
 # changes to existing Tales.
-_currentTaleFormat = 5
+_currentTaleFormat = 6
 
 
 class Tale(AccessControlledModel):
@@ -30,15 +31,15 @@ class Tale(AccessControlledModel):
         })
         self.modifiableFields = {
             'title', 'description', 'public', 'config', 'updated', 'authors',
-            'category', 'icon', 'iframe', 'illustration', 'dataSet',
-            'published', 'doi', 'publishedURI'
+            'category', 'icon', 'iframe', 'illustration', 'dataSet', 'licenseSPDX',
+            'workspaceModified', 'publishInfo'
         }
         self.exposeFields(
             level=AccessType.READ,
             fields=({'_id', 'folderId', 'imageId', 'creatorId', 'created',
-                     'format', 'dataSet', 'narrative', 'narrativeId',
-                     'doi', 'publishedURI', 'workspaceId'} | self.modifiableFields))
-        self.exposeFields(level=AccessType.ADMIN, fields={'published'})
+                     'format', 'dataSet', 'narrative', 'narrativeId', 'licenseSPDX',
+                     'imageInfo', 'publishInfo', 'workspaceId',
+                     'workspaceModified'} | self.modifiableFields))
 
     def validate(self, tale):
         if 'iframe' not in tale:
@@ -47,22 +48,21 @@ class Tale(AccessControlledModel):
         if '_id' not in tale:
             return tale
 
-        if 'doi' not in tale:
-            tale['doi'] = None
-
-        if 'publishedURI' not in tale:
-            tale['publishedURI'] = None
+        if 'publishInfo' not in tale:
+            tale['publishInfo'] = []
 
         if 'dataSet' not in tale:
             tale['dataSet'] = []
 
-        return tale
+        if 'licenseSPDX' not in tale:
+            tale['licenseSPDX'] = WholeTaleLicense.default_spdx()
+        tale_licenses = WholeTaleLicense()
+        if tale['licenseSPDX'] not in tale_licenses.supported_spdxes():
+            tale['licenseSPDX'] = WholeTaleLicense.default_spdx()
 
-    def setPublished(self, tale, publish, save=False):
-        assert isinstance(publish, bool)
-        tale['published'] = publish or tale['published']
-        if save:
-            tale = self.save(tale)
+        if tale.get('config') is None:
+            tale['config'] = {}
+
         return tale
 
     def list(self, user=None, data=None, image=None, limit=0, offset=0,
@@ -96,16 +96,17 @@ class Tale(AccessControlledModel):
             yield r
 
     def createTale(self, image, data, creator=None, save=True, title=None,
-                   description=None, public=None, config=None, published=False,
-                   authors=None, icon=None, category=None, illustration=None,
-                   narrative=None, doi=None, publishedURI=None):
+                   description=None, public=None, config=None, authors=None,
+                   icon=None, category=None, illustration=None, narrative=None,
+                   licenseSPDX=WholeTaleLicense.default_spdx()):
+
         if creator is None:
             creatorId = None
         else:
             creatorId = creator.get('_id', None)
 
         if title is None:
-            title = '{} with {}'.format(image['fullName'], DATADIRS_NAME)
+            title = '{} with {}'.format(image['name'], DATADIRS_NAME)
         # if illustration is None:
             # Get image from SILS
 
@@ -113,7 +114,7 @@ class Tale(AccessControlledModel):
         tale = {
             'authors': authors,
             'category': category,
-            'config': config,
+            'config': config or {},
             'creatorId': creatorId,
             'dataSet': data or [],
             'description': description,
@@ -126,10 +127,8 @@ class Tale(AccessControlledModel):
             'narrative': narrative or [],
             'title': title,
             'public': public,
-            'published': published,
             'updated': now,
-            'doi': doi,
-            'publishedURI': publishedURI
+            'licenseSPDX': licenseSPDX
         }
         if public is not None and isinstance(public, bool):
             self.setPublic(tale, public, save=False)

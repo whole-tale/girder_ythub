@@ -6,12 +6,16 @@ add_python_test(harvester
   plugins/wholetale/dataone_listFiles.json
   plugins/wholetale/test_list_files.txt
 )
-add_python_test(recipe PLUGIN wholetale)
 add_python_test(image PLUGIN wholetale)
 add_python_test(tale PLUGIN wholetale)
 add_python_test(instance PLUGIN wholetale)
 add_python_test(constants PLUGIN wholetale)
 add_python_test(utils PLUGIN wholetale)
+add_python_test(manifest
+  PLUGIN wholetale
+  EXTERNAL_DATA
+  plugins/wholetale/manifest_mock_catalog.json
+)
 add_python_test(dataone_register
   PLUGIN wholetale
   EXTERNAL_DATA
@@ -40,5 +44,6 @@ add_python_test(dataset
   EXTERNAL_DATA
   plugins/wholetale/dataset_register.txt
 )
+add_python_test(publish PLUGIN wholetale)
 add_python_style_test(python_static_analysis_wholetale
                       "${PROJECT_SOURCE_DIR}/plugins/wholetale/server")

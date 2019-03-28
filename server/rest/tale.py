@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import re
-import requests
-
+from datetime import datetime, timedelta
+import time
 from girder.api import access
 from girder.api.docs import addModel
 from girder.api.describe import Description, autoDescribeRoute
@@ -10,16 +9,28 @@ from girder.api.rest import Resource, filtermodel, RestException,\
     setResponseHeader, setContentDisposition
 
 from girder.constants import AccessType, SortDir, TokenScope
-from girder.utility import ziputil
+from girder.utility.path import getResourcePath
 from girder.utility.progress import ProgressContext
 from girder.models.token import Token
 from girder.models.folder import Folder
+from girder.models.user import User
 from girder.plugins.jobs.constants import REST_CREATE_JOB_TOKEN_SCOPE
-from gwvolman.tasks import import_tale
+from gwvolman.tasks import import_tale, build_tale_image
+
+from girder.plugins.jobs.constants import JobStatus
+from girder.models.notification import Notification
 
 from ..schema.tale import taleModel as taleSchema
 from ..models.tale import Tale as taleModel
 from ..models.image import Image as imageModel
+from ..lib.manifest import Manifest
+from ..lib.exporters.bag import BagTaleExporter
+from ..lib.exporters.native import NativeTaleExporter
+
+from girder.plugins.worker import getCeleryApp
+
+from ..constants import ImageStatus
+
 
 addModel('tale', taleSchema, resources='tale')
 
@@ -40,6 +51,8 @@ class Tale(Resource):
         self.route('GET', (':id', 'access'), self.getTaleAccess)
         self.route('PUT', (':id', 'access'), self.updateTaleAccess)
         self.route('GET', (':id', 'export'), self.exportTale)
+        self.route('GET', (':id', 'manifest'), self.generateManifest)
+        self.route('PUT', (':id', 'build'), self.buildImage)
 
     @access.public
     @filtermodel(model='tale', plugin='wholetale')
@@ -226,8 +239,8 @@ class Tale(Resource):
                                      'images/demo-graph2.jpg')),
                 authors=tale.get('authors', default_author),
                 category=tale.get('category', 'science'),
-                published=False, narrative=tale.get('narrative'),
-                doi=tale.get('doi'), publishedURI=tale.get('publishedURI')
+                narrative=tale.get('narrative'),
+                licenseSPDX=tale.get('licenseSPDX')
             )
 
     @access.user(scope=TokenScope.DATA_OWN)
@@ -259,64 +272,125 @@ class Tale(Resource):
 
     @access.user
     @autoDescribeRoute(
-        Description('Export a tale.')
+        Description('Export a tale as a zipfile')
         .modelParam('id', model='tale', plugin='wholetale', level=AccessType.READ)
+        .param('taleFormat', 'Format of the exported Tale', required=False,
+               enum=['bagit', 'native'], strip=True, default='native')
         .responseClass('tale')
         .produces('application/zip')
         .errorResponse('ID was invalid.', 404)
         .errorResponse('You are not authorized to export this tale.', 403)
     )
-    def exportTale(self, tale, params):
+    def exportTale(self, tale, taleFormat):
         user = self.getCurrentUser()
-        folder = self.model('folder').load(
-            tale['folderId'],
-            user=user,
-            level=AccessType.READ,
-            exc=True)
-        image = self.model('image', 'wholetale').load(
-            tale['imageId'], user=user, level=AccessType.READ, exc=True)
-        recipe = self.model('recipe', 'wholetale').load(
-            image['recipeId'], user=user, level=AccessType.READ, exc=True)
+        zip_name = str(tale['_id'])
 
-        # Construct a sanitized name for the ZIP archive using a whitelist
-        # approach
-        zip_name = re.sub('[^a-zA-Z0-9-]', '_', tale['title'])
+        if taleFormat == 'bagit':
+            exporter = BagTaleExporter(tale, user, expand_folders=True)
+        elif taleFormat == 'native':
+            exporter = NativeTaleExporter(tale, user)
 
         setResponseHeader('Content-Type', 'application/zip')
         setContentDisposition(zip_name + '.zip')
+        return exporter.stream
 
-        # Temporary: Fetch the GitHub archive of the recipe. Note that this is
-        # done in a streaming fashion because ziputil makes use of generators
-        # when files are added to the zip
-        url = '{}/archive/{}.tar.gz'.format(recipe['url'], recipe['commitId'])
-        req = requests.get(url, stream=True)
+    @access.public
+    @autoDescribeRoute(
+        Description('Generate the Tale manifest')
+        .modelParam('id', model='tale', plugin='wholetale', level=AccessType.READ)
+        .param('expandFolders', "If True, folders in Tale's dataSet are recursively "
+               "expanded to items in the 'aggregates' section",
+               required=False, dataType='boolean', default=False)
+        .errorResponse('ID was invalid.')
+    )
+    def generateManifest(self, tale, expandFolders):
+        """
+        Creates a manifest document and returns the contents.
+        :param tale: The Tale whose information is being used
+        :param itemIds: An optional list of items to include in the manifest
+        :return: A JSON structure representing the Tale
+        """
 
-        def stream():
-            zip = ziputil.ZipGenerator(zip_name)
+        user = self.getCurrentUser()
+        manifest_doc = Manifest(tale, user, expand_folders=expandFolders)
+        return manifest_doc.manifest
 
-            # Add files from the Tale folder
-            for (path, f) in self.model('folder').fileList(folder,
-                                                           user=user,
-                                                           subpath=False):
+    @access.user
+    @autoDescribeRoute(
+        Description('Build the image for the Tale')
+        .modelParam('id', model='tale', plugin='wholetale', level=AccessType.WRITE,
+                    description='The ID of the Tale.')
+        .errorResponse('ID was invalid.')
+        .errorResponse('Admin access was denied for the tale.', 403)
+    )
+    def buildImage(self, tale, params):
+        token = self.getCurrentToken()
 
-                for data in zip.addFile(f, path):
-                    yield data
+        buildTask = build_tale_image.delay(
+            str(tale['_id']),
+            girder_client_token=str(token['_id'])
+        )
+        return buildTask.job
 
-            # Temporary: Add Image metadata
-            for data in zip.addFile(lambda: image.__str__(), 'image.txt'):
-                yield data
+    def updateBuildStatus(self, event):
+        """
+        Event handler that updates the Tale object based on the build_tale_image task.
+        Creates notifications when image build status changes.
+        """
+        job = event.info['job']
+        if job['title'] == 'Build Tale Image' and job.get('status') is not None:
+            status = int(job['status'])
+            tale = self.model('tale', 'wholetale').load(
+                job['args'][0], force=True)
 
-            # Temporary: Add Recipe metadata
-            for data in zip.addFile(lambda: recipe.__str__(), 'recipe.txt'):
-                yield data
+            if 'imageInfo' not in tale:
+                tale['imageInfo'] = {}
 
-            # Temporary: Add a zip of the recipe archive
-            # TODO: Grab proper filename from header
-            # e.g. 'Content-Disposition': 'attachment; filename= \
-            # jupyter-base-b45f9a575602e6038b4da6333f2c3e679ee01c58.tar.gz'
-            for data in zip.addFile(req.iter_content, 'archive.tar.gz'):
-                yield data
+            # Store the previous status, if present.
+            previousStatus = -1
+            try:
+                previousStatus = tale['imageInfo']['status']
+            except KeyError:
+                pass
 
-            yield zip.footer()
+            if status == JobStatus.SUCCESS:
+                result = getCeleryApp().AsyncResult(job['celeryTaskId']).get()
+                tale['imageInfo']['digest'] = result['image_digest']
+                tale['imageInfo']['repo2docker_version'] = result['repo2docker_version']
+                tale['imageInfo']['last_build'] = result['last_build']
+                tale['imageInfo']['status'] = ImageStatus.AVAILABLE
+            elif status == JobStatus.ERROR:
+                tale['imageInfo']['status'] = ImageStatus.INVALID
+            elif status in (JobStatus.QUEUED, JobStatus.RUNNING):
+                tale['imageInfo']['jobId'] = job['_id']
+                tale['imageInfo']['status'] = ImageStatus.BUILDING
 
-        return stream
+            # If the status changed, save the object and send a notification
+            if 'status' in tale['imageInfo'] and tale['imageInfo']['status'] != previousStatus:
+                self.model('tale', 'wholetale').updateTale(tale)
+                user = User().load(job['userId'], force=True)
+                expires = datetime.now() + timedelta(minutes=10)
+                Notification().createNotification(type="wt_image_build_status",
+                                                  data=tale,
+                                                  user=user, expires=expires)
+
+    def updateWorkspaceModTime(self, event):
+        """
+        Handler for model.file.save, model.file.save.created and
+        model.file.remove events When files in a workspace are modified or
+        deleted, update the associated Tale with a workspaceModified time.
+        This is used to determine whether to rebuild or not.
+        """
+
+        # Get the path
+        path = getResourcePath('file', event.info, force=True)
+
+        # If the file is in a workspace, parse the Tale ID
+        # e.g., "/collection/WholeTale Workspaces/
+        #  WholeTale Workspaces/5c848784912a470001e9545d/file.txt"
+        if path.startswith('/collection/WholeTale Workspaces/WholeTale Workspaces'):
+            elems = path.split('/')
+            taleId = elems[4]
+            tale = self.model('tale', 'wholetale').load(taleId, force=True)
+            tale['workspaceModified'] = int(time.time())
+            self.model('tale', 'wholetale').save(tale)

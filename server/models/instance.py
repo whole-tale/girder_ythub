@@ -15,16 +15,17 @@ from girder.models.token import Token
 from girder.plugins.worker import getCeleryApp
 from girder.plugins.jobs.constants import JobStatus, REST_CREATE_JOB_TOKEN_SCOPE
 from gwvolman.tasks import \
-    create_volume, launch_container, update_container, shutdown_container, remove_volume
+    create_volume, launch_container, update_container, shutdown_container, \
+    remove_volume, build_tale_image
 
 from ..constants import InstanceStatus
 from ..schema.misc import containerInfoSchema
 
 from girder.plugins.wholetale.models.tale import Tale
-from girder.plugins.wholetale.models.image import Image
 
 
 TASK_TIMEOUT = 15.0
+BUILD_TIMEOUT = 360.0
 
 
 class Instance(AccessControlledModel):
@@ -75,7 +76,7 @@ class Instance(AccessControlledModel):
                 limit=limit, offset=offset):
             yield r
 
-    def updateAndRestartInstance(self, instance, token, imageId, digest):
+    def updateAndRestartInstance(self, instance, token, digest):
         """
         Updates and restarts an instance.
 
@@ -88,13 +89,12 @@ class Instance(AccessControlledModel):
             args=[str(instance['_id'])], queue='manager',
             kwargs={
                 'girder_client_token': str(token['_id']),
-                'image': str(imageId) + '@' + str(digest)
+                'image': digest
             }
         ).apply_async()
         instanceTask.get(timeout=TASK_TIMEOUT)
-        # TODO: Ensure valid imageId / digest?
+        # TODO: Ensure valid digest?
         instance['containerInfo']['digest'] = digest
-        instance['containerInfo']['imageId'] = imageId
         return self.updateInstance(instance)
 
     def updateInstance(self, instance):
@@ -157,15 +157,21 @@ class Instance(AccessControlledModel):
         if spawn:
             # Create single job
             Token().addScope(token, scope=REST_CREATE_JOB_TOKEN_SCOPE)
-            volumeTask = create_volume.signature(
-                args=[str(instance['_id'])],
-                kwargs={'girder_client_token': str(token['_id'])}
+
+            buildTask = build_tale_image.si(
+                str(tale['_id']),
+                girder_client_token=str(token['_id'])
+            )
+            volumeTask = create_volume.si(
+                str(instance['_id']),
+                girder_client_token=str(token['_id'])
             )
             serviceTask = launch_container.signature(
                 kwargs={'girder_client_token': str(token['_id'])},
                 queue='manager'
             )
-            (volumeTask | serviceTask).apply_async()
+
+            (buildTask | volumeTask | serviceTask).apply_async()
         return instance
 
 
@@ -214,8 +220,7 @@ def finalizeInstance(event):
             # Preserve the imageId / current digest in containerInfo
             tale = Tale().load(instance['taleId'], force=True)
             containerInfo['imageId'] = tale['imageId']
-            image = Image().load(tale['imageId'], force=True)
-            containerInfo['digest'] = image['digest']
+            containerInfo['digest'] = tale['imageInfo']['digest']
 
             instance.update({
                 'url': url,
