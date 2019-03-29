@@ -158,9 +158,9 @@ class Instance(AccessControlledModel):
             # Create single job
             Token().addScope(token, scope=REST_CREATE_JOB_TOKEN_SCOPE)
 
-            buildTask = build_tale_image.si(
-                str(tale['_id']),
-                girder_client_token=str(token['_id'])
+            buildTask = build_tale_image.signature(
+                args=[str(tale['_id'])], queue='manager', immutable=True,
+                kwargs={'girder_client_token': str(token['_id'])}
             )
             volumeTask = create_volume.si(
                 str(instance['_id']),
