@@ -159,7 +159,7 @@ class Instance(AccessControlledModel):
             Token().addScope(token, scope=REST_CREATE_JOB_TOKEN_SCOPE)
 
             buildTask = build_tale_image.signature(
-                args=[str(tale['_id'])], queue='manager', immutable=True,
+                args=[str(tale['_id'])], immutable=True,
                 kwargs={'girder_client_token': str(token['_id'])}
             )
             volumeTask = create_volume.si(

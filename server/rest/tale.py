@@ -327,7 +327,7 @@ class Tale(Resource):
         token = self.getCurrentToken()
 
         buildTask = build_tale_image.signature(
-            args=[str(tale['_id'])], queue='manager',
+            args=[str(tale['_id'])],
             kwargs={
                 'girder_client_token': str(token['_id'])
             }
