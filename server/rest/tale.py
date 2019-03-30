@@ -326,10 +326,12 @@ class Tale(Resource):
     def buildImage(self, tale, params):
         token = self.getCurrentToken()
 
-        buildTask = build_tale_image.delay(
-            str(tale['_id']),
-            girder_client_token=str(token['_id'])
-        )
+        buildTask = build_tale_image.signature(
+            args=[str(tale['_id'])],
+            kwargs={
+                'girder_client_token': str(token['_id'])
+            }
+        ).apply_async()
         return buildTask.job
 
     def updateBuildStatus(self, event):
