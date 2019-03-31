@@ -43,7 +43,7 @@ class Manifest:
         self.manifest.update(self.create_context())
         self.manifest.update(self.create_basic_attributes())
         self.add_tale_creator()
-        self.add_tale_authors()
+        self.manifest.update(self.create_author_record())
         self.add_tale_records()
         # Add any external datasets to the manifest
         self.add_dataset_records()
@@ -118,23 +118,21 @@ class Manifest:
             "schema:email": tale_user.get('email', '')
         }
 
-    def add_tale_authors(self):
-
-        self.manifest['schema:author'] = []
-        for author in self.tale['authors']:
-            self.manifest['schema:author'].append(self.create_author_record(author))
-
-    def create_author_record(self, author):
+    def create_author_record(self):
         """
-        Creates a record for an author that is associated with a Tale
-        :param author: An object that describes the author
-        :return: A dictionary listing of the author
+        Creates records for authors that are associated with a Tale
+        :return: A dictionary listing of the authors
         """
         return {
-            "@id": author['orcid'],
-            "@type": "schema:Person",
-            "schema:givenName": author['firstName'],
-            "schema:familyName": author['lastName']
+            'schema:author': [
+                {
+                    "@id": author["orcid"],
+                    "@type": "schema:Person",
+                    "schema:givenName": author["firstName"],
+                    "schema:familyName": author["lastName"]
+                }
+                for author in self.tale['authors']
+            ]
         }
 
     def create_context(self):
