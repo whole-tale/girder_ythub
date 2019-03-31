@@ -631,12 +631,12 @@ class TaleTestCase(base.TestCase):
         new_authors = [
             {
                 "firstName": self.admin['firstName'],
-                "lastName": self.admin['firstName'],
+                "lastName": self.admin['lastName'],
                 "orcid": admin_orcid
             },
             {
-                "firstName": self.admin['firstName'],
-                "lastName": self.admin['firstName'],
+                "firstName": self.user['firstName'],
+                "lastName": self.user['lastName'],
                 "orcid": user_orcid
             }
         ]

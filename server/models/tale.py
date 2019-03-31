@@ -70,7 +70,6 @@ class Tale(AccessControlledModel):
                                 'lastName': tale_creator['lastName'],
                                 'orcid': ''}]
         return tale
-        return tale
 
     def list(self, user=None, data=None, image=None, limit=0, offset=0,
              sort=None, currentUser=None, level=AccessType.READ):
