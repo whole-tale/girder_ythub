@@ -143,9 +143,7 @@ class TaleTestCase(base.TestCase):
             type='application/json',
             body=json.dumps({
                 'imageId': str(self.image['_id']),
-                'dataSet': [
-                    {'mountPath': '/' + publicFolder['name'], 'itemId': publicFolder['_id']}
-                ]
+                'dataSet': []
             })
         )
         self.assertStatusOk(resp)
@@ -201,10 +199,7 @@ class TaleTestCase(base.TestCase):
             type='application/json',
             body=json.dumps({
                 'imageId': str(self.image['_id']),
-                'dataSet': [{
-                    'mountPath': '/' + privateFolder['name'],
-                    'itemId': privateFolder['_id']
-                }]
+                'dataSet': [],
             })
         )
         self.assertStatusOk(resp)
@@ -215,10 +210,7 @@ class TaleTestCase(base.TestCase):
             type='application/json',
             body=json.dumps({
                 'imageId': str(self.image['_id']),
-                'dataSet': [{
-                    'mountPath': '/' + privateFolder['name'],
-                    'itemId': adminPublicFolder['_id']
-                }],
+                'dataSet': [],
                 'public': False
             })
         )
@@ -297,9 +289,7 @@ class TaleTestCase(base.TestCase):
                 body=json.dumps(
                     {
                         'imageId': str(self.image['_id']),
-                        'dataSet': [
-                            {'mountPath': '/' + folder['name'], 'itemId': folder['_id']}
-                        ],
+                        'dataSet': [],
                         'public': True
                     })
             )
@@ -312,9 +302,7 @@ class TaleTestCase(base.TestCase):
                 body=json.dumps(
                     {
                         'imageId': str(self.image_admin['_id']),
-                        'dataSet': [
-                            {'mountPath': '/' + folder['name'], 'itemId': folder['_id']}
-                        ]
+                        'dataSet': [],
                     })
             )
             self.assertStatusOk(resp)
@@ -471,9 +459,7 @@ class TaleTestCase(base.TestCase):
             type='application/json',
             body=json.dumps({
                 'imageId': str(self.image['_id']),
-                'dataSet': [
-                    {'mountPath': '/' + sub_home_dir['name'], 'itemId': sub_home_dir['_id']}
-                ],
+                'dataSet': [],
                 'narrative': [str(my_narrative['_id'])]
             })
         )
@@ -604,9 +590,7 @@ class TaleTestCase(base.TestCase):
             body=json.dumps({
                 'folderId': '1234',
                 'imageId': str(self.image['_id']),
-                'dataSet': [
-                    {'mountPath': '/' + 'folder', 'itemId': '123456'}
-                ],
+                'dataSet': [],
                 'title': 'tale tile',
                 'description': 'description',
                 'config': {},
@@ -648,9 +632,7 @@ class TaleTestCase(base.TestCase):
                 'authors': new_authors,
                 'folderId': '1234',
                 'imageId': str(self.image['_id']),
-                'dataSet': [
-                    {'mountPath': '/' + 'folder', 'itemId': '123456'}
-                ],
+                'dataSet': [],
                 'title': title,
                 'description': description,
                 'config': config,
