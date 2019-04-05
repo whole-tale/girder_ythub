@@ -370,10 +370,7 @@ class Manifest:
         Add records for files that we inject (README, LICENSE, etc)
         """
 
-        self.manifest['aggregates'].append({'uri': '../LICENSE',
-                                            'license':
-                                                self.tale.get('licenseSPDX',
-                                                              WholeTaleLicense.default_spdx())})
+        self.manifest['aggregates'].append({'uri': '../LICENSE'})
 
         self.manifest['aggregates'].append({'uri': '../README.md',
                                             '@type': 'HowTo'})
