@@ -95,7 +95,8 @@ def update_citation(event):
     dataset_top_identifiers = set()
     for obj in tale.get('dataSet', []):
         doc = ModelImporter.model(obj['_modelType']).load(
-            obj['itemId'], user=user, level=AccessType.READ, exc=True)
+            obj['itemId'], user=user, level=AccessType.READ, exc=True
+        )
         provider_name = doc['meta']['provider']
         if provider_name.startswith('HTTP'):
             provider_name = 'HTTP'  # TODO: handle HTTPS to make it unnecessary
@@ -109,7 +110,10 @@ def update_citation(event):
         if doi.startswith('doi:'):
             doi = doi[4:]
         try:
-            url = 'https://api.datacite.org/dois/text/x-bibliography/{}?style=harvard'
+            url = (
+                'https://api.datacite.org/dois/'
+                'text/x-bibliography/{}?style=harvard-cite-them-right'
+            )
             citations.append(urlopen(url.format(doi)).read().decode())
         except Exception as ex:
             logger.info('Unable to get a citation for %s, getting "%s"', doi, str(ex))
