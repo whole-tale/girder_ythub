@@ -205,9 +205,11 @@ class ManifestTestCase(base.TestCase):
         from server.lib.manifest import Manifest
 
         manifest_doc = Manifest(self.tale, self.user)
-        manifest_creator = manifest_doc.manifest['createdBy']
+        manifest_creator = manifest_doc.manifest['creator']
         self.assertEqual(manifest_creator['givenName'], self.user['firstName'])
         self.assertEqual(manifest_creator['familyName'], self.user['lastName'])
+        self.assertEqual(manifest_creator['name'],
+                         self.user['firstName'] + ' ' + self.user['lastName'])
         self.assertEqual(manifest_creator['email'], self.user['email'])
         self.assertEqual(manifest_creator['@id'], self.tale['authors'])
 
@@ -257,7 +259,7 @@ class ManifestTestCase(base.TestCase):
     def _testAddTaleCreator(self):
         from server.lib.manifest import Manifest
         manifest_doc = Manifest(self.tale, self.user)
-        self.assertTrue(len(manifest_doc.manifest['schema:author']))
+        self.assertTrue(len(manifest_doc.manifest['author']))
 
     def _testGetFolderIdentifier(self):
         from server.lib.manifest import get_folder_identifier
@@ -346,7 +348,7 @@ class ManifestTestCase(base.TestCase):
                 'size': 1005007,
             },
             {'uri': '../README.md', '@type': 'HowTo'},
-            {'uri': '../LICENSE', 'license': 'CC-BY-4.0'}
+            {'uri': '../LICENSE'}
         ]
         from operator import itemgetter
 

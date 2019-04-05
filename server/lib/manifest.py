@@ -1,7 +1,6 @@
 import os
 import six.moves.urllib as urllib
 
-from .license import WholeTaleLicense
 from . import IMPORT_PROVIDERS
 
 from girder import logger
@@ -112,11 +111,12 @@ class Manifest:
         tale_user = self.userModel.load(self.tale['creatorId'],
                                         user=self.user,
                                         force=True)
-        self.manifest['createdBy'] = {
+        self.manifest['creator'] = {
             "@id": tale_user['email'],
             "@type": "Person",
-            "givenName": tale_user.get('firstName', ''),
-            "familyName": tale_user.get('lastName', ''),
+            "givenName": tale_user.get('firstName'),
+            "familyName": tale_user.get('lastName'),
+            "name": tale_user.get('firstName') + ' ' + tale_user.get('lastName'),
             "email": tale_user.get('email', '')
         }
 
