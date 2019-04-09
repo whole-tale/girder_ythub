@@ -9,3 +9,4 @@ dataone.common==3.2.0
 dataone.libclient==3.2.0
 dataone.cli==3.2.0
 validators
+html2markdown

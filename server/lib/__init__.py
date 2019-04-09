@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import html2markdown
 from urllib.request import urlopen
 
 from girder import events, logger
@@ -114,7 +115,9 @@ def update_citation(event):
                 'https://api.datacite.org/dois/'
                 'text/x-bibliography/{}?style=harvard-cite-them-right'
             )
-            citations.append(urlopen(url.format(doi)).read().decode())
+            citations.append(
+                html2markdown.convert(urlopen(url.format(doi)).read().decode())
+            )
         except Exception as ex:
             logger.info('Unable to get a citation for %s, getting "%s"', doi, str(ex))
 
