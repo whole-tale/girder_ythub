@@ -842,6 +842,21 @@ class TaleTestCase(base.TestCase):
         except bagit.BagValidationError:
             pass  # TODO: Goes without saying that we should not be doing that...
         shutil.rmtree(dirpath)
+
+        # Test dataSetCitation
+        resp = self.request(
+            path='/tale/{_id}'.format(**tale), method='PUT',
+            type='application/json',
+            user=self.user, body=json.dumps({
+                'dataSet': [],
+                'imageId': str(tale['imageId']),
+                'public': tale['public'],
+            })
+        )
+        self.assertStatusOk(resp)
+        tale = resp.json
+        self.assertEqual(tale['dataSetCitation'], [])
+
         self.model('tale', 'wholetale').remove(tale)
         self.model('collection').remove(self.data_collection)
 
