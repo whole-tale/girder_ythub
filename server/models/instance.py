@@ -97,7 +97,7 @@ class Instance(AccessControlledModel):
             resource, user, 'Updating instance',
             'Initializing', total)
 
-        instanceTask = update_container.signature(
+        update_container.signature(
             args=[str(instance['_id'])], queue='manager',
             girder_job_other_fields={
                 'wt_notification_id': str(notification['_id'])
@@ -107,10 +107,6 @@ class Instance(AccessControlledModel):
                 'digest': digest
             }
         ).apply_async()
-        instanceTask.get(timeout=TASK_TIMEOUT)
-        # TODO: Ensure valid digest?
-        instance['containerInfo']['digest'] = digest
-        return self.updateInstance(instance)
 
     def updateInstance(self, instance):
         """
