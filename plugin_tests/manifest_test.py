@@ -409,7 +409,7 @@ class ManifestTestCase(base.TestCase):
             title=self.tale_info['name'],
             public=self.tale_info['public'],
             description=self.tale_info['description'],
-            authors=missing_orcid)
+            authors=[missing_orcid])
 
         with self.assertRaises(ValueError):
             Manifest(tale_missing_orcid, self.user)
@@ -421,7 +421,7 @@ class ManifestTestCase(base.TestCase):
             title=self.tale_info['name'],
             public=self.tale_info['public'],
             description=self.tale_info['description'],
-            authors=missing_orcid)
+            authors=[blank_orcid])
         with self.assertRaises(ValueError):
             Manifest(tale_blank_orcid, self.user)
 

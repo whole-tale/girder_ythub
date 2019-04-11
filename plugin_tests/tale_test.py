@@ -551,10 +551,6 @@ class TaleTestCase(base.TestCase):
         tale = self.model('tale', 'wholetale').save(tale)
         self.assertEqual(tale['licenseSPDX'], WholeTaleLicense.default_spdx())
         self.assertTrue(isinstance(tale['authors'], list))
-        single_author = tale['authors'][0]
-        self.assertEqual(single_author['firstName'], self.user['firstName'])
-        self.assertEqual(single_author['lastName'], self.user['lastName'])
-        self.assertEqual(single_author['orcid'], '')
         self.model('tale', 'wholetale').remove(tale)
 
     @mock.patch('gwvolman.tasks.import_tale')
