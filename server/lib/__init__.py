@@ -1,6 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import html2markdown
+from urllib.request import urlopen
+
+from girder import events, logger
+from girder.constants import AccessType
+from girder.utility.model_importer import ModelImporter
 from girder.utility.progress import ProgressContext
 from .data_map import DataMap
 from .entity import Entity
@@ -81,3 +87,42 @@ def register_dataMap(dataMaps, parent, parentType, user=None, base_url=None):
             )
             importedData.append(obj['_id'])
     return importedData
+
+
+def update_citation(event):
+    tale = event.info['tale']
+    user = event.info['user']
+
+    dataset_top_identifiers = set()
+    for obj in tale.get('dataSet', []):
+        doc = ModelImporter.model(obj['_modelType']).load(
+            obj['itemId'], user=user, level=AccessType.READ, exc=True
+        )
+        provider_name = doc['meta']['provider']
+        if provider_name.startswith('HTTP'):
+            provider_name = 'HTTP'  # TODO: handle HTTPS to make it unnecessary
+        provider = IMPORT_PROVIDERS.providerMap[provider_name]
+        top_identifier = provider.getDatasetUID(doc, user)
+        if top_identifier:
+            dataset_top_identifiers.add(top_identifier)
+
+    citations = []
+    for doi in dataset_top_identifiers:
+        if doi.startswith('doi:'):
+            doi = doi[4:]
+        try:
+            url = (
+                'https://api.datacite.org/dois/'
+                'text/x-bibliography/{}?style=harvard-cite-them-right'
+            )
+            citations.append(
+                html2markdown.convert(urlopen(url.format(doi)).read().decode())
+            )
+        except Exception as ex:
+            logger.info('Unable to get a citation for %s, getting "%s"', doi, str(ex))
+
+    tale['dataSetCitation'] = citations
+    event.preventDefault().addResponse(tale)
+
+
+events.bind('tale.update_citation', 'wholetale', update_citation)

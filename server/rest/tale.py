@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 from datetime import datetime, timedelta
 import time
+from girder import events
 from girder.api import access
 from girder.api.docs import addModel
 from girder.api.describe import Description, autoDescribeRoute
@@ -125,6 +126,10 @@ class Tale(Resource):
     def updateTale(self, taleObj, tale, params):
         is_public = tale.pop('public')
 
+        update_citations = {_['itemId'] for _ in tale['dataSet']} ^ {
+            _['itemId'] for _ in taleObj['dataSet']
+        }  # XOR between new and old dataSet
+
         for keyword in self._model.modifiableFields:
             try:
                 taleObj[keyword] = tale.pop(keyword)
@@ -139,8 +144,14 @@ class Tale(Resource):
             taleObj = self._model.setAccessList(
                 taleObj, access, save=True, user=user, setPublic=is_public)
 
-        # if taleObj['published']:
-        #     self._model.setPublished(taleObj, True)
+        if update_citations:
+            eventParams = {
+                'tale': taleObj,
+                'user': self.getCurrentUser(),
+            }
+            event = events.trigger('tale.update_citation', eventParams)
+            if len(event.responses):
+                taleObj = self._model.updateTale(event.responses[-1])
         return taleObj
 
     @access.user
