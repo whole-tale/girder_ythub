@@ -6,6 +6,7 @@ from urllib.request import urlopen
 
 from girder import events, logger
 from girder.constants import AccessType
+from girder.exceptions import ValidationException
 from girder.utility.model_importer import ModelImporter
 from girder.utility.progress import ProgressContext
 from .data_map import DataMap
@@ -95,13 +96,16 @@ def update_citation(event):
 
     dataset_top_identifiers = set()
     for obj in tale.get('dataSet', []):
-        doc = ModelImporter.model(obj['_modelType']).load(
-            obj['itemId'], user=user, level=AccessType.READ, exc=True
-        )
-        provider_name = doc['meta']['provider']
-        if provider_name.startswith('HTTP'):
-            provider_name = 'HTTP'  # TODO: handle HTTPS to make it unnecessary
-        provider = IMPORT_PROVIDERS.providerMap[provider_name]
+        try:
+            doc = ModelImporter.model(obj['_modelType']).load(
+                obj['itemId'], user=user, level=AccessType.READ, exc=True
+            )
+            provider_name = doc['meta']['provider']
+            if provider_name.startswith('HTTP'):
+                provider_name = 'HTTP'  # TODO: handle HTTPS to make it unnecessary
+            provider = IMPORT_PROVIDERS.providerMap[provider_name]
+        except (KeyError, ValidationException):
+            continue
         top_identifier = provider.getDatasetUID(doc, user)
         if top_identifier:
             dataset_top_identifiers.add(top_identifier)
