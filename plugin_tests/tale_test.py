@@ -9,7 +9,6 @@ import urllib.request
 import tempfile
 import zipfile
 import shutil
-from bson import ObjectId
 from tests import base
 from .tests_helpers import mockOtherRequest
 from girder.models.item import Item
@@ -79,6 +78,19 @@ class TaleTestCase(base.TestCase):
             'lastName': 'Regular',
             'password': 'secret'
         })
+
+        self.authors = [
+            {
+                'firstName': 'Charles',
+                'lastName': 'Darwmin',
+                'orcid': 'https://orcid.org/000-000'
+            },
+            {
+                'firstName': 'Thomas',
+                'lastName': 'Edison',
+                'orcid': 'https://orcid.org/111-111'
+            }
+        ]
         self.admin, self.user = [self.model('user').createUser(**user)
                                  for user in users]
 
@@ -131,9 +143,7 @@ class TaleTestCase(base.TestCase):
             type='application/json',
             body=json.dumps({
                 'imageId': str(self.image['_id']),
-                'dataSet': [
-                    {'mountPath': '/' + publicFolder['name'], 'itemId': publicFolder['_id']}
-                ]
+                'dataSet': []
             })
         )
         self.assertStatusOk(resp)
@@ -172,10 +182,9 @@ class TaleTestCase(base.TestCase):
                 'licenseSPDX': taleLicense,
                 'publishInfo': [
                     {
-                
-                       'pid': 'published_pid',
-                       'uri': 'published_url',
-                       'date': '2019-01-23T15:48:17.476000+00:00',
+                        'pid': 'published_pid',
+                        'uri': 'published_url',
+                        'date': '2019-01-23T15:48:17.476000+00:00',
                     }
                 ]
             })
@@ -190,10 +199,7 @@ class TaleTestCase(base.TestCase):
             type='application/json',
             body=json.dumps({
                 'imageId': str(self.image['_id']),
-                'dataSet': [{
-                    'mountPath': '/' + privateFolder['name'],
-                    'itemId': privateFolder['_id']
-                }]
+                'dataSet': [],
             })
         )
         self.assertStatusOk(resp)
@@ -204,10 +210,7 @@ class TaleTestCase(base.TestCase):
             type='application/json',
             body=json.dumps({
                 'imageId': str(self.image['_id']),
-                'dataSet': [{
-                    'mountPath': '/' + privateFolder['name'],
-                    'itemId': adminPublicFolder['_id']
-                }],
+                'dataSet': [],
                 'public': False
             })
         )
@@ -286,9 +289,7 @@ class TaleTestCase(base.TestCase):
                 body=json.dumps(
                     {
                         'imageId': str(self.image['_id']),
-                        'dataSet': [
-                            {'mountPath': '/' + folder['name'], 'itemId': folder['_id']}
-                        ],
+                        'dataSet': [],
                         'public': True
                     })
             )
@@ -301,9 +302,7 @@ class TaleTestCase(base.TestCase):
                 body=json.dumps(
                     {
                         'imageId': str(self.image_admin['_id']),
-                        'dataSet': [
-                            {'mountPath': '/' + folder['name'], 'itemId': folder['_id']}
-                        ]
+                        'dataSet': [],
                     })
             )
             self.assertStatusOk(resp)
@@ -460,9 +459,7 @@ class TaleTestCase(base.TestCase):
             type='application/json',
             body=json.dumps({
                 'imageId': str(self.image['_id']),
-                'dataSet': [
-                    {'mountPath': '/' + sub_home_dir['name'], 'itemId': sub_home_dir['_id']}
-                ],
+                'dataSet': [],
                 'narrative': [str(my_narrative['_id'])]
             })
         )
@@ -518,7 +515,8 @@ class TaleTestCase(base.TestCase):
             "imageId": "5873dcdbaec030000144d233",
             "public": True,
             "publishInfo": [],
-            "title": "Fake Unvalidated Tale"
+            "title": "Fake Unvalidated Tale",
+            "authors": "Root Von Kolmph"
         }
         tale = self.model('tale', 'wholetale').save(tale)  # get's id
         tale = self.model('tale', 'wholetale').save(tale)  # migrate to new format
@@ -538,6 +536,7 @@ class TaleTestCase(base.TestCase):
         tale['licenseSPDX'] = 'unsupportedLicense'
         tale = self.model('tale', 'wholetale').save(tale)
         self.assertEqual(tale['licenseSPDX'], WholeTaleLicense.default_spdx())
+        self.assertTrue(isinstance(tale['authors'], list))
         self.model('tale', 'wholetale').remove(tale)
 
     @mock.patch('gwvolman.tasks.import_tale')
@@ -587,9 +586,7 @@ class TaleTestCase(base.TestCase):
             body=json.dumps({
                 'folderId': '1234',
                 'imageId': str(self.image['_id']),
-                'dataSet': [
-                    {'mountPath': '/' + 'folder', 'itemId': '123456'}
-                ],
+                'dataSet': [],
                 'title': 'tale tile',
                 'description': 'description',
                 'config': {},
@@ -597,9 +594,9 @@ class TaleTestCase(base.TestCase):
                 'licenseSPDX': taleLicense,
                 'publishInfo': [
                     {
-                       'pid': 'published_pid',
-                       'uri': 'published_url',
-                       'date': '2019-01-23T15:48:17.476000+00:00',
+                        'pid': 'published_pid',
+                        'uri': 'published_url',
+                        'date': '2019-01-23T15:48:17.476000+00:00',
                     }
                 ]
             })
@@ -608,6 +605,19 @@ class TaleTestCase(base.TestCase):
         self.assertStatus(resp, 200)
 
         newLicense = tale_licenses.supported_spdxes().pop()
+        admin_orcid, user_orcid = 'https://orcid.org/1234', 'https://orcid.org/9876'
+        new_authors = [
+            {
+                "firstName": self.admin['firstName'],
+                "lastName": self.admin['lastName'],
+                "orcid": admin_orcid
+            },
+            {
+                "firstName": self.user['firstName'],
+                "lastName": self.user['lastName'],
+                "orcid": user_orcid
+            }
+        ]
         # Update the Tale with new values
         resp = self.request(
             path='/tale/{}'.format(str(resp.json['_id'])),
@@ -615,11 +625,10 @@ class TaleTestCase(base.TestCase):
             user=self.user,
             type='application/json',
             body=json.dumps({
+                'authors': new_authors,
                 'folderId': '1234',
                 'imageId': str(self.image['_id']),
-                'dataSet': [
-                    {'mountPath': '/' + 'folder', 'itemId': '123456'}
-                ],
+                'dataSet': [],
                 'title': title,
                 'description': description,
                 'config': config,
@@ -646,6 +655,11 @@ class TaleTestCase(base.TestCase):
         self.assertEqual(resp.json['publishInfo'][0]['uri'], 'published_url')
         self.assertEqual(resp.json['publishInfo'][0]['date'], '2019-01-23T15:48:17.476000+00:00')
         self.assertEqual(resp.json['licenseSPDX'], newLicense)
+        self.assertTrue(isinstance(resp.json['authors'], list))
+
+        tale_authors = resp.json['authors']
+        self.assertEqual(tale_authors[0], new_authors[0])
+        self.assertEqual(tale_authors[1], new_authors[1])
 
     def testManifest(self):
         from server.lib.license import WholeTaleLicense
@@ -653,6 +667,7 @@ class TaleTestCase(base.TestCase):
             path='/tale', method='POST', user=self.user,
             type='application/json',
             body=json.dumps({
+                'authors': self.authors,
                 'folderId': '1234',
                 'imageId': str(self.image['_id']),
                 'dataSet': [],
@@ -749,11 +764,12 @@ class TaleTestCase(base.TestCase):
                 'itemId': item['_id'],
                 '_modelType': 'item',
                 'mountPath': item['name']
-            }], creator=self.user, title="Export Tale", public=True)
+            }], creator=self.user, title="Export Tale", public=True, authors=self.authors)
         workspace = self.model('folder').load(tale['workspaceId'], force=True)
         with urllib.request.urlopen(
-            'https://wholetale.readthedocs.io/en/stable/'
-            '_downloads/wt_quickstart.ipynb'
+            'https://raw.githubusercontent.com/whole-tale/wt-design-docs/'
+            '3305527f7eb28d0e0364f4e54fd9e7155a2614d3'
+            '/users_guide/wt_quickstart.ipynb'
         ) as url:
             self.uploadFile(
                 name=item['name'], contents=url.read(), user=self.user,
@@ -767,6 +783,7 @@ class TaleTestCase(base.TestCase):
             path='/tale', method='POST', user=self.user,
             type='application/json',
             body=json.dumps({
+                'authors': self.authors,
                 'imageId': str(self.image['_id']),
                 'dataSet': [],
                 'title': 'tale tile',
@@ -821,6 +838,21 @@ class TaleTestCase(base.TestCase):
         except bagit.BagValidationError:
             pass  # TODO: Goes without saying that we should not be doing that...
         shutil.rmtree(dirpath)
+
+        # Test dataSetCitation
+        resp = self.request(
+            path='/tale/{_id}'.format(**tale), method='PUT',
+            type='application/json',
+            user=self.user, body=json.dumps({
+                'dataSet': [],
+                'imageId': str(tale['imageId']),
+                'public': tale['public'],
+            })
+        )
+        self.assertStatusOk(resp)
+        tale = resp.json
+        self.assertEqual(tale['dataSetCitation'], [])
+
         self.model('tale', 'wholetale').remove(tale)
         self.model('collection').remove(self.data_collection)
 

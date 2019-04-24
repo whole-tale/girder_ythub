@@ -1,23 +1,23 @@
 # -*- coding: utf-8 -*-
 
+from bson.objectid import ObjectId
 import datetime
 
-from bson.objectid import ObjectId
-
-from ..constants import WORKSPACE_NAME, DATADIRS_NAME, SCRIPTDIRS_NAME
-from ..utils import getOrCreateRootFolder
-from ..lib.license import WholeTaleLicense
+from girder import events
 from girder.models.model_base import AccessControlledModel
 from girder.models.item import Item
 from girder.models.folder import Folder
 from girder.constants import AccessType
 from girder.exceptions import AccessException
+from ..constants import WORKSPACE_NAME, DATADIRS_NAME, SCRIPTDIRS_NAME
+from ..utils import getOrCreateRootFolder
+from ..lib.license import WholeTaleLicense
 
 
 # Whenever the Tale object schema is modified (e.g. fields are added or
 # removed) increase `_currentTaleFormat` to retroactively apply those
 # changes to existing Tales.
-_currentTaleFormat = 6
+_currentTaleFormat = 7
 
 
 class Tale(AccessControlledModel):
@@ -39,7 +39,7 @@ class Tale(AccessControlledModel):
             fields=({'_id', 'folderId', 'imageId', 'creatorId', 'created',
                      'format', 'dataSet', 'narrative', 'narrativeId', 'licenseSPDX',
                      'imageInfo', 'publishInfo', 'workspaceId',
-                     'workspaceModified'} | self.modifiableFields))
+                     'workspaceModified', 'dataSetCitation'} | self.modifiableFields))
 
     def validate(self, tale):
         if 'iframe' not in tale:
@@ -63,6 +63,11 @@ class Tale(AccessControlledModel):
         if tale.get('config') is None:
             tale['config'] = {}
 
+        if tale.get('dataSetCitation') is None:
+            tale['dataSetCitation'] = []
+
+        if not isinstance(tale['authors'], list):
+            tale['authors'] = []
         return tale
 
     def list(self, user=None, data=None, image=None, limit=0, offset=0,
@@ -138,6 +143,12 @@ class Tale(AccessControlledModel):
         if creator is not None:
             self.setUserAccess(tale, user=creator, level=AccessType.ADMIN,
                                save=False)
+        if tale['dataSet']:
+            eventParams = {'tale': tale, 'user': creator}
+            event = events.trigger('tale.update_citation', eventParams)
+            if len(event.responses):
+                tale = event.responses[-1]
+
         if save:
             tale = self.save(tale)
             workspace = self.createWorkspace(tale, creator=creator)
@@ -151,6 +162,7 @@ class Tale(AccessControlledModel):
                 Item().copyItem(item, creator, folder=narrative_folder)
             tale['narrativeId'] = narrative_folder['_id']
             tale = self.save(tale)
+
         return tale
 
     def createNarrativeFolder(self, tale, creator=None, default=False):

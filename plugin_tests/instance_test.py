@@ -80,7 +80,7 @@ class InstanceTestCase(base.TestCase):
             self.user, 'PublicFolder', parentType='user', public=True,
             creator=self.user)
 
-        data = [{'type': 'folder', 'id': self.userPrivateFolder['_id']}]
+        data = []
         self.tale_one = self.model('tale', 'wholetale').createTale(
             self.image, data, creator=self.user,
             title='tale one', public=True, config={'memLimit': '2g'})
@@ -98,7 +98,7 @@ class InstanceTestCase(base.TestCase):
         self.tale_one["imageInfo"] = fake_imageInfo
         self.model('tale', 'wholetale').save(self.tale_one)
 
-        data = [{'type': 'folder', 'id': self.userPublicFolder['_id']}]
+        data = []
         self.tale_two = self.model('tale', 'wholetale').createTale(
             self.image, data, creator=self.user,
             title='tale two', public=True, config={'memLimit': '1g'})
