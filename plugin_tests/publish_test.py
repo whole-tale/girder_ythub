@@ -75,6 +75,7 @@ class PublishTestCase(base.TestCase):
                     'taleId': str(self.tale['_id']),
                     'remoteMemberNode': remoteMemberNode,
                     'authToken': authToken,
+                    'isProduction': False
                 },
             )
             self.assertStatusOk(resp)
@@ -88,6 +89,7 @@ class PublishTestCase(base.TestCase):
                         'dataone_node': remoteMemberNode,
                         'tale': str(self.tale['_id']),
                         'user_id': str(self.user['_id']),
+                        'is_production': 'False'
                     }
                 ),
             )

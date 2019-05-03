@@ -48,9 +48,13 @@ class Publish(Resource):
             'token.',
             required=True,
         )
+        .param(
+            'isProduction',
+            description='Flag set to True when publishing to a production server',
+            required=True,
+        )
     )
-    def dataonePublish(self, tale, remoteMemberNode, authToken):
-
+    def dataonePublish(self, tale, remoteMemberNode, authToken, isProduction):
         user = self.getCurrentUser()
         token = self.getCurrentToken()
 
@@ -58,6 +62,7 @@ class Publish(Resource):
             tale=str(tale['_id']),
             dataone_node=remoteMemberNode,
             dataone_auth_token=authToken,
+            is_production=isProduction,
             user_id=str(user['_id']),
             girder_client_token=str(token['_id'])
         )
