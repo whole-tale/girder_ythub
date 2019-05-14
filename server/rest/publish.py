@@ -7,7 +7,6 @@ from girder.constants import AccessType, TokenScope
 from girder.api.rest import Resource, filtermodel
 from girder.plugins.jobs.models.job import Job
 
-
 from ..models.tale import Tale
 
 from gwvolman.tasks import publish
@@ -38,7 +37,13 @@ class Publish(Resource):
         .param(
             'remoteMemberNode',
             description='The endpoint for the Metacat instance, including the endpoint.\n'
-            'Example: \'https://dev.nceas.ucsb.edu/knb/d1/mn/v2\'',
+            'Example: \'https://dev.nceas.ucsb.edu/knb/d1/mn',
+            required=True,
+        )
+        .param(
+            'coordinatingNode',
+            description='The coordinating node that will be managing the package.'
+            'Example: https://cn.dataone.org/cn/v2 or http://cn-stage-2.test.dataone.org/cn/v2',
             required=True,
         )
         .param(
@@ -48,13 +53,9 @@ class Publish(Resource):
             'token.',
             required=True,
         )
-        .param(
-            'isProduction',
-            description='Flag set to True when publishing to a production server',
-            required=True,
-        )
+
     )
-    def dataonePublish(self, tale, remoteMemberNode, authToken, isProduction):
+    def dataonePublish(self, tale, remoteMemberNode, coordinatingNode, authToken):
         user = self.getCurrentUser()
         token = self.getCurrentToken()
 
@@ -62,7 +63,7 @@ class Publish(Resource):
             tale=str(tale['_id']),
             dataone_node=remoteMemberNode,
             dataone_auth_token=authToken,
-            is_production=isProduction,
+            coordinating_node=coordinatingNode,
             user_id=str(user['_id']),
             girder_client_token=str(token['_id'])
         )
