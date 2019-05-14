@@ -76,7 +76,7 @@ class PublishTestCase(base.TestCase):
                     'taleId': str(self.tale['_id']),
                     'remoteMemberNode': remoteMemberNode,
                     'authToken': authToken,
-                    'coordinating_node': D1_ENV_DICT['dev']
+                    'coordinatingNode': D1_ENV_DICT['dev']['base_url']
                 },
             )
             self.assertStatusOk(resp)
@@ -90,7 +90,7 @@ class PublishTestCase(base.TestCase):
                         'dataone_node': remoteMemberNode,
                         'tale': str(self.tale['_id']),
                         'user_id': str(self.user['_id']),
-                        'coordinating_node': D1_ENV_DICT['dev']
+                        'coordinating_node': D1_ENV_DICT['dev']['base_url']
                     }
                 ),
             )
