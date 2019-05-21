@@ -2,6 +2,7 @@ from bson import ObjectId
 import mock
 from tests import base
 
+from d1_common.env import D1_ENV_DICT
 
 def setUpModule():
     base.enabledPlugins.append('wholetale')
@@ -75,6 +76,7 @@ class PublishTestCase(base.TestCase):
                     'taleId': str(self.tale['_id']),
                     'remoteMemberNode': remoteMemberNode,
                     'authToken': authToken,
+                    'coordinatingNode': D1_ENV_DICT['dev']['base_url']
                 },
             )
             self.assertStatusOk(resp)
@@ -88,6 +90,7 @@ class PublishTestCase(base.TestCase):
                         'dataone_node': remoteMemberNode,
                         'tale': str(self.tale['_id']),
                         'user_id': str(self.user['_id']),
+                        'coordinating_node': D1_ENV_DICT['dev']['base_url']
                     }
                 ),
             )
