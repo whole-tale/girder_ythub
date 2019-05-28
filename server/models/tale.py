@@ -10,7 +10,7 @@ from girder.models.folder import Folder
 from girder.constants import AccessType
 from girder.exceptions import AccessException
 from ..constants import WORKSPACE_NAME, DATADIRS_NAME, SCRIPTDIRS_NAME
-from ..utils import getOrCreateRootFolder
+from ..utils import getOrCreateRootFolder, init_progress
 from ..lib.license import WholeTaleLicense
 
 
@@ -262,3 +262,26 @@ class Tale(AccessControlledModel):
                     setPublic=setPublic, publicFlags=publicFlags)
 
         return doc
+
+
+    def buildImage(self, tale, user, token):
+
+        resource = {
+           'type': 'wt_image_build_status',
+           '_id': tale['_id'],
+           'title': tale['title'],
+           'imageInfo': tale['imageInfo']
+        }
+
+        notification = init_progress(resource, user,
+            'Build tale notification', 'Creating job', BUILD_TALE_IMAGE_STEP_TOTAL)
+
+        buildTask = build_tale_image.signature(
+            args=[str(tale['_id'])],
+            kwargs={
+                'girder_client_token': str(token['_id']),
+                'notification_id': str(notification['_id'])
+            }
+        ).apply_async()
+
+        return buildTask.job

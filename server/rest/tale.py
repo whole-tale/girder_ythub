@@ -16,7 +16,8 @@ from girder.models.token import Token
 from girder.models.folder import Folder
 from girder.models.user import User
 from girder.plugins.jobs.constants import REST_CREATE_JOB_TOKEN_SCOPE
-from gwvolman.tasks import import_tale, build_tale_image
+from gwvolman.tasks import import_tale, build_tale_image, \
+   BUILD_TALE_IMAGE_STEP_TOTAL
 
 from girder.plugins.jobs.constants import JobStatus
 from girder.models.notification import Notification
@@ -31,6 +32,7 @@ from ..lib.exporters.native import NativeTaleExporter
 from girder.plugins.worker import getCeleryApp
 
 from ..constants import ImageStatus
+from ..utils import init_progress
 
 
 addModel('tale', taleSchema, resources='tale')
@@ -336,14 +338,10 @@ class Tale(Resource):
     )
     def buildImage(self, tale, params):
         token = self.getCurrentToken()
+        user = self.getCurrentUser()
 
-        buildTask = build_tale_image.signature(
-            args=[str(tale['_id'])],
-            kwargs={
-                'girder_client_token': str(token['_id'])
-            }
-        ).apply_async()
-        return buildTask.job
+        return self._model.buildImage(tale, user, token)
+
 
     def updateBuildStatus(self, event):
         """
@@ -381,11 +379,17 @@ class Tale(Resource):
             # If the status changed, save the object and send a notification
             if 'status' in tale['imageInfo'] and tale['imageInfo']['status'] != previousStatus:
                 self.model('tale', 'wholetale').updateTale(tale)
-                user = User().load(job['userId'], force=True)
-                expires = datetime.now() + timedelta(minutes=10)
-                Notification().createNotification(type="wt_image_build_status",
-                                                  data=tale,
-                                                  user=user, expires=expires)
+
+            if job['progress']:
+                notification = Notification().load(job['kwargs']['notification_id'])
+                notification['data']['resource']['imageInfo'] = tale['imageInfo']
+                Notification().save(notification)
+            #    state = JobStatus.toNotificationStatus(job['status'])
+            #    Notification().updateProgress(
+            #        notification, state=state,
+            #        message=job['progress']['message'],
+            #        current=job['progress']['current'],
+            #        total=job['progress']['total'])
 
     def updateWorkspaceModTime(self, event):
         """

@@ -23,6 +23,8 @@ from ..schema.misc import containerInfoSchema
 
 from girder.plugins.wholetale.models.tale import Tale
 
+from girder.models.notification import Notification
+
 
 TASK_TIMEOUT = 15.0
 BUILD_TIMEOUT = 360.0
@@ -158,8 +160,24 @@ class Instance(AccessControlledModel):
             # Create single job
             Token().addScope(token, scope=REST_CREATE_JOB_TOKEN_SCOPE)
 
+            resource = {
+               'type': 'wt_launch_instance_status',
+               'tale_id': tale['_id'],
+               'instance_id': instance['_id'],
+               'title': tale['title'],
+               'imageInfo': tale['imageInfo']
+            }
+
+            # TODO: create_volume doesn't accept the notification_id
+            total = BUILD_TALE_IMAGE_STEP_TOTAL + CREATE_VOLUME_STEP_TOTAL + \
+                    LAUNCH_CONTAINER_STEP_TOTAL 
+
+            notification = init_progress(resource, user,
+                'Build tale notification', 'Creating job', 5)
+
             buildTask = build_tale_image.signature(
-                args=[str(tale['_id'])], immutable=True,
+                args=[str(tale['_id']), str(notification['_id'])], 
+                immutable=True,
                 kwargs={'girder_client_token': str(token['_id'])}
             )
             volumeTask = create_volume.si(
@@ -167,7 +185,10 @@ class Instance(AccessControlledModel):
                 girder_client_token=str(token['_id'])
             )
             serviceTask = launch_container.signature(
-                kwargs={'girder_client_token': str(token['_id'])},
+                kwargs={
+                    'notification_id': str(notification['_id']),
+                    'girder_client_token': str(token['_id'])
+                },
                 queue='manager'
             )
 

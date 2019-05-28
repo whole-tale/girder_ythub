@@ -1,6 +1,7 @@
 import six.moves.urllib as urllib
 
 from girder.utility.model_importer import ModelImporter
+from girder.models.notification import Notification
 
 
 def getOrCreateRootFolder(name, description=str()):
@@ -39,3 +40,20 @@ def esc(value):
     :rtype: str
     """
     return urllib.parse.quote_plus(value)
+
+
+def init_progress(resource, user, title, message, total, expires=-1):
+
+    data = {
+       'title': title,
+       'total': total,
+       'current': 0,
+       'state': 'active',
+       'message': message,
+       'estimateTime': False,
+       'resource': resource,
+       'resourceName': 'Custom resource'
+    }
+
+    return Notification().createNotification(
+        type="progress", data=data, user=user, expires=expires)
