@@ -265,12 +265,13 @@ class Tale(AccessControlledModel):
 
 
     def buildImage(self, tale, user, token):
+        """
+        Build the image for the tale
+        """
 
         resource = {
            'type': 'wt_image_build_status',
-           '_id': tale['_id'],
-           'title': tale['title'],
-           'imageInfo': tale['imageInfo']
+           'tale_id': tale['_id']
         }
 
         notification = init_progress(resource, user,

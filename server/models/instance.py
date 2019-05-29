@@ -164,15 +164,13 @@ class Instance(AccessControlledModel):
                'type': 'wt_image_build_status',
                'tale_id': tale['_id'],
                'instance_id': instance['_id'],
-               'title': tale['title'],
-               'imageInfo': tale['imageInfo']
             }
 
             total = BUILD_TALE_IMAGE_STEP_TOTAL + CREATE_VOLUME_STEP_TOTAL + \
                     LAUNCH_CONTAINER_STEP_TOTAL 
 
             notification = init_progress(resource, user,
-                'Build tale notification', 'Creating job', total)
+                'Create instance notification', 'Creating job', total)
 
             buildTask = build_tale_image.signature(
                 args=[str(tale['_id'])], 
