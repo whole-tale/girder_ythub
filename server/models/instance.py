@@ -16,15 +16,15 @@ from girder.plugins.worker import getCeleryApp
 from girder.plugins.jobs.constants import JobStatus, REST_CREATE_JOB_TOKEN_SCOPE
 from gwvolman.tasks import \
     create_volume, launch_container, update_container, shutdown_container, \
-    remove_volume, build_tale_image
+    remove_volume, build_tale_image, \
+    CREATE_VOLUME_STEP_TOTAL, BUILD_TALE_IMAGE_STEP_TOTAL, \
+    LAUNCH_CONTAINER_STEP_TOTAL
 
 from ..constants import InstanceStatus
 from ..schema.misc import containerInfoSchema
+from ..utils import init_progress
 
 from girder.plugins.wholetale.models.tale import Tale
-
-from girder.models.notification import Notification
-
 
 TASK_TIMEOUT = 15.0
 BUILD_TIMEOUT = 360.0
@@ -161,29 +161,39 @@ class Instance(AccessControlledModel):
             Token().addScope(token, scope=REST_CREATE_JOB_TOKEN_SCOPE)
 
             resource = {
-               'type': 'wt_launch_instance_status',
+               'type': 'wt_image_build_status',
                'tale_id': tale['_id'],
                'instance_id': instance['_id'],
                'title': tale['title'],
                'imageInfo': tale['imageInfo']
             }
 
-            # TODO: create_volume doesn't accept the notification_id
             total = BUILD_TALE_IMAGE_STEP_TOTAL + CREATE_VOLUME_STEP_TOTAL + \
                     LAUNCH_CONTAINER_STEP_TOTAL 
 
             notification = init_progress(resource, user,
-                'Build tale notification', 'Creating job', 5)
+                'Build tale notification', 'Creating job', total)
 
             buildTask = build_tale_image.signature(
-                args=[str(tale['_id']), str(notification['_id'])], 
-                immutable=True,
-                kwargs={'girder_client_token': str(token['_id'])}
+                args=[str(tale['_id'])], 
+                kwargs={
+                    'notification_id': str(notification['_id']),
+                    'girder_client_token': str(token['_id'])
+                },
+                immutable=True
             )
-            volumeTask = create_volume.si(
-                str(instance['_id']),
-                girder_client_token=str(token['_id'])
+            volumeTask = create_volume.signature(
+                args=[str(instance['_id'])], 
+                kwargs={
+                    'notification_id': str(notification['_id']),
+                    'girder_client_token': str(token['_id'])
+                },
+                immutable=True
             )
+            #volumeTask = create_volume.si(
+            #    str(instance['_id']),
+            #    girder_client_token=str(token['_id'])
+            #)
             serviceTask = launch_container.signature(
                 kwargs={
                     'notification_id': str(notification['_id']),
