@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from datetime import datetime, timedelta
 import time
 from girder import events
 from girder.api import access
@@ -14,13 +13,10 @@ from girder.utility.path import getResourcePath
 from girder.utility.progress import ProgressContext
 from girder.models.token import Token
 from girder.models.folder import Folder
-from girder.models.user import User
 from girder.plugins.jobs.constants import REST_CREATE_JOB_TOKEN_SCOPE
-from gwvolman.tasks import import_tale, build_tale_image, \
-   BUILD_TALE_IMAGE_STEP_TOTAL
+from gwvolman.tasks import import_tale
 
 from girder.plugins.jobs.constants import JobStatus
-from girder.models.notification import Notification
 
 from ..schema.tale import taleModel as taleSchema
 from ..models.tale import Tale as taleModel
@@ -32,7 +28,6 @@ from ..lib.exporters.native import NativeTaleExporter
 from girder.plugins.worker import getCeleryApp
 
 from ..constants import ImageStatus
-from ..utils import init_progress
 
 
 addModel('tale', taleSchema, resources='tale')
@@ -341,7 +336,6 @@ class Tale(Resource):
         user = self.getCurrentUser()
 
         return self._model.buildImage(tale, user, token)
-
 
     def updateBuildStatus(self, event):
         """

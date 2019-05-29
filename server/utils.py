@@ -45,14 +45,14 @@ def esc(value):
 def init_progress(resource, user, title, message, total, expires=-1):
 
     data = {
-       'title': title,
-       'total': total,
-       'current': 0,
-       'state': 'active',
-       'message': message,
-       'estimateTime': False,
-       'resource': resource,
-       'resourceName': 'Custom resource'
+        'title': title,
+        'total': total,
+        'current': 0,
+        'state': 'active',
+        'message': message,
+        'estimateTime': False,
+        'resource': resource,
+        'resourceName': 'Custom resource'
     }
 
     return Notification().createNotification(

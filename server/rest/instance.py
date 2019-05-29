@@ -142,6 +142,7 @@ class Instance(Resource):
         # Digest ensures that container runs from newest image version
         instanceModel = self.model('instance', 'wholetale')
         instanceModel.updateAndRestartInstance(
+            currentUser,
             instance,
             self.getCurrentToken(),
             tale['imageInfo']['digest'])

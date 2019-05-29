@@ -78,7 +78,7 @@ class Instance(AccessControlledModel):
                 limit=limit, offset=offset):
             yield r
 
-    def updateAndRestartInstance(self, instance, token, digest):
+    def updateAndRestartInstance(self, user, instance, token, digest):
         """
         Updates and restarts an instance.
 
@@ -87,14 +87,15 @@ class Instance(AccessControlledModel):
         :returns: The instance document that was edited.
         """
         resource = {
-           'type': 'wt_create_instance',
-           'instance_id': instance['_id'],
+            'type': 'wt_create_instance',
+            'instance_id': instance['_id'],
         }
 
         total = UPDATE_CONTAINER_STEP_TOTAL
 
-        notification = init_progress(resource, user,
-            'Update instance notification', 'Creating job', total)
+        notification = init_progress(
+            resource, user, 'Update instance notification',
+            'Creating job', total)
 
         instanceTask = update_container.signature(
             args=[str(instance['_id'])], queue='manager',
@@ -171,19 +172,20 @@ class Instance(AccessControlledModel):
             Token().addScope(token, scope=REST_CREATE_JOB_TOKEN_SCOPE)
 
             resource = {
-               'type': 'wt_image_build_status',
-               'tale_id': tale['_id'],
-               'instance_id': instance['_id'],
+                'type': 'wt_image_build_status',
+                'tale_id': tale['_id'],
+                'instance_id': instance['_id'],
             }
 
             total = BUILD_TALE_IMAGE_STEP_TOTAL + CREATE_VOLUME_STEP_TOTAL + \
-                    LAUNCH_CONTAINER_STEP_TOTAL 
+                LAUNCH_CONTAINER_STEP_TOTAL
 
-            notification = init_progress(resource, user,
-                'Create instance notification', 'Creating job', total)
+            notification = init_progress(
+                resource, user, 'Create instance notification',
+                'Creating job', total)
 
             buildTask = build_tale_image.signature(
-                args=[str(tale['_id'])], 
+                args=[str(tale['_id'])],
                 kwargs={
                     'notification_id': str(notification['_id']),
                     'girder_client_token': str(token['_id'])
@@ -191,17 +193,13 @@ class Instance(AccessControlledModel):
                 immutable=True
             )
             volumeTask = create_volume.signature(
-                args=[str(instance['_id'])], 
+                args=[str(instance['_id'])],
                 kwargs={
                     'notification_id': str(notification['_id']),
                     'girder_client_token': str(token['_id'])
                 },
                 immutable=True
             )
-            #volumeTask = create_volume.si(
-            #    str(instance['_id']),
-            #    girder_client_token=str(token['_id'])
-            #)
             serviceTask = launch_container.signature(
                 kwargs={
                     'notification_id': str(notification['_id']),

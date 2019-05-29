@@ -274,20 +274,22 @@ def validateFileLink(event):
     doc['exts'] = [ext.lower() for ext in doc['name'].split('.')[1:]]
     event.preventDefault().addResponse(doc)
 
-def updateNotification(event):
-   """
-   Update the Whole Tale task notification for a job, if present 
-   """
 
-   job = event.info['job']
-   if job['progress'] and 'notification_id' in job['kwargs']:
-       state = JobStatus.toNotificationStatus(job['status'])
-       notification = Notification().load(job['kwargs']['notification_id'])
-       Notification().updateProgress(
-           notification, state=state,
-           message=job['progress']['message'],
-           current=job['progress']['current'],
-           total=job['progress']['total'])
+def updateNotification(event):
+    """
+    Update the Whole Tale task notification for a job, if present
+    """
+
+    job = event.info['job']
+    if job['progress'] and 'notification_id' in job['kwargs']:
+        state = JobStatus.toNotificationStatus(job['status'])
+        notification = Notification().load(job['kwargs']['notification_id'])
+        Notification().updateProgress(
+            notification, state=state,
+            message=job['progress']['message'],
+            current=job['progress']['current'],
+            total=job['progress']['total'])
+
 
 @access.user
 @autoDescribeRoute(

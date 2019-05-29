@@ -13,6 +13,8 @@ from ..constants import WORKSPACE_NAME, DATADIRS_NAME, SCRIPTDIRS_NAME
 from ..utils import getOrCreateRootFolder, init_progress
 from ..lib.license import WholeTaleLicense
 
+from gwvolman.tasks import build_tale_image, BUILD_TALE_IMAGE_STEP_TOTAL
+
 
 # Whenever the Tale object schema is modified (e.g. fields are added or
 # removed) increase `_currentTaleFormat` to retroactively apply those
@@ -263,19 +265,19 @@ class Tale(AccessControlledModel):
 
         return doc
 
-
     def buildImage(self, tale, user, token):
         """
         Build the image for the tale
         """
 
         resource = {
-           'type': 'wt_image_build_status',
-           'tale_id': tale['_id']
+            'type': 'wt_image_build_status',
+            'tale_id': tale['_id']
         }
 
-        notification = init_progress(resource, user,
-            'Build tale notification', 'Creating job', BUILD_TALE_IMAGE_STEP_TOTAL)
+        notification = init_progress(
+            resource, user, 'Build tale notification',
+            'Creating job', BUILD_TALE_IMAGE_STEP_TOTAL)
 
         buildTask = build_tale_image.signature(
             args=[str(tale['_id'])],
