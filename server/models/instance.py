@@ -18,7 +18,7 @@ from gwvolman.tasks import \
     create_volume, launch_container, update_container, shutdown_container, \
     remove_volume, build_tale_image, \
     CREATE_VOLUME_STEP_TOTAL, BUILD_TALE_IMAGE_STEP_TOTAL, \
-    LAUNCH_CONTAINER_STEP_TOTAL
+    LAUNCH_CONTAINER_STEP_TOTAL, UPDATE_CONTAINER_STEP_TOTAL
 
 from ..constants import InstanceStatus
 from ..schema.misc import containerInfoSchema
@@ -86,11 +86,21 @@ class Instance(AccessControlledModel):
         :type image: dict
         :returns: The instance document that was edited.
         """
+        resource = {
+           'type': 'wt_create_instance',
+           'instance_id': instance['_id'],
+        }
+
+        total = UPDATE_CONTAINER_STEP_TOTAL
+
+        notification = init_progress(resource, user,
+            'Update instance notification', 'Creating job', total)
 
         instanceTask = update_container.signature(
             args=[str(instance['_id'])], queue='manager',
             kwargs={
                 'girder_client_token': str(token['_id']),
+                'notification_id': str(notification['_id']),
                 'image': digest
             }
         ).apply_async()
