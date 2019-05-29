@@ -346,7 +346,6 @@ class Tale(Resource):
     def updateBuildStatus(self, event):
         """
         Event handler that updates the Tale object based on the build_tale_image task.
-        Creates notifications when image build status changes.
         """
         job = event.info['job']
         if job['title'] == 'Build Tale Image' and job.get('status') is not None:
@@ -376,20 +375,9 @@ class Tale(Resource):
                 tale['imageInfo']['jobId'] = job['_id']
                 tale['imageInfo']['status'] = ImageStatus.BUILDING
 
-            # If the status changed, save the object and send a notification
+            # If the status changed, save the object
             if 'status' in tale['imageInfo'] and tale['imageInfo']['status'] != previousStatus:
                 self.model('tale', 'wholetale').updateTale(tale)
-
-            if job['progress']:
-                notification = Notification().load(job['kwargs']['notification_id'])
-                notification['data']['resource']['imageInfo'] = tale['imageInfo']
-                Notification().save(notification)
-            #    state = JobStatus.toNotificationStatus(job['status'])
-            #    Notification().updateProgress(
-            #        notification, state=state,
-            #        message=job['progress']['message'],
-            #        current=job['progress']['current'],
-            #        total=job['progress']['total'])
 
     def updateWorkspaceModTime(self, event):
         """

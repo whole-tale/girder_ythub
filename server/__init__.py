@@ -12,6 +12,7 @@ from girder.api.rest import \
 from girder.constants import AccessType, TokenScope, CoreEventHandler
 from girder.exceptions import GirderException
 from girder.models.model_base import ValidationException
+from girder.models.notification import Notification
 from girder.plugins.jobs.constants import JobStatus
 from girder.plugins.jobs.models.job import Job as JobModel
 from girder.plugins.worker import getCeleryApp
@@ -273,6 +274,20 @@ def validateFileLink(event):
     doc['exts'] = [ext.lower() for ext in doc['name'].split('.')[1:]]
     event.preventDefault().addResponse(doc)
 
+def updateNotification(event):
+   """
+   Update the Whole Tale task notification for a job, if present 
+   """
+
+   job = event.info['job']
+   if job['progress'] and 'notification_id' in job['kwargs']:
+       state = JobStatus.toNotificationStatus(job['status'])
+       notification = Notification().load(job['kwargs']['notification_id'])
+       Notification().updateProgress(
+           notification, state=state,
+           message=job['progress']['message'],
+           current=job['progress']['current'],
+           total=job['progress']['total'])
 
 @access.user
 @autoDescribeRoute(
@@ -329,6 +344,7 @@ def load(info):
     info['apiRoot'].image = Image()
     events.bind('jobs.job.update.after', 'wholetale', tale.updateBuildStatus)
     events.bind('jobs.job.update.after', 'wholetale', finalizeInstance)
+    events.bind('jobs.job.update.after', 'wholetale', updateNotification)
     events.bind('model.file.validate', 'wholetale', validateFileLink)
     events.unbind('model.user.save.created', CoreEventHandler.USER_DEFAULT_FOLDERS)
     events.bind('model.user.save.created', 'wholetale', addDefaultFolders)
