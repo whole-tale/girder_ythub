@@ -284,11 +284,12 @@ def updateNotification(event):
     if job['progress'] and 'notification_id' in job['kwargs']:
         state = JobStatus.toNotificationStatus(job['status'])
         notification = Notification().load(job['kwargs']['notification_id'])
+
         Notification().updateProgress(
             notification, state=state,
             message=job['progress']['message'],
-            current=job['progress']['current'],
-            total=job['progress']['total'])
+            increment=1,
+            total=notification['data']['total'])
 
 
 @access.user
