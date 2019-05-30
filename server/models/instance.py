@@ -87,8 +87,8 @@ class Instance(AccessControlledModel):
         :returns: The instance document that was edited.
         """
         resource = {
-            'type': 'wt_create_instance',
-            'instance_id': instance['_id'],
+            'type': 'wt_update_instance',
+            'instance_id': instance['_id']
         }
 
         total = UPDATE_CONTAINER_STEP_TOTAL
@@ -99,10 +99,12 @@ class Instance(AccessControlledModel):
 
         instanceTask = update_container.signature(
             args=[str(instance['_id'])], queue='manager',
+            girder_job_other_fields={
+                'wt_notification_id': str(notification['_id'])
+            },
             kwargs={
                 'girder_client_token': str(token['_id']),
-                'notification_id': str(notification['_id']),
-                'image': digest
+                'digest': digest
             }
         ).apply_async()
         instanceTask.get(timeout=TASK_TIMEOUT)
@@ -172,7 +174,7 @@ class Instance(AccessControlledModel):
             Token().addScope(token, scope=REST_CREATE_JOB_TOKEN_SCOPE)
 
             resource = {
-                'type': 'wt_image_build_status',
+                'type': 'wt_create_instance',
                 'tale_id': tale['_id'],
                 'instance_id': instance['_id'],
             }
@@ -186,23 +188,29 @@ class Instance(AccessControlledModel):
 
             buildTask = build_tale_image.signature(
                 args=[str(tale['_id'])],
+                girder_job_other_fields={
+                    'wt_notification_id': str(notification['_id'])
+                },
                 kwargs={
-                    'notification_id': str(notification['_id']),
                     'girder_client_token': str(token['_id'])
                 },
                 immutable=True
             )
             volumeTask = create_volume.signature(
                 args=[str(instance['_id'])],
+                girder_job_other_fields={
+                    'wt_notification_id': str(notification['_id'])
+                },
                 kwargs={
-                    'notification_id': str(notification['_id']),
                     'girder_client_token': str(token['_id'])
                 },
                 immutable=True
             )
             serviceTask = launch_container.signature(
+                girder_job_other_fields={
+                    'wt_notification_id': str(notification['_id'])
+                },
                 kwargs={
-                    'notification_id': str(notification['_id']),
                     'girder_client_token': str(token['_id'])
                 },
                 queue='manager'

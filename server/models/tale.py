@@ -271,7 +271,7 @@ class Tale(AccessControlledModel):
         """
 
         resource = {
-            'type': 'wt_image_build_status',
+            'type': 'wt_build_image',
             'tale_id': tale['_id']
         }
 
@@ -281,9 +281,11 @@ class Tale(AccessControlledModel):
 
         buildTask = build_tale_image.signature(
             args=[str(tale['_id'])],
+            girder_job_other_fields={
+                'wt_notification_id': str(notification['_id']),
+            },
             kwargs={
-                'girder_client_token': str(token['_id']),
-                'notification_id': str(notification['_id'])
+                'girder_client_token': str(token['_id'])
             }
         ).apply_async()
 
