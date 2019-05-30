@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import six
+import time
 import validators
 
 from girder import events, logprint, logger
@@ -277,15 +278,17 @@ def validateFileLink(event):
 
 def updateNotification(event):
     """
-    Update the Whole Tale task notification for a job, if present
+    Update the Whole Tale task notification for a job, if present.
     """
 
     job = event.info['job']
-    if job['progress'] and 'notification_id' in job['kwargs']:
+    if job['progress'] and 'wt_notification_id' in job:
         state = JobStatus.toNotificationStatus(job['status'])
-        notification = Notification().load(job['kwargs']['notification_id'])
+        notification = Notification().load(job['wt_notification_id'])
 
         if notification['data']['message'] != job['progress']['message']:
+            # Without the sleep, some notifications don't appear in the stream
+            time.sleep(1)
             Notification().updateProgress(
                 notification, state=state,
                 message=job['progress']['message'],
