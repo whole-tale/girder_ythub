@@ -52,8 +52,8 @@ def init_progress(resource, user, title, message, total, expires=-1):
         'message': message,
         'estimateTime': False,
         'resource': resource,
-        'resourceName': 'Custom resource'
+        'resourceName': 'WT custom resource'
     }
 
     return Notification().createNotification(
-        type="progress", data=data, user=user, expires=expires)
+        type="wt_progress", data=data, user=user, expires=expires)
