@@ -81,6 +81,7 @@ class NotificationTestCase(base.TestCase):
         self.assertEqual(notification['data']['state'], ProgressState.QUEUED)
         self.assertEqual(notification['data']['total'], 2)
         self.assertEqual(notification['data']['current'], 0)
+        self.assertEqual(notification['data']['resource']['jobs'][0], job['_id'])
 
         # State change to ACTIVE
         job = Job().updateJob(job, status=JobStatus.RUNNING)

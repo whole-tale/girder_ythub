@@ -301,16 +301,26 @@ def updateNotification(event):
         # Without the sleep, some notifications don't appear in the stream
         time.sleep(1)
 
+        # Add job IDs to the resource
+        if 'jobs' not in notification['data']['resource']:
+            notification['data']['resource']['jobs'] = []
+
+        if job['_id'] not in notification['data']['resource']['jobs']:
+            notification['data']['resource']['jobs'].append(job['_id'])
+
         # If the state hasn't changed, increment. Otherwise keep previous current value.
+        # Note, if expires parameter is not provided, updateProgress resets to 1 hour
         if not state_changed:
             Notification().updateProgress(
                 notification, state=state,
+                expires=notification['expires'],
                 message=job['progress']['message'],
                 increment=1,
                 total=notification['data']['total'])
         else:
             Notification().updateProgress(
                 notification, state=state,
+                expires=notification['expires'],
                 message=job['progress']['message'],
                 current=notification['data']['current'],
                 total=notification['data']['total'])
