@@ -94,8 +94,8 @@ class Instance(AccessControlledModel):
         total = UPDATE_CONTAINER_STEP_TOTAL
 
         notification = init_progress(
-            resource, user, 'Update instance notification',
-            'Creating job', total)
+            resource, user, 'Updating instance',
+            'Initializing', total)
 
         instanceTask = update_container.signature(
             args=[str(instance['_id'])], queue='manager',
@@ -183,8 +183,8 @@ class Instance(AccessControlledModel):
                 LAUNCH_CONTAINER_STEP_TOTAL
 
             notification = init_progress(
-                resource, user, 'Create instance notification',
-                'Creating job', total)
+                resource, user, 'Creating instance',
+                'Initializing', total)
 
             buildTask = build_tale_image.signature(
                 args=[str(tale['_id'])],

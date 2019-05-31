@@ -276,8 +276,8 @@ class Tale(AccessControlledModel):
         }
 
         notification = init_progress(
-            resource, user, 'Build tale notification',
-            'Creating job', BUILD_TALE_IMAGE_STEP_TOTAL)
+            resource, user, 'Building image',
+            'Initializing', BUILD_TALE_IMAGE_STEP_TOTAL)
 
         buildTask = build_tale_image.signature(
             args=[str(tale['_id'])],
