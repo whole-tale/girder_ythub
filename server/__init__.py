@@ -13,7 +13,7 @@ from girder.api.rest import \
 from girder.constants import AccessType, TokenScope, CoreEventHandler
 from girder.exceptions import GirderException
 from girder.models.model_base import ValidationException
-from girder.models.notification import Notification
+from girder.models.notification import Notification, ProgressState
 from girder.plugins.jobs.constants import JobStatus
 from girder.plugins.jobs.models.job import Job as JobModel
 from girder.plugins.worker import getCeleryApp
@@ -286,13 +286,33 @@ def updateNotification(event):
         state = JobStatus.toNotificationStatus(job['status'])
         notification = Notification().load(job['wt_notification_id'])
 
-        if notification['data']['message'] != job['progress']['message']:
-            # Without the sleep, some notifications don't appear in the stream
-            time.sleep(1)
+        state_changed = notification['data']['state'] != state
+        message_changed = notification['data']['message'] != job['progress']['message']
+
+        # Ignore duplicate events based on state and message content
+        if not state_changed and not message_changed:
+            return
+
+        # For multi-job tasks, ignore success for intermediate events
+        is_last = notification['data']['total'] == (notification['data']['current'])
+        if state == ProgressState.SUCCESS and not is_last:
+            return
+
+        # Without the sleep, some notifications don't appear in the stream
+        time.sleep(1)
+
+        # If the state hasn't changed, increment. Otherwise keep previous current value.
+        if not state_changed:
             Notification().updateProgress(
                 notification, state=state,
                 message=job['progress']['message'],
                 increment=1,
+                total=notification['data']['total'])
+        else:
+            Notification().updateProgress(
+                notification, state=state,
+                message=job['progress']['message'],
+                current=notification['data']['current'],
                 total=notification['data']['total'])
 
 
