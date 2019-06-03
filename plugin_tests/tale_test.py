@@ -627,7 +627,7 @@ class TaleTestCase(base.TestCase):
             body=json.dumps({
                 'authors': new_authors,
                 'folderId': '1234',
-                'imageId': str(self.image['_id']),
+                'imageId': '5873dcdbaec030000144d233',
                 'dataSet': [],
                 'title': title,
                 'description': description,
@@ -646,7 +646,7 @@ class TaleTestCase(base.TestCase):
 
         # Check that the updates happened
         # self.assertStatus(resp, 200)
-        self.assertEqual(resp.json['imageId'], str(self.image['_id']))
+        self.assertEqual(resp.json['imageId'], '5873dcdbaec030000144d233')
         self.assertEqual(resp.json['title'], title)
         self.assertEqual(resp.json['description'], description)
         self.assertEqual(resp.json['config'], config)
