@@ -265,7 +265,7 @@ class Tale(AccessControlledModel):
 
         return doc
 
-    def buildImage(self, tale, user, token, force):
+    def buildImage(self, tale, user, token, force=False):
         """
         Build the image for the tale
         """

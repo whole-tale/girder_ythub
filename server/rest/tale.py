@@ -337,7 +337,7 @@ class Tale(Resource):
         token = self.getCurrentToken()
         user = self.getCurrentUser()
 
-        return self._model.buildImage(tale, user, token, force)
+        return self._model.buildImage(tale, user, token, force=force)
 
     def updateBuildStatus(self, event):
         """
