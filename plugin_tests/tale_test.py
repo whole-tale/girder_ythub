@@ -878,7 +878,7 @@ class TaleTestCase(base.TestCase):
             self.assertStatusOk(resp)
             job_call = mock_apply_async.call_args_list[-1][-1]
             self.assertEqual(
-                job_call['args'], (str(tale['_id']),)
+                job_call['args'], (str(tale['_id']), False)
             )
             self.assertEqual(job_call['headers']['girder_job_title'], 'Build Tale Image')
         self.assertStatusOk(resp)
