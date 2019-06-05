@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from datetime import datetime, timedelta
 import time
 from girder import events
 from girder.api import access
@@ -14,12 +13,10 @@ from girder.utility.path import getResourcePath
 from girder.utility.progress import ProgressContext
 from girder.models.token import Token
 from girder.models.folder import Folder
-from girder.models.user import User
 from girder.plugins.jobs.constants import REST_CREATE_JOB_TOKEN_SCOPE
-from gwvolman.tasks import import_tale, build_tale_image
+from gwvolman.tasks import import_tale
 
 from girder.plugins.jobs.constants import JobStatus
-from girder.models.notification import Notification
 
 from ..schema.tale import taleModel as taleSchema
 from ..models.tale import Tale as taleModel
@@ -336,19 +333,13 @@ class Tale(Resource):
     )
     def buildImage(self, tale, params):
         token = self.getCurrentToken()
+        user = self.getCurrentUser()
 
-        buildTask = build_tale_image.signature(
-            args=[str(tale['_id'])],
-            kwargs={
-                'girder_client_token': str(token['_id'])
-            }
-        ).apply_async()
-        return buildTask.job
+        return self._model.buildImage(tale, user, token)
 
     def updateBuildStatus(self, event):
         """
         Event handler that updates the Tale object based on the build_tale_image task.
-        Creates notifications when image build status changes.
         """
         job = event.info['job']
         if job['title'] == 'Build Tale Image' and job.get('status') is not None:
@@ -378,14 +369,9 @@ class Tale(Resource):
                 tale['imageInfo']['jobId'] = job['_id']
                 tale['imageInfo']['status'] = ImageStatus.BUILDING
 
-            # If the status changed, save the object and send a notification
+            # If the status changed, save the object
             if 'status' in tale['imageInfo'] and tale['imageInfo']['status'] != previousStatus:
                 self.model('tale', 'wholetale').updateTale(tale)
-                user = User().load(job['userId'], force=True)
-                expires = datetime.now() + timedelta(minutes=10)
-                Notification().createNotification(type="wt_image_build_status",
-                                                  data=tale,
-                                                  user=user, expires=expires)
 
     def updateWorkspaceModTime(self, event):
         """
