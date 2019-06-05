@@ -265,7 +265,7 @@ class Tale(AccessControlledModel):
 
         return doc
 
-    def buildImage(self, tale, user, token):
+    def buildImage(self, tale, user, token, force=False):
         """
         Build the image for the tale
         """
@@ -280,7 +280,7 @@ class Tale(AccessControlledModel):
             'Initializing', BUILD_TALE_IMAGE_STEP_TOTAL)
 
         buildTask = build_tale_image.signature(
-            args=[str(tale['_id'])],
+            args=[str(tale['_id']), force],
             girder_job_other_fields={
                 'wt_notification_id': str(notification['_id']),
             },
