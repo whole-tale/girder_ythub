@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 import six
-import time
 import validators
 
 from girder import events, logprint, logger
@@ -297,9 +296,6 @@ def updateNotification(event):
         is_last = notification['data']['total'] == (notification['data']['current'])
         if state == ProgressState.SUCCESS and not is_last:
             return
-
-        # Without the sleep, some notifications don't appear in the stream
-        time.sleep(1)
 
         # Add job IDs to the resource
         if 'jobs' not in notification['data']['resource']:
