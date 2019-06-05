@@ -187,7 +187,7 @@ class Instance(AccessControlledModel):
                 'Initializing', total)
 
             buildTask = build_tale_image.signature(
-                args=[str(tale['_id'])],
+                args=[str(tale['_id']), False],
                 girder_job_other_fields={
                     'wt_notification_id': str(notification['_id'])
                 },

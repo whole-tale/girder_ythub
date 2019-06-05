@@ -328,14 +328,16 @@ class Tale(Resource):
         Description('Build the image for the Tale')
         .modelParam('id', model='tale', plugin='wholetale', level=AccessType.WRITE,
                     description='The ID of the Tale.')
+        .param('force', 'If true, force build regardless of workspace changes',
+               default=False, required=False, dataType='boolean')
         .errorResponse('ID was invalid.')
         .errorResponse('Admin access was denied for the tale.', 403)
     )
-    def buildImage(self, tale, params):
+    def buildImage(self, tale, force):
         token = self.getCurrentToken()
         user = self.getCurrentUser()
 
-        return self._model.buildImage(tale, user, token)
+        return self._model.buildImage(tale, user, token, force)
 
     def updateBuildStatus(self, event):
         """
