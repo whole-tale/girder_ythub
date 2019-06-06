@@ -4,6 +4,7 @@ import json
 from girder.models.folder import Folder
 from girder.utility import JsonEncoder
 from . import TaleExporter
+from gwvolman.constants import REPO2DOCKER_VERSION
 
 
 bag_profile = (
@@ -78,7 +79,7 @@ class BagTaleExporter(TaleExporter):
         run_file = run_tpl.format(
             template=container_config['template'],
             buildpack=container_config['buildpack'],
-            repo2docker=container_config.get('repo2docker_version', 'wholetale/repo2docker:latest'),
+            repo2docker=container_config.get('repo2docker_version', REPO2DOCKER_VERSION),
             user=container_config['user'],
             port=container_config['port'],
             taleId=self.tale['_id'],
