@@ -1,6 +1,11 @@
+import datetime
 import six.moves.urllib as urllib
 
 from girder.utility.model_importer import ModelImporter
+from girder.models.notification import Notification
+
+
+NOTIFICATION_EXP_DAYS = 10
 
 
 def getOrCreateRootFolder(name, description=str()):
@@ -39,3 +44,22 @@ def esc(value):
     :rtype: str
     """
     return urllib.parse.quote_plus(value)
+
+
+def init_progress(resource, user, title, message, total):
+
+    data = {
+        'title': title,
+        'total': total,
+        'current': 0,
+        'state': 'active',
+        'message': message,
+        'estimateTime': False,
+        'resource': resource,
+        'resourceName': 'WT custom resource'
+    }
+
+    expires = datetime.datetime.utcnow() + datetime.timedelta(days=NOTIFICATION_EXP_DAYS)
+
+    return Notification().createNotification(
+        type="wt_progress", data=data, user=user, expires=expires)

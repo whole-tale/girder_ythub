@@ -1,6 +1,5 @@
 import time
 import json
-import copy
 import mock
 import six
 from bson import ObjectId
@@ -28,6 +27,7 @@ def tearDownModule():
 
 
 class FakeAsyncResult(object):
+
     def __init__(self, instanceId=None):
         self.task_id = 'fake_id'
         self.instanceId = instanceId
@@ -42,6 +42,17 @@ class FakeAsyncResult(object):
             sessionId='sessionId',
             instanceId=self.instanceId
         )
+
+
+class FakeAsyncResultForUpdate(object):
+
+    def __init__(self, instanceId=None):
+        self.task_id = 'fake_update_id'
+        self.instanceId = instanceId
+        self.digest = 'sha256:7a789bc20359dce987653'
+
+    def get(self, timeout=None):
+        return dict(digest=self.digest)
 
 
 class InstanceTestCase(base.TestCase):
@@ -177,7 +188,7 @@ class InstanceTestCase(base.TestCase):
             self.assertEqual(
                 resp.json['message'], instanceCapErrMsg.format('0'))
             setting.set(PluginSettings.INSTANCE_CAP, current_cap)
-        
+
     @mock.patch('gwvolman.tasks.create_volume')
     @mock.patch('gwvolman.tasks.launch_container')
     @mock.patch('gwvolman.tasks.update_container')
@@ -254,7 +265,7 @@ class InstanceTestCase(base.TestCase):
         self.assertEqual(resp.json['containerInfo']['nodeId'], '123456')
         self.assertEqual(resp.json['containerInfo']['volumeName'], 'blah_volume')
         self.assertEqual(resp.json['status'], InstanceStatus.RUNNING)
-        
+
         # Save this response to populate containerInfo
         instance = resp.json
 
@@ -268,9 +279,17 @@ class InstanceTestCase(base.TestCase):
         self.assertEqual(resp.json['_id'], str(instance['_id']))
 
         # Update/restart the instance
-        with mock.patch('girder_worker.task.celery.Task.apply_async', spec=True) \
-                as mock_apply_async:
-                    
+        job = jobModel.createJob(
+            title='Update Instance', type='celery', handler='worker_handler',
+            user=self.user, public=False, args=[instance['_id']], kwargs={})
+        job = jobModel.save(job)
+        self.assertEqual(job['status'], JobStatus.INACTIVE)
+        with mock.patch('celery.Celery') as celeryMock, mock.patch(
+            'girder_worker.task.celery.Task.apply_async', spec=True
+        ) as mock_apply_async, mock.patch(
+            'girder.plugins.worker.getCeleryApp'
+        ) as gca:
+            gca().send_task.return_value = FakeAsyncResultForUpdate(instance['_id'])
             # PUT /instance/:id (currently a no-op)
             resp = self.request(
                 path='/instance/{_id}'.format(**instance), method='PUT', user=self.user,
@@ -284,22 +303,102 @@ class InstanceTestCase(base.TestCase):
                     'sessionId': instance['status'],
                     'url': instance['url'],
                     'containerInfo': {
-                       'digest': instance['containerInfo']['digest'],
-                       'imageId': instance['containerInfo']['imageId'],
-                       'mountPoint': instance['containerInfo']['mountPoint'],
-                       'name': instance['containerInfo']['name'],
-                       'nodeId': instance['containerInfo']['nodeId'],
-                       'urlPath': instance['containerInfo']['urlPath'],
+                        'digest': instance['containerInfo']['digest'],
+                        'imageId': instance['containerInfo']['imageId'],
+                        'mountPoint': instance['containerInfo']['mountPoint'],
+                        'name': instance['containerInfo']['name'],
+                        'nodeId': instance['containerInfo']['nodeId'],
+                        'urlPath': instance['containerInfo']['urlPath'],
                     }
                 })
             )
             self.assertStatusOk(resp)
             mock_apply_async.assert_called_once()
 
+            jobModel.scheduleJob(job)
+            for i in range(20):
+                job = jobModel.load(job['_id'], force=True)
+                if job['status'] == JobStatus.QUEUED:
+                    break
+                time.sleep(0.1)
+            self.assertEqual(job['status'], JobStatus.QUEUED)
+
+            instance = Instance().load(instance['_id'], force=True)
+            self.assertEqual(instance['status'], InstanceStatus.LAUNCHING)
+
+            # Make sure we sent the job to celery
+            sendTaskCalls = gca.return_value.send_task.mock_calls
+
+            self.assertEqual(len(sendTaskCalls), 1)
+            self.assertEqual(sendTaskCalls[0][1], (
+                'girder_worker.run', job['args'], job['kwargs']))
+
+            self.assertTrue('headers' in sendTaskCalls[0][2])
+            self.assertTrue('jobInfoSpec' in sendTaskCalls[0][2]['headers'])
+
+            # Make sure we got and saved the celery task id
+            job = jobModel.load(job['_id'], force=True)
+            self.assertEqual(job['celeryTaskId'], 'fake_update_id')
+            Job().updateJob(job, log='job running', status=JobStatus.RUNNING)
+
+            Job().updateJob(job, log='job running', status=JobStatus.RUNNING)
+            Job().updateJob(job, log='job ran', status=JobStatus.SUCCESS)
+
         resp = self.request(
             path='/instance/{_id}'.format(**instance), method='GET',
             user=self.user)
-        self.assertStatus(resp, 200)
+        self.assertStatusOk(resp)
+        self.assertEqual(resp.json['containerInfo']['digest'], 'sha256:7a789bc20359dce987653')
+        instance = resp.json
+
+        # Update/restart the instance and fail
+        job = jobModel.createJob(
+            title='Update Instance', type='celery', handler='worker_handler',
+            user=self.user, public=False, args=[instance['_id']], kwargs={})
+        job = jobModel.save(job)
+        self.assertEqual(job['status'], JobStatus.INACTIVE)
+        with mock.patch('celery.Celery') as celeryMock, mock.patch(
+            'girder_worker.task.celery.Task.apply_async', spec=True
+        ) as mock_apply_async, mock.patch(
+            'girder.plugins.worker.getCeleryApp'
+        ) as gca:
+            gca().send_task.return_value = FakeAsyncResultForUpdate(instance['_id'])
+            # PUT /instance/:id (currently a no-op)
+            resp = self.request(
+                path='/instance/{_id}'.format(**instance), method='PUT', user=self.user,
+                body=json.dumps({
+                    # ObjectId is not serializable
+                    '_id': str(instance['_id']),
+                    'iframe': instance['iframe'],
+                    'name': instance['name'],
+                    'status': instance['status'],
+                    'taleId': instance['status'],
+                    'sessionId': instance['status'],
+                    'url': instance['url'],
+                    'containerInfo': {
+                        'digest': instance['containerInfo']['digest'],
+                        'imageId': instance['containerInfo']['imageId'],
+                        'mountPoint': instance['containerInfo']['mountPoint'],
+                        'name': instance['containerInfo']['name'],
+                        'nodeId': instance['containerInfo']['nodeId'],
+                        'urlPath': instance['containerInfo']['urlPath'],
+                    }
+                })
+            )
+            self.assertStatusOk(resp)
+            mock_apply_async.assert_called_once()
+
+            jobModel.scheduleJob(job)
+            for i in range(20):
+                job = jobModel.load(job['_id'], force=True)
+            self.assertEqual(job['status'], JobStatus.QUEUED)
+
+            instance = Instance().load(instance['_id'], force=True)
+            self.assertEqual(instance['status'], InstanceStatus.LAUNCHING)
+
+            Job().updateJob(job, log='job failed', status=JobStatus.ERROR)
+            instance = Instance().load(instance['_id'], force=True)
+            self.assertEqual(instance['status'], InstanceStatus.ERROR)
 
         # Delete the instance
         with mock.patch('girder_worker.task.celery.Task.apply_async', spec=True) \

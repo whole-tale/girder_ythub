@@ -12,6 +12,7 @@ from girder.api.rest import \
 from girder.constants import AccessType, TokenScope, CoreEventHandler
 from girder.exceptions import GirderException
 from girder.models.model_base import ValidationException
+from girder.models.notification import Notification, ProgressState
 from girder.plugins.jobs.constants import JobStatus
 from girder.plugins.jobs.models.job import Job as JobModel
 from girder.plugins.worker import getCeleryApp
@@ -291,6 +292,53 @@ def validateFileLink(event):
     event.preventDefault().addResponse(doc)
 
 
+def updateNotification(event):
+    """
+    Update the Whole Tale task notification for a job, if present.
+    """
+
+    job = event.info['job']
+    if job['progress'] and 'wt_notification_id' in job:
+        state = JobStatus.toNotificationStatus(job['status'])
+        notification = Notification().load(job['wt_notification_id'])
+
+        state_changed = notification['data']['state'] != state
+        message_changed = notification['data']['message'] != job['progress']['message']
+
+        # Ignore duplicate events based on state and message content
+        if not state_changed and not message_changed:
+            return
+
+        # For multi-job tasks, ignore success for intermediate events
+        is_last = notification['data']['total'] == (notification['data']['current'])
+        if state == ProgressState.SUCCESS and not is_last:
+            return
+
+        # Add job IDs to the resource
+        if 'jobs' not in notification['data']['resource']:
+            notification['data']['resource']['jobs'] = []
+
+        if job['_id'] not in notification['data']['resource']['jobs']:
+            notification['data']['resource']['jobs'].append(job['_id'])
+
+        # If the state hasn't changed, increment. Otherwise keep previous current value.
+        # Note, if expires parameter is not provided, updateProgress resets to 1 hour
+        if not state_changed:
+            Notification().updateProgress(
+                notification, state=state,
+                expires=notification['expires'],
+                message=job['progress']['message'],
+                increment=1,
+                total=notification['data']['total'])
+        else:
+            Notification().updateProgress(
+                notification, state=state,
+                expires=notification['expires'],
+                message=job['progress']['message'],
+                current=notification['data']['current'],
+                total=notification['data']['total'])
+
+
 @access.user
 @autoDescribeRoute(
     Description('Get output from celery job.')
@@ -346,6 +394,7 @@ def load(info):
     info['apiRoot'].image = Image()
     events.bind('jobs.job.update.after', 'wholetale', tale.updateBuildStatus)
     events.bind('jobs.job.update.after', 'wholetale', finalizeInstance)
+    events.bind('jobs.job.update.after', 'wholetale', updateNotification)
     events.bind('model.file.validate', 'wholetale', validateFileLink)
     events.unbind('model.user.save.created', CoreEventHandler.USER_DEFAULT_FOLDERS)
     events.bind('model.user.save.created', 'wholetale', addDefaultFolders)

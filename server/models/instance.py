@@ -16,13 +16,15 @@ from girder.plugins.worker import getCeleryApp
 from girder.plugins.jobs.constants import JobStatus, REST_CREATE_JOB_TOKEN_SCOPE
 from gwvolman.tasks import \
     create_volume, launch_container, update_container, shutdown_container, \
-    remove_volume, build_tale_image
+    remove_volume, build_tale_image, \
+    CREATE_VOLUME_STEP_TOTAL, BUILD_TALE_IMAGE_STEP_TOTAL, \
+    LAUNCH_CONTAINER_STEP_TOTAL, UPDATE_CONTAINER_STEP_TOTAL
 
 from ..constants import InstanceStatus
 from ..schema.misc import containerInfoSchema
+from ..utils import init_progress
 
 from girder.plugins.wholetale.models.tale import Tale
-
 
 TASK_TIMEOUT = 15.0
 BUILD_TIMEOUT = 360.0
@@ -76,7 +78,7 @@ class Instance(AccessControlledModel):
                 limit=limit, offset=offset):
             yield r
 
-    def updateAndRestartInstance(self, instance, token, digest):
+    def updateAndRestartInstance(self, user, instance, token, digest):
         """
         Updates and restarts an instance.
 
@@ -84,18 +86,27 @@ class Instance(AccessControlledModel):
         :type image: dict
         :returns: The instance document that was edited.
         """
+        resource = {
+            'type': 'wt_update_instance',
+            'instance_id': instance['_id']
+        }
 
-        instanceTask = update_container.signature(
+        total = UPDATE_CONTAINER_STEP_TOTAL
+
+        notification = init_progress(
+            resource, user, 'Updating instance',
+            'Initializing', total)
+
+        update_container.signature(
             args=[str(instance['_id'])], queue='manager',
+            girder_job_other_fields={
+                'wt_notification_id': str(notification['_id'])
+            },
             kwargs={
                 'girder_client_token': str(token['_id']),
-                'image': digest
+                'digest': digest
             }
         ).apply_async()
-        instanceTask.get(timeout=TASK_TIMEOUT)
-        # TODO: Ensure valid digest?
-        instance['containerInfo']['digest'] = digest
-        return self.updateInstance(instance)
 
     def updateInstance(self, instance):
         """
@@ -158,16 +169,46 @@ class Instance(AccessControlledModel):
             # Create single job
             Token().addScope(token, scope=REST_CREATE_JOB_TOKEN_SCOPE)
 
+            resource = {
+                'type': 'wt_create_instance',
+                'tale_id': tale['_id'],
+                'instance_id': instance['_id'],
+            }
+
+            total = BUILD_TALE_IMAGE_STEP_TOTAL + CREATE_VOLUME_STEP_TOTAL + \
+                LAUNCH_CONTAINER_STEP_TOTAL
+
+            notification = init_progress(
+                resource, user, 'Creating instance',
+                'Initializing', total)
+
             buildTask = build_tale_image.signature(
-                args=[str(tale['_id'])], immutable=True,
-                kwargs={'girder_client_token': str(token['_id'])}
+                args=[str(tale['_id']), False],
+                girder_job_other_fields={
+                    'wt_notification_id': str(notification['_id'])
+                },
+                kwargs={
+                    'girder_client_token': str(token['_id'])
+                },
+                immutable=True
             )
-            volumeTask = create_volume.si(
-                str(instance['_id']),
-                girder_client_token=str(token['_id'])
+            volumeTask = create_volume.signature(
+                args=[str(instance['_id'])],
+                girder_job_other_fields={
+                    'wt_notification_id': str(notification['_id'])
+                },
+                kwargs={
+                    'girder_client_token': str(token['_id'])
+                },
+                immutable=True
             )
             serviceTask = launch_container.signature(
-                kwargs={'girder_client_token': str(token['_id'])},
+                girder_job_other_fields={
+                    'wt_notification_id': str(notification['_id'])
+                },
+                kwargs={
+                    'girder_client_token': str(token['_id'])
+                },
                 queue='manager'
             )
 

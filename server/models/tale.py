@@ -10,8 +10,10 @@ from girder.models.folder import Folder
 from girder.constants import AccessType
 from girder.exceptions import AccessException
 from ..constants import WORKSPACE_NAME, DATADIRS_NAME, SCRIPTDIRS_NAME
-from ..utils import getOrCreateRootFolder
+from ..utils import getOrCreateRootFolder, init_progress
 from ..lib.license import WholeTaleLicense
+
+from gwvolman.tasks import build_tale_image, BUILD_TALE_IMAGE_STEP_TOTAL
 
 
 # Whenever the Tale object schema is modified (e.g. fields are added or
@@ -262,3 +264,29 @@ class Tale(AccessControlledModel):
                     setPublic=setPublic, publicFlags=publicFlags)
 
         return doc
+
+    def buildImage(self, tale, user, token, force=False):
+        """
+        Build the image for the tale
+        """
+
+        resource = {
+            'type': 'wt_build_image',
+            'tale_id': tale['_id']
+        }
+
+        notification = init_progress(
+            resource, user, 'Building image',
+            'Initializing', BUILD_TALE_IMAGE_STEP_TOTAL)
+
+        buildTask = build_tale_image.signature(
+            args=[str(tale['_id']), force],
+            girder_job_other_fields={
+                'wt_notification_id': str(notification['_id']),
+            },
+            kwargs={
+                'girder_client_token': str(token['_id'])
+            }
+        ).apply_async()
+
+        return buildTask.job

@@ -1,14 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from girder import events
 from girder.api import access
 from girder.api.describe import Description, autoDescribeRoute
 from girder.api.docs import addModel
 from girder.api.rest import Resource, filtermodel, RestException
 from girder.constants import AccessType, SortDir
-from ..constants import PluginSettings
+from girder.plugins.jobs.constants import JobStatus
+from girder.plugins.worker import getCeleryApp
+from ..constants import PluginSettings, InstanceStatus
+from ..models.instance import Instance as instanceModel
 
 
-instanceModel = {
+instanceSchema = {
     'id': 'instance',
     'type': 'object',
     'required': [
@@ -61,7 +65,7 @@ instanceModel = {
         'url': {'type': 'string'}
     }
 }
-addModel('instance', instanceModel, resources='instance')
+addModel('instance', instanceSchema, resources='instance')
 instanceCapErrMsg = (
     'You have reached a limit for running instances ({}). '
     'Please shutdown one of the running instances before '
@@ -74,12 +78,15 @@ class Instance(Resource):
     def __init__(self):
         super(Instance, self).__init__()
         self.resourceName = 'instance'
+        self._model = instanceModel()
 
         self.route('GET', (), self.listInstances)
         self.route('POST', (), self.createInstance)
         self.route('GET', (':id',), self.getInstance)
         self.route('DELETE', (':id',), self.deleteInstance)
         self.route('PUT', (':id',), self.updateInstance)
+
+        events.bind('jobs.job.update.after', 'wholetale', self.handleUpdateJob)
 
     @access.user
     @filtermodel(model='instance', plugin='wholetale')
@@ -123,6 +130,7 @@ class Instance(Resource):
         return instance
 
     @access.user
+    @filtermodel(model='instance', plugin='wholetale')
     @autoDescribeRoute(
         Description('Updates and restarts an existing instance.')
         .modelParam('id', model='instance', plugin='wholetale', level=AccessType.WRITE)
@@ -140,8 +148,8 @@ class Instance(Resource):
         # if image['digest'] != instance['containerInfo']['digest']:
 
         # Digest ensures that container runs from newest image version
-        instanceModel = self.model('instance', 'wholetale')
-        instanceModel.updateAndRestartInstance(
+        self._model.updateAndRestartInstance(
+            currentUser,
             instance,
             self.getCurrentToken(),
             tale['imageInfo']['digest'])
@@ -182,8 +190,7 @@ class Instance(Resource):
         tale = taleModel.load(
             taleId, user=user, level=AccessType.READ)
 
-        instanceModel = self.model('instance', 'wholetale')
-        existing = instanceModel.findOne({
+        existing = self._model.findOne({
             'taleId': tale['_id'],
             'creatorId': user['_id'],
         })
@@ -191,11 +198,29 @@ class Instance(Resource):
             return existing
 
         running_instances = list(
-            instanceModel.list(user=user, currentUser=user)
+            self._model.list(user=user, currentUser=user)
         )
         instance_cap = self.model('setting').get(PluginSettings.INSTANCE_CAP)
         if len(running_instances) + 1 > int(instance_cap):
             raise RestException(instanceCapErrMsg.format(instance_cap))
 
-        return instanceModel.createInstance(tale, user, token, name=name,
-                                            save=True, spawn=spawn)
+        return self._model.createInstance(tale, user, token, name=name,
+                                          save=True, spawn=spawn)
+
+    def handleUpdateJob(self, event):
+        job = event.info['job']
+        if not (job['title'] == 'Update Instance' and job.get('status') is not None):
+            return
+
+        status = int(job['status'])
+        instance = self._model.load(job['args'][0], force=True)
+
+        if status == JobStatus.SUCCESS:
+            result = getCeleryApp().AsyncResult(job['celeryTaskId']).get()
+            instance['containerInfo'].update(result)
+            instance['status'] = InstanceStatus.RUNNING
+        elif status == JobStatus.ERROR:
+            instance['status'] = InstanceStatus.ERROR
+        elif status in (JobStatus.QUEUED, JobStatus.RUNNING):
+            instance['status'] = InstanceStatus.LAUNCHING
+        self._model.updateInstance(instance)
