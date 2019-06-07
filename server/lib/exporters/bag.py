@@ -23,21 +23,20 @@ run_tpl = r"""#!/bin/sh
 # Use repo2docker to build the image from the workspace
 docker run  \
   -v /var/run/docker.sock:/var/run/docker.sock \
-  -v `pwd`/data/workspace:/WholeTale/workspace \
+  -v "`pwd`/data/workspace:/WholeTale/workspace" \
+  -v "`pwd`/metadata/environment.json:/WholeTale/workspace/.wholetale/environment.json" \
   --privileged=true \
   -e DOCKER_HOST=unix:///var/run/docker.sock \
   {repo2docker} \
   jupyter-repo2docker \
     --target-repo-dir=/WholeTale/workspace \
-    --template={template} \
-    --buildpack-name={buildpack} \
     --user-id=1000 --user-name={user} \
     --no-clean --no-run --debug \
     --image-name wholetale/tale_{taleId} \
     /WholeTale/workspace
 
 docker run --rm \
-    -v `pwd`:/bag \
+    -v "`pwd`:/bag" \
     -ti jfloff/alpine-python:2.7-slim \
       -p bdbag -- bdbag --resolve-fetch all /bag
 
@@ -47,8 +46,8 @@ echo "========================================================================"
 
 # Run the built image
 docker run -p {port}:{port} \
-  -v `pwd`/data/data:/WholeTale/data \
-  -v `pwd`/data/workspace:/WholeTale/workspace \
+  -v "`pwd`/data/data:/WholeTale/data" \
+  -v "`pwd`/data/workspace:/WholeTale/workspace" \
   wholetale/tale_{taleId} {command}
 
 """
@@ -58,7 +57,10 @@ readme_tpl = """# Tale: "{title}" in BDBag Format
 
 {description}
 
-# How to run?
+# Running locally
+
+If you have Docker installed, you can run this Tale locally using the
+following command:
 
 ```
 sh ./run-local.sh
@@ -77,8 +79,6 @@ class BagTaleExporter(TaleExporter):
         )
         urlPath = container_config['urlPath'].format(token=token)
         run_file = run_tpl.format(
-            template=container_config['template'],
-            buildpack=container_config['buildpack'],
             repo2docker=container_config.get('repo2docker_version', REPO2DOCKER_VERSION),
             user=container_config['user'],
             port=container_config['port'],
