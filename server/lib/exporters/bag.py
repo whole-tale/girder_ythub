@@ -29,8 +29,6 @@ docker run  \
   {repo2docker} \
   jupyter-repo2docker \
     --target-repo-dir=/WholeTale/workspace \
-    --template={template} \
-    --buildpack-name={buildpack} \
     --user-id=1000 --user-name={user} \
     --no-clean --no-run --debug \
     --image-name wholetale/tale_{taleId} \
@@ -58,7 +56,10 @@ readme_tpl = """# Tale: "{title}" in BDBag Format
 
 {description}
 
-# How to run?
+# Running locally
+
+If you have Docker installed, you can run this Tale locally using the
+following command:
 
 ```
 sh ./run-local.sh
@@ -77,8 +78,6 @@ class BagTaleExporter(TaleExporter):
         )
         urlPath = container_config['urlPath'].format(token=token)
         run_file = run_tpl.format(
-            template=container_config['template'],
-            buildpack=container_config['buildpack'],
             repo2docker=container_config.get('repo2docker_version', REPO2DOCKER_VERSION),
             user=container_config['user'],
             port=container_config['port'],
@@ -171,7 +170,7 @@ class BagTaleExporter(TaleExporter):
                     sort_keys=True,
                     allow_nan=False,
                 ),
-                'metadata/environment.json',
+                'data/workspace/.wholetale/environment.json',
             ),
             (lambda: json.dumps(self.manifest, indent=4), 'metadata/manifest.json'),
         ):
