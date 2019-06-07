@@ -23,7 +23,8 @@ run_tpl = r"""#!/bin/sh
 # Use repo2docker to build the image from the workspace
 docker run  \
   -v /var/run/docker.sock:/var/run/docker.sock \
-  -v `pwd`/data/workspace:/WholeTale/workspace \
+  -v "`pwd`/data/workspace:/WholeTale/workspace" \
+  -v "`pwd`/metadata/environment.json:/WholeTale/workspace/.wholetale/environment.json" \
   --privileged=true \
   -e DOCKER_HOST=unix:///var/run/docker.sock \
   {repo2docker} \
@@ -35,7 +36,7 @@ docker run  \
     /WholeTale/workspace
 
 docker run --rm \
-    -v `pwd`:/bag \
+    -v "`pwd`:/bag" \
     -ti jfloff/alpine-python:2.7-slim \
       -p bdbag -- bdbag --resolve-fetch all /bag
 
@@ -45,8 +46,8 @@ echo "========================================================================"
 
 # Run the built image
 docker run -p {port}:{port} \
-  -v `pwd`/data/data:/WholeTale/data \
-  -v `pwd`/data/workspace:/WholeTale/workspace \
+  -v "`pwd`/data/data:/WholeTale/data" \
+  -v "`pwd`/data/workspace:/WholeTale/workspace" \
   wholetale/tale_{taleId} {command}
 
 """
@@ -170,7 +171,7 @@ class BagTaleExporter(TaleExporter):
                     sort_keys=True,
                     allow_nan=False,
                 ),
-                'data/workspace/.wholetale/environment.json',
+                'metadata/environment.json',
             ),
             (lambda: json.dumps(self.manifest, indent=4), 'metadata/manifest.json'),
         ):
