@@ -5,7 +5,7 @@ from girder.utility.model_importer import ModelImporter
 from girder.models.notification import Notification
 
 
-NOTIFICATION_EXP_DAYS = 10
+NOTIFICATION_EXP_HOURS = 1
 
 
 def getOrCreateRootFolder(name, description=str()):
@@ -59,7 +59,7 @@ def init_progress(resource, user, title, message, total):
         'resourceName': 'WT custom resource'
     }
 
-    expires = datetime.datetime.utcnow() + datetime.timedelta(days=NOTIFICATION_EXP_DAYS)
+    expires = datetime.datetime.utcnow() + datetime.timedelta(hours=NOTIFICATION_EXP_HOURS)
 
     return Notification().createNotification(
         type="wt_progress", data=data, user=user, expires=expires)

@@ -18,10 +18,11 @@ from girder.models.item import Item
 from girder.models.user import User
 from girder.utility.progress import ProgressContext
 from girder.plugins.wholetale.models.tale import Tale
-from girder.plugins.wholetale.rest.repository import Repository
 from girder.plugins.wholetale.utils import getOrCreateRootFolder
 from girder.plugins.wholetale.constants import CATALOG_NAME
-from girder.plugins.wholetale.lib import IMPORT_PROVIDERS
+from girder.plugins.wholetale.lib import IMPORT_PROVIDERS, pids_to_entities
+from girder.plugins.wholetale.lib.entity import Entity
+from girder.plugins.wholetale.lib.http_provider import HTTPImportProvider
 
 
 CAT_ROOT = getOrCreateRootFolder(CATALOG_NAME)
@@ -36,14 +37,14 @@ def migrate_item(item):
     creator = User().load(item['creatorId'], force=True)
 
     # register url
-    entity = Repository._buildAndResolveEntity(url, base_url, creator)
-    provider = IMPORT_PROVIDERS.getProvider(entity)
-    if not provider.getName().lower().startswith('http'):
-        print("  -> WRONG PROVIDER!!! ({})".format(provider.getName()))
-        print("  -> Item '{}' removed".format(item['name']))
+    entity = Entity(url.strip(), creator)
+    provider = HTTPImportProvider()
+    try:
+        dataMap = provider.lookup(entity)
+    except Exception:
+        print("  -> Failed to resolve {} as HTTP".format(url))
+        print("  -> item_id = {}".format(str(item["_id"])))
         return 0
-
-    dataMap = provider.lookup(entity)
     ds = dataMap.toDict()
 
     if not ds['name']:
