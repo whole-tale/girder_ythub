@@ -8,7 +8,7 @@ from urllib.request import urlopen
 from urllib.error import HTTPError, URLError
 
 from girder import logger
-from girder.constants import AccessType, SortDir
+from girder.constants import AccessType, SortDir, TokenScope
 from girder.exceptions import ValidationException
 from girder.models.model_base import AccessControlledModel
 from girder.models.token import Token
@@ -78,7 +78,7 @@ class Instance(AccessControlledModel):
                 limit=limit, offset=offset):
             yield r
 
-    def updateAndRestartInstance(self, user, instance, token, digest):
+    def updateAndRestartInstance(self, instance, user, digest):
         """
         Updates and restarts an instance.
 
@@ -86,11 +86,12 @@ class Instance(AccessControlledModel):
         :type image: dict
         :returns: The instance document that was edited.
         """
+        token = Token().createToken(user=user, days=0.5)
+
         resource = {
             'type': 'wt_update_instance',
             'instance_id': instance['_id']
         }
-
         total = UPDATE_CONTAINER_STEP_TOTAL
 
         notification = init_progress(
@@ -102,10 +103,8 @@ class Instance(AccessControlledModel):
             girder_job_other_fields={
                 'wt_notification_id': str(notification['_id'])
             },
-            kwargs={
-                'girder_client_token': str(token['_id']),
-                'digest': digest
-            }
+            girder_client_token=str(token['_id']),
+            kwargs={'digest': digest}
         ).apply_async()
 
     def updateInstance(self, instance):
@@ -120,13 +119,13 @@ class Instance(AccessControlledModel):
         instance['updated'] = datetime.datetime.utcnow()
         return self.save(instance)
 
-    def deleteInstance(self, instance, token):
+    def deleteInstance(self, instance, user):
+        token = Token().createToken(user=user, days=0.5)
         app = getCeleryApp()
         active_queues = list(app.control.inspect().active_queues().keys())
 
         instanceTask = shutdown_container.signature(
-            args=[str(instance['_id'])], queue='manager',
-            kwargs={'girder_client_token': str(token['_id'])}
+            args=[str(instance['_id'])], queue='manager', girder_client_token=str(token['_id']),
         ).apply_async()
         instanceTask.get(timeout=TASK_TIMEOUT)
 
@@ -135,7 +134,7 @@ class Instance(AccessControlledModel):
             if queue in active_queues:
                 volumeTask = remove_volume.signature(
                     args=[str(instance['_id'])],
-                    kwargs={'girder_client_token': str(token['_id'])},
+                    girder_client_token=str(token['_id']),
                     queue=instance['containerInfo']['nodeId']
                 ).apply_async()
                 volumeTask.get(timeout=TASK_TIMEOUT)
@@ -145,8 +144,7 @@ class Instance(AccessControlledModel):
         # TODO: handle error
         self.remove(instance)
 
-    def createInstance(self, tale, user, token, name=None, save=True,
-                       spawn=True):
+    def createInstance(self, tale, user, name=None, save=True, spawn=True):
         if not name:
             name = tale.get('title', '')
 
@@ -167,7 +165,11 @@ class Instance(AccessControlledModel):
 
         if spawn:
             # Create single job
-            Token().addScope(token, scope=REST_CREATE_JOB_TOKEN_SCOPE)
+            token = Token().createToken(
+                user=user,
+                days=0.5,
+                scope=(TokenScope.USER_AUTH, REST_CREATE_JOB_TOKEN_SCOPE)
+            )
 
             resource = {
                 'type': 'wt_create_instance',
@@ -187,9 +189,7 @@ class Instance(AccessControlledModel):
                 girder_job_other_fields={
                     'wt_notification_id': str(notification['_id'])
                 },
-                kwargs={
-                    'girder_client_token': str(token['_id'])
-                },
+                girder_client_token=str(token['_id']),
                 immutable=True
             )
             volumeTask = create_volume.signature(
@@ -197,18 +197,14 @@ class Instance(AccessControlledModel):
                 girder_job_other_fields={
                     'wt_notification_id': str(notification['_id'])
                 },
-                kwargs={
-                    'girder_client_token': str(token['_id'])
-                },
+                girder_client_token=str(token['_id']),
                 immutable=True
             )
             serviceTask = launch_container.signature(
                 girder_job_other_fields={
                     'wt_notification_id': str(notification['_id'])
                 },
-                kwargs={
-                    'girder_client_token': str(token['_id'])
-                },
+                girder_client_token=str(token['_id']),
                 queue='manager'
             )
 

@@ -7,6 +7,7 @@ from girder import events
 from girder.models.model_base import AccessControlledModel
 from girder.models.item import Item
 from girder.models.folder import Folder
+from girder.models.token import Token
 from girder.constants import AccessType
 from girder.exceptions import AccessException
 from ..constants import WORKSPACE_NAME, DATADIRS_NAME, SCRIPTDIRS_NAME
@@ -265,7 +266,7 @@ class Tale(AccessControlledModel):
 
         return doc
 
-    def buildImage(self, tale, user, token, force=False):
+    def buildImage(self, tale, user, force=False):
         """
         Build the image for the tale
         """
@@ -274,6 +275,8 @@ class Tale(AccessControlledModel):
             'type': 'wt_build_image',
             'tale_id': tale['_id']
         }
+
+        token = Token().createToken(user=user, days=0.5)
 
         notification = init_progress(
             resource, user, 'Building image',
@@ -284,9 +287,7 @@ class Tale(AccessControlledModel):
             girder_job_other_fields={
                 'wt_notification_id': str(notification['_id']),
             },
-            kwargs={
-                'girder_client_token': str(token['_id'])
-            }
+            girder_client_token=str(token['_id']),
         ).apply_async()
 
         return buildTask.job
