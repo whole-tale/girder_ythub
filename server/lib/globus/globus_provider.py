@@ -102,12 +102,16 @@ class GlobusImportProvider(ImportProvider):
                     url='globus://%s/%s%s' % (endpoint, path, entry['name']))
 
     def getDatasetUID(self, doc, user):
-        if 'folderId' in doc:
-            path_to_root = Item().parentsToRoot(doc, user=user)
-        else:
-            path_to_root = Folder().parentsToRoot(doc, user=user)
-        # Collection{WT Catalog} / Folder{WT Catalog} / Folder{Globus ds root}
-        return path_to_root[2]['object']['meta']['identifier']
+        try:
+            identifier = doc['meta']['identifier']  # if root of ds, it should have it
+        except (KeyError, TypeError):
+            if 'folderId' in doc:
+                path_to_root = Item().parentsToRoot(doc, user=user)
+            else:
+                path_to_root = Folder().parentsToRoot(doc, user=user)
+            # Collection{WT Catalog} / Folder{WT Catalog} / Folder{Globus ds root}
+            identifier = path_to_root[2]['object']['meta']['identifier']
+        return identifier
 
     def getURI(self, doc, user):
         if 'folderId' in doc:
