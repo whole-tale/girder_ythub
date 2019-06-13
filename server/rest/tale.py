@@ -197,6 +197,8 @@ class Tale(Resource):
         .param('spawn', 'If false, create only Tale object without a corresponding '
                         'Instance.',
                default=True, required=False, dataType='boolean')
+        .param('asTale', 'If True, assume that external dataset is a Tale.',
+               default=False, required=False, dataType='boolean')
         .jsonParam('lookupKwargs', 'Optional keyword arguments passed to '
                    'GET /repository/lookup', requireObject=True, required=False)
         .jsonParam('taleKwargs', 'Optional keyword arguments passed to POST /tale',
@@ -204,7 +206,7 @@ class Tale(Resource):
         .responseClass('job')
         .errorResponse('You are not authorized to create tales.', 403)
     )
-    def createTaleFromDataset(self, imageId, url, spawn, lookupKwargs, taleKwargs):
+    def createTaleFromDataset(self, imageId, url, spawn, asTale, lookupKwargs, taleKwargs):
         user = self.getCurrentUser()
         token = Token().createToken(
             user=user,
@@ -282,11 +284,25 @@ class Tale(Resource):
             except TypeError:
                 taleKwargs = dict(imageId=str(image['_id']))
 
-            taleTask = import_tale.delay(
-                lookupKwargs, taleKwargs, spawn=spawn,
-                girder_client_token=str(token['_id'])
-            )
-            return taleTask.job
+            if asTale:
+                job = Job().createLocalJob(
+                    title="Import Tale from external dataset",
+                    user=user,
+                    type="wholetale.import_binder",
+                    public=False,
+                    async=True,
+                    module="girder.plugins.wholetale.tasks.import_binder",
+                    args=(taleKwargs, lookupKwargs),
+                    kwargs={"user": user},
+                )
+                Job().scheduleJob(job)
+                return job
+            else:
+                taleTask = import_tale.delay(
+                    lookupKwargs, taleKwargs, spawn=spawn,
+                    girder_client_token=str(token['_id'])
+                )
+                return taleTask.job
 
     @access.user
     @autoDescribeRoute(
