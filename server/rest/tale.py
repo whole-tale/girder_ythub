@@ -13,6 +13,7 @@ from girder.utility.path import getResourcePath
 from girder.utility.progress import ProgressContext
 from girder.models.token import Token
 from girder.models.folder import Folder
+from girder.plugins.jobs.models.job import Job
 from girder.plugins.jobs.constants import REST_CREATE_JOB_TOKEN_SCOPE
 from gwvolman.tasks import import_tale
 
@@ -45,6 +46,7 @@ class Tale(Resource):
         self.route('PUT', (':id',), self.updateTale)
         self.route('POST', (), self.createTale)
         self.route('POST', ('import', ), self.createTaleFromDataset)
+        self.route('POST', (':id', 'copy'), self.copyTale)
         self.route('DELETE', (':id',), self.deleteTale)
         self.route('GET', (':id', 'access'), self.getTaleAccess)
         self.route('PUT', (':id', 'access'), self.updateTaleAccess)
@@ -395,3 +397,48 @@ class Tale(Resource):
             tale = self.model('tale', 'wholetale').load(taleId, force=True)
             tale['workspaceModified'] = int(time.time())
             self.model('tale', 'wholetale').save(tale)
+
+    @access.user
+    @autoDescribeRoute(
+        Description('Copy a tale.')
+        .modelParam('id', model='tale', plugin='wholetale', level=AccessType.READ)
+        .responseClass('tale')
+        .errorResponse('ID was invalid.')
+        .errorResponse('You are not authorized to copy this tale.', 403)
+    )
+    @filtermodel(model='tale', plugin='wholetale')
+    def copyTale(self, tale):
+        user = self.getCurrentUser()
+        image = self.model('image', 'wholetale').load(
+            tale['imageId'], user=user, level=AccessType.READ, exc=True)
+        default_author = ' '.join((user['firstName'], user['lastName']))
+        new_tale = self._model.createTale(
+            image, tale['dataSet'], creator=user, save=True,
+            title=tale.get('title'), description=tale.get('description'),
+            public=False, config=tale.get('config'),
+            icon=image.get('icon', ('https://raw.githubusercontent.com/'
+                                    'whole-tale/dashboard/master/public/'
+                                    'images/whole_tale_logo.png')),
+            illustration=tale.get(
+                'illustration', ('https://raw.githubusercontent.com/'
+                                 'whole-tale/dashboard/master/public/'
+                                 'images/demo-graph2.jpg')),
+            authors=tale.get('authors', default_author),
+            category=tale.get('category', 'science'),
+            narrative=tale.get('narrative'),
+            licenseSPDX=tale.get('licenseSPDX'),
+        )
+        new_tale['copyOfTale'] = tale['_id']
+        new_tale = self._model.save(new_tale)
+        # asynchronously copy the workspace of a source Tale
+        tale_workspaceId = self._model.createWorkspace(tale)['_id']
+        new_tale_workspaceId = self._model.createWorkspace(new_tale)['_id']
+        job = Job().createLocalJob(
+            title='Copy "{title}" workspace'.format(**tale), user=user,
+            type='wholetale.copy_workspace', public=False, async=True,
+            module='girder.plugins.wholetale.tasks.copy_workspace',
+            args=(tale_workspaceId, new_tale_workspaceId),
+            kwargs={'user': user}
+        )
+        Job().scheduleJob(job)
+        return new_tale

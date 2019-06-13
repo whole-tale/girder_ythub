@@ -1,9 +1,12 @@
 import bagit
 from bdbag import bdbag_api as bdb
-import mock
+from bson import ObjectId
 import httmock
-import os
+from io import BytesIO
 import json
+import mock
+import os
+import re
 import time
 import urllib.request
 import tempfile
@@ -11,7 +14,11 @@ import zipfile
 import shutil
 from tests import base
 from .tests_helpers import mockOtherRequest
+
+from girder.utility import assetstore_utilities
+from girder.models.assetstore import Assetstore
 from girder.models.item import Item
+from girder.models.upload import Upload
 from girder.models.folder import Folder
 
 
@@ -45,6 +52,7 @@ class FakeAsyncResult(object):
 
 def setUpModule():
     base.enabledPlugins.append('wholetale')
+    base.enabledPlugins.append('wt_home_dir')
     base.startServer()
 
     global JobStatus, Tale, ImageStatus
@@ -116,27 +124,6 @@ class TaleTestCase(base.TestCase):
                         "is a required property"),
             'type': 'rest'
         })
-
-        # Grab the default user folders
-        resp = self.request(
-            path='/folder', method='GET', user=self.user, params={
-                'parentType': 'user',
-                'parentId': self.user['_id'],
-                'sort': 'title',
-                'sortdir': 1
-            })
-        privateFolder = resp.json[0]
-        publicFolder = resp.json[1]
-
-        resp = self.request(
-            path='/folder', method='GET', user=self.admin, params={
-                'parentType': 'user',
-                'parentId': self.admin['_id'],
-                'sort': 'title',
-                'sortdir': 1
-            })
-        # adminPrivateFolder = resp.json[0]
-        adminPublicFolder = resp.json[1]
 
         resp = self.request(
             path='/tale', method='POST', user=self.user,
@@ -273,15 +260,6 @@ class TaleTestCase(base.TestCase):
 
     def testTaleAccess(self):
         with httmock.HTTMock(mockOtherRequest):
-            # Grab the default user folders
-            resp = self.request(
-                path='/folder', method='GET', user=self.user, params={
-                    'parentType': 'user',
-                    'parentId': self.user['_id'],
-                    'sort': 'title',
-                    'sortdir': 1
-                })
-            folder = resp.json[1]
             # Create a new tale from a user image
             resp = self.request(
                 path='/tale', method='POST', user=self.user,
@@ -688,94 +666,6 @@ class TaleTestCase(base.TestCase):
         # just make sure that we get the right response
         self.assertStatus(resp, 200)
 
-    def _create_water_tale(self):
-        # register required data
-        self.data_collection = self.model('collection').createCollection(
-            'WholeTale Catalog', public=True, reuseExisting=True
-        )
-        catalog = self.model('folder').createFolder(
-            self.data_collection,
-            'WholeTale Catalog',
-            parentType='collection',
-            public=True,
-            reuseExisting=True,
-        )
-        # Tale map of values to check against in tests
-
-        def restore_catalog(parent, current):
-            for folder in current['folders']:
-                resp = self.request(
-                    path='/folder',
-                    method='POST',
-                    user=self.admin,
-                    params={
-                        'parentId': parent['_id'],
-                        'name': folder['name'],
-                        'metadata': json.dumps(folder['meta']),
-                    },
-                )
-                folderObj = resp.json
-                restore_catalog(folderObj, folder)
-
-            for obj in current['files']:
-                resp = self.request(
-                    path='/item',
-                    method='POST',
-                    user=self.admin,
-                    params={
-                        'folderId': parent['_id'],
-                        'name': obj['name'],
-                        'metadata': json.dumps(obj['meta']),
-                    },
-                )
-                item = resp.json
-                self.request(
-                    path='/file',
-                    method='POST',
-                    user=self.admin,
-                    params={
-                        'parentType': 'item',
-                        'parentId': item['_id'],
-                        'name': obj['name'],
-                        'size': obj['size'],
-                        'mimeType': obj['mimeType'],
-                        'linkUrl': obj['linkUrl'],
-                    },
-                )
-
-        with open(os.path.join(DATA_PATH, 'watertale_catalog.json'), 'r') as fp:
-            data = json.load(fp)
-            restore_catalog(catalog, data)
-
-        resp = self.request(
-            path='/dataset', method='GET', user=self.user)
-        self.assertStatusOk(resp)
-        ds = resp.json[0]
-
-        resp = self.request(
-            path='/item', method='GET', user=self.user,
-            params={'name': 'usco2000.xls', 'folderId': ds['_id']}
-        )
-        item = resp.json[0]
-
-        tale = self.model('tale', 'wholetale').createTale(
-            self.image,
-            [{
-                'itemId': item['_id'],
-                '_modelType': 'item',
-                'mountPath': item['name']
-            }], creator=self.user, title="Export Tale", public=True, authors=self.authors)
-        workspace = self.model('folder').load(tale['workspaceId'], force=True)
-        with urllib.request.urlopen(
-            'https://raw.githubusercontent.com/whole-tale/wt-design-docs/'
-            '3305527f7eb28d0e0364f4e54fd9e7155a2614d3'
-            '/users_guide/wt_quickstart.ipynb'
-        ) as url:
-            self.uploadFile(
-                name=item['name'], contents=url.read(), user=self.user,
-                parent=workspace, parentType='folder')
-        return tale
-
     def testExport(self):
         from server.lib.license import WholeTaleLicense
 
@@ -820,41 +710,6 @@ class TaleTestCase(base.TestCase):
         is_present = license_path in zip_files
         self.assertTrue(is_present)
         self.model('tale', 'wholetale').remove(tale)
-
-    def testExportBag(self):
-        tale = self._create_water_tale()
-        export_path = '/tale/{}/export'.format(str(tale['_id']))
-        resp = self.request(
-            path=export_path, method='GET', params={'taleFormat': 'bagit'},
-            isJson=False, user=self.user)
-        dirpath = tempfile.mkdtemp()
-        bag_file = os.path.join(dirpath, "{}.zip".format(str(tale['_id'])))
-        with open(bag_file, 'wb') as fp:
-            for content in resp.body:
-                fp.write(content)
-        temp_path = bdb.extract_bag(bag_file, temp=True)
-        try:
-            bdb.validate_bag_structure(temp_path)
-        except bagit.BagValidationError:
-            pass  # TODO: Goes without saying that we should not be doing that...
-        shutil.rmtree(dirpath)
-
-        # Test dataSetCitation
-        resp = self.request(
-            path='/tale/{_id}'.format(**tale), method='PUT',
-            type='application/json',
-            user=self.user, body=json.dumps({
-                'dataSet': [],
-                'imageId': str(tale['imageId']),
-                'public': tale['public'],
-            })
-        )
-        self.assertStatusOk(resp)
-        tale = resp.json
-        self.assertEqual(tale['dataSetCitation'], [])
-
-        self.model('tale', 'wholetale').remove(tale)
-        self.model('collection').remove(self.data_collection)
 
     @mock.patch('gwvolman.tasks.build_tale_image')
     def testImageBuild(self, it):
@@ -940,3 +795,246 @@ class TaleTestCase(base.TestCase):
         self.model('user').remove(self.admin)
         self.model('image', 'wholetale').remove(self.image)
         super(TaleTestCase, self).tearDown()
+
+
+class TaleWithWorkspaceTestCase(base.TestCase):
+
+    def setUp(self):
+        super(TaleWithWorkspaceTestCase, self).setUp()
+        from girder.plugins.wholetale.models.image import Image
+        users = ({
+            'email': 'root@dev.null',
+            'login': 'admin',
+            'firstName': 'Root',
+            'lastName': 'van Klompf',
+            'password': 'secret'
+        }, {
+            'email': 'joe@dev.null',
+            'login': 'joeregular',
+            'firstName': 'Joe',
+            'lastName': 'Regular',
+            'password': 'secret'
+        })
+        self.admin, self.user = [self.model('user').createUser(**user)
+                                 for user in users]
+        self.image = Image().createImage(
+            {'_id': ObjectId()},
+            'test image',
+            creator=self.admin,
+            public=True,
+            config=dict(template='base.tpl', buildpack='SomeBuildPack',
+                        user='someUser', port=8888, urlPath=''),
+        )
+
+        from girder.plugins.wt_home_dir import HOME_DIRS_APPS
+        self.homeDirsApps = HOME_DIRS_APPS  # nopep8
+        for e in self.homeDirsApps.entries():
+            provider = e.app.providerMap['/']['provider']
+            provider.updateAssetstore()
+
+        from girder.plugins.wt_home_dir.lib.WTAssetstoreTypes import WTAssetstoreTypes
+        self.ws_assetstore = Assetstore().find(
+            {'type': WTAssetstoreTypes.WT_TALE_ASSETSTORE}).next()
+
+        self.clearDAVAuthCache()
+
+    def clearDAVAuthCache(self):
+        # need to do this because the DB is wiped on every test, but the dav domain
+        # controller keeps a cache with users/tokens
+        for e in self.homeDirsApps.entries():
+            e.app.config['domaincontroller'].clearCache()
+
+    def _create_water_tale(self):
+        # register required data
+        self.data_collection = self.model('collection').createCollection(
+            'WholeTale Catalog', public=True, reuseExisting=True
+        )
+        catalog = self.model('folder').createFolder(
+            self.data_collection,
+            'WholeTale Catalog',
+            parentType='collection',
+            public=True,
+            reuseExisting=True,
+        )
+        # Tale map of values to check against in tests
+
+        def restore_catalog(parent, current):
+            for folder in current['folders']:
+                resp = self.request(
+                    path='/folder',
+                    method='POST',
+                    user=self.admin,
+                    params={
+                        'parentId': parent['_id'],
+                        'name': folder['name'],
+                        'metadata': json.dumps(folder['meta']),
+                    },
+                )
+                folderObj = resp.json
+                restore_catalog(folderObj, folder)
+
+            for obj in current['files']:
+                resp = self.request(
+                    path='/item',
+                    method='POST',
+                    user=self.admin,
+                    params={
+                        'folderId': parent['_id'],
+                        'name': obj['name'],
+                        'metadata': json.dumps(obj['meta']),
+                    },
+                )
+                item = resp.json
+                self.request(
+                    path='/file',
+                    method='POST',
+                    user=self.admin,
+                    params={
+                        'parentType': 'item',
+                        'parentId': item['_id'],
+                        'name': obj['name'],
+                        'size': obj['size'],
+                        'mimeType': obj['mimeType'],
+                        'linkUrl': obj['linkUrl'],
+                    },
+                )
+
+        with open(os.path.join(DATA_PATH, 'watertale_catalog.json'), 'r') as fp:
+            data = json.load(fp)
+            restore_catalog(catalog, data)
+
+        resp = self.request(
+            path='/dataset', method='GET', user=self.user)
+        self.assertStatusOk(resp)
+        ds = resp.json[0]
+
+        resp = self.request(
+            path='/item', method='GET', user=self.user,
+            params={'name': 'usco2000.xls', 'folderId': ds['_id']}
+        )
+        item = resp.json[0]
+
+        authors = [
+            {
+                'firstName': 'Charles',
+                'lastName': 'Darwmin',
+                'orcid': 'https://orcid.org/000-000'
+            },
+            {
+                'firstName': 'Thomas',
+                'lastName': 'Edison',
+                'orcid': 'https://orcid.org/111-111'
+            }
+        ]
+
+        tale = self.model('tale', 'wholetale').createTale(
+            self.image,
+            [{
+                'itemId': item['_id'],
+                '_modelType': 'item',
+                'mountPath': item['name']
+            }], creator=self.user, title="Export Tale", public=True, authors=authors)
+        workspace = self.model('folder').load(tale['workspaceId'], force=True)
+        with urllib.request.urlopen(
+            'https://raw.githubusercontent.com/whole-tale/wt-design-docs/'
+            '3305527f7eb28d0e0364f4e54fd9e7155a2614d3'
+            '/users_guide/wt_quickstart.ipynb'
+        ) as url:
+            self.uploadFile(
+                name=item['name'], contents=url.read(), user=self.user,
+                parent=workspace, parentType='folder')
+        return tale
+
+    def testTaleCopy(self):
+        from girder.plugins.wholetale.models.tale import Tale
+        from girder.plugins.wholetale.constants import TaleStatus
+        from girder.plugins.jobs.models.job import Job
+        from girder.plugins.jobs.constants import JobStatus
+        tale = Tale().createTale(
+            self.image,
+            [],
+            creator=self.admin,
+            public=True
+        )
+        workspace = Tale().createWorkspace(tale)
+        # Below workarounds a bug, it will be addressed elsewhere.
+        workspace = Folder().setPublic(workspace, True, save=True)
+
+        adapter = assetstore_utilities.getAssetstoreAdapter(self.ws_assetstore)
+        size = 101
+        data = BytesIO(b' ' * size)
+        files = []
+        files.append(Upload().uploadFromFile(
+            data, size, 'file01.txt', parentType='folder', parent=workspace,
+            assetstore=self.ws_assetstore))
+        fullPath = adapter.fullPath(files[0])
+
+        # Create a copy
+        resp = self.request(
+            path='/tale/{_id}/copy'.format(**tale), method='POST',
+            user=self.user
+        )
+        self.assertStatusOk(resp)
+
+        new_tale = resp.json
+        self.assertFalse(new_tale['public'])
+        self.assertEqual(new_tale['dataSet'], tale['dataSet'])
+        self.assertEqual(new_tale['copyOfTale'], str(tale['_id']))
+        self.assertEqual(new_tale['imageId'], str(tale['imageId']))
+        self.assertEqual(new_tale['creatorId'], str(self.user['_id']))
+        # TODO: Delay job execution somehow
+        # self.assertEqual(new_tale['status'], TaleStatus.PREPARING)
+
+        copied_file_path = re.sub(workspace['name'], new_tale['_id'], fullPath)
+        job = Job().findOne({'type': 'wholetale.copy_workspace'})
+        for i in range(10):
+            job = Job().load(job['_id'], force=True)
+            if job['status'] == JobStatus.SUCCESS:
+                break
+            time.sleep(0.1)
+        self.assertTrue(os.path.isfile(copied_file_path))
+        self.assertEqual(new_tale['status'], TaleStatus.READY)
+
+        Tale().remove(new_tale)
+        Tale().remove(tale)
+
+    def testExportBag(self):
+        tale = self._create_water_tale()
+        export_path = '/tale/{}/export'.format(str(tale['_id']))
+        resp = self.request(
+            path=export_path, method='GET', params={'taleFormat': 'bagit'},
+            isJson=False, user=self.user)
+        dirpath = tempfile.mkdtemp()
+        bag_file = os.path.join(dirpath, "{}.zip".format(str(tale['_id'])))
+        with open(bag_file, 'wb') as fp:
+            for content in resp.body:
+                fp.write(content)
+        temp_path = bdb.extract_bag(bag_file, temp=True)
+        try:
+            bdb.validate_bag_structure(temp_path)
+        except bagit.BagValidationError:
+            pass  # TODO: Goes without saying that we should not be doing that...
+        shutil.rmtree(dirpath)
+
+        # Test dataSetCitation
+        resp = self.request(
+            path='/tale/{_id}'.format(**tale), method='PUT',
+            type='application/json',
+            user=self.user, body=json.dumps({
+                'dataSet': [],
+                'imageId': str(tale['imageId']),
+                'public': tale['public'],
+            })
+        )
+        self.assertStatusOk(resp)
+        tale = resp.json
+        self.assertEqual(tale['dataSetCitation'], [])
+
+        self.model('tale', 'wholetale').remove(tale)
+        self.model('collection').remove(self.data_collection)
+
+    def tearDown(self):
+        self.model('user').remove(self.user)
+        self.model('user').remove(self.admin)
+        self.model('image', 'wholetale').remove(self.image)
+        super(TaleWithWorkspaceTestCase, self).tearDown()
