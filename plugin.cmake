@@ -12,6 +12,7 @@ add_python_test(tale
   EXTERNAL_DATA
   plugins/wholetale/5c92fbd472a9910001fbff72.zip
   plugins/wholetale/tale_import_zip.txt
+  plugins/wholetale/tale_import_binder.txt
 )
 add_python_test(instance PLUGIN wholetale)
 add_python_test(constants PLUGIN wholetale)

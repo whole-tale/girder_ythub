@@ -14,10 +14,10 @@ import vcr
 import zipfile
 import shutil
 from tests import base
-from .tests_helpers import mockOtherRequest
 
 from girder.utility import assetstore_utilities
 from girder.models.assetstore import Assetstore
+from .tests_helpers import mockOtherRequest
 from girder.models.item import Item
 from girder.models.upload import Upload
 from girder.models.folder import Folder
@@ -527,7 +527,7 @@ class TaleTestCase(base.TestCase):
             resp = self.request(
                 path='/tale/import', method='POST', user=self.user,
                 params={'url': 'http://blah.com/', 'spawn': False,
-                        'imageId': self.image['_id']}
+                        'imageId': self.image['_id'], 'asTale': False}
             )
             self.assertStatusOk(resp)
             job_call = mock_apply_async.call_args_list[-1][-1]
@@ -537,6 +537,57 @@ class TaleTestCase(base.TestCase):
             )
             self.assertEqual(job_call['kwargs'], {'spawn': False})
             self.assertEqual(job_call['headers']['girder_job_title'], 'Import Tale')
+
+    @vcr.use_cassette(os.path.join(DATA_PATH, 'tale_import_binder.txt'))
+    def testTaleImportBinder(self):
+        image = self.model('image', 'wholetale').createImage(
+            name="Jupyter Classic", creator=self.user, public=True,
+            config=dict(template='base.tpl', buildpack='PythonBuildPack',
+                        user='someUser', port=8888, urlPath=''))
+
+        from girder.plugins.wholetale.constants import PluginSettings
+        resp = self.request(
+            '/system/setting', user=self.admin, method='PUT',
+            params={'list': json.dumps([
+                {
+                    'key': PluginSettings.DATAVERSE_URL,
+                    'value': 'https://dev2.dataverse.org'
+                }
+            ])}
+        )
+        self.assertStatusOk(resp)
+
+        with mock.patch('fs.copy.copy_fs') as mock_copy:
+            resp = self.request(
+                path='/tale/import', method='POST', user=self.user,
+                params={
+                    'url': (
+                        'https://dev2.dataverse.org/dataset.xhtml?'
+                        'persistentId=doi:10.5072/FK2/NYNHAM'
+                    ),
+                    'spawn': False, 'imageId': self.image['_id'], 'asTale': True
+                }
+            )
+
+            self.assertStatusOk(resp)
+            job = resp.json
+
+            from girder.plugins.jobs.models.job import Job
+            self.assertEqual(job['type'], 'wholetale.import_binder')
+            for i in range(300):
+                if job['status'] in {JobStatus.SUCCESS, JobStatus.ERROR}:
+                    break
+                time.sleep(0.1)
+                job = Job().load(job['_id'], force=True)
+            self.assertEqual(job['status'], JobStatus.SUCCESS)
+        mock_copy.assert_called_once()
+        # TODO: make it more extensive...
+        self.assertTrue(
+            self.model('tale', 'wholetale').findOne(
+                {'title': 'A Tale for "Dataverse IRC Metrics"'}
+            ) is not None
+        )
+        self.model('image', 'wholetale').remove(image)
 
     @vcr.use_cassette(os.path.join(DATA_PATH, 'tale_import_zip.txt'))
     def testTaleImportZip(self):
