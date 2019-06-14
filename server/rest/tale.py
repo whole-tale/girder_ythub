@@ -293,7 +293,7 @@ class Tale(Resource):
                     async=True,
                     module="girder.plugins.wholetale.tasks.import_binder",
                     args=(taleKwargs, lookupKwargs),
-                    kwargs={"user": user},
+                    kwargs={"user": user, "spawn": spawn},
                 )
                 Job().scheduleJob(job)
                 return job

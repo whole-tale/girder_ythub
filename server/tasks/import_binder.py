@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import json
 import os
 import stat
 import sys
 import textwrap
+import time
 import traceback
 from webdavfs.webdavfs import WebDAVFS
 from fs.base import FS
@@ -21,14 +23,15 @@ from girder_client import GirderClient
 from girder.constants import AccessType
 from girder.models.folder import Folder
 from girder.models.token import Token
-from girder.utility import config
+from girder.utility import config, JsonEncoder
 from girder.plugins.jobs.constants import JobStatus
 from girder.plugins.jobs.models.job import Job
 
-from ..constants import CATALOG_NAME
+from ..constants import CATALOG_NAME, InstanceStatus
 from ..lib import pids_to_entities, register_dataMap
 from ..lib.dataone import DataONELocations  # TODO: get rid of it
 from ..models.image import Image
+from ..models.instance import Instance
 from ..models.tale import Tale
 from ..utils import getOrCreateRootFolder
 
@@ -37,11 +40,12 @@ def run(job):
     jobModel = Job()
     jobModel.updateJob(job, status=JobStatus.RUNNING)
 
-    progressTotal = 4
-
     tale_kwargs, lookup_kwargs = job["args"]
     user = job["kwargs"]["user"]
-    # spawn = job["kwargs"]["spawn"]
+    spawn = job["kwargs"]["spawn"]
+
+    progressTotal = 4 + int(spawn)
+    progressCurrent = 0
 
     try:
         # 1. Register data using url
@@ -49,7 +53,7 @@ def run(job):
             job,
             status=JobStatus.RUNNING,
             progressTotal=progressTotal,
-            progressCurrent=1,
+            progressCurrent=progressCurrent + 1,
             progressMessage="Registering external data",
         )
         dataIds = lookup_kwargs.pop('dataId')
@@ -97,7 +101,7 @@ def run(job):
             status=JobStatus.RUNNING,
             log="Creating a Tale object",
             progressTotal=progressTotal,
-            progressCurrent=2,
+            progressCurrent=progressCurrent + 1,
             progressMessage="Creating a Tale object",
         )
 
@@ -135,7 +139,7 @@ def run(job):
             status=JobStatus.RUNNING,
             log="Copying files to workspace",
             progressTotal=progressTotal,
-            progressCurrent=3,
+            progressCurrent=progressCurrent + 1,
             progressMessage="Copying files to workspace",
         )
         token = Token().createToken(user=user, days=0.5)
@@ -153,23 +157,62 @@ def run(job):
             copy_fs(source_fs, destination_fs)
 
         Session().deleteSession(user, session)
-        Token().remove(token)
 
-        jobModel.updateJob(
-            job,
-            status=JobStatus.SUCCESS,
-            log="Tale created",
-            progressTotal=progressTotal,
-            progressCurrent=4,
-            progressMessage="Tale created",
-        )
+        if spawn:
+            jobModel.updateJob(
+                job,
+                status=JobStatus.RUNNING,
+                log="Creating a Tale container",
+                progressTotal=progressTotal,
+                progressCurrent=progressCurrent + 1,
+                progressMessage="Creating a Tale container",
+            )
 
-        # TODO: use spawn?
+            instance = Instance().createInstance(tale, user, token, spawn=spawn)
+
+            sleep_step = 10
+            timeout = 15 * 60
+            while instance['status'] == InstanceStatus.LAUNCHING and timeout > 0:
+                time.sleep(sleep_step)
+                instance = Instance().load(instance['_id'], user=user)
+                timeout -= sleep_step
+            if timeout <= 0:
+                raise RuntimeError(
+                    "Failed to launch instance {}".format(instance["_id"])
+                )
+        else:
+            instance = None
+
     except Exception:
         t, val, tb = sys.exc_info()
         log = "%s: %s\n%s" % (t.__name__, repr(val), traceback.extract_tb(tb))
-        jobModel.updateJob(job, status=JobStatus.ERROR, log=log)
+        jobModel.updateJob(
+            job,
+            progressTotal=progressTotal,
+            progressCurrent=progressTotal,
+            progressMessage="Task failed",
+            status=JobStatus.ERROR,
+            log=log,
+        )
         raise
+
+    # To get rid of ObjectId's, dates etc.
+    tale = json.loads(
+        json.dumps(tale, sort_keys=True, allow_nan=False, cls=JsonEncoder)
+    )
+    instance = json.loads(
+        json.dumps(instance, sort_keys=True, allow_nan=False, cls=JsonEncoder)
+    )
+
+    jobModel.updateJob(
+        job,
+        status=JobStatus.SUCCESS,
+        log="Tale created",
+        progressTotal=progressTotal,
+        progressCurrent=progressTotal,
+        progressMessage="Tale created",
+        otherFields={"result": {"tale": tale, "instance": instance}},
+    )
 
 
 class DMSFS(FS):
