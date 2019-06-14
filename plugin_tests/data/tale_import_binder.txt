@@ -14,7 +14,7 @@ interactions:
       Connection: [close]
       Content-Length: ['85']
       Content-Type: [application/json]
-      Date: ['Thu, 13 Jun 2019 20:56:22 GMT']
+      Date: ['Fri, 14 Jun 2019 15:50:41 GMT']
       Server: [Apache/2.4.6 (CentOS) OpenSSL/1.0.2k-fips]
     status: {code: 200, message: OK}
 - request:
@@ -42,9 +42,9 @@ interactions:
       Connection: [close]
       Content-Length: ['6513']
       Content-Type: [application/json]
-      Date: ['Thu, 13 Jun 2019 20:56:22 GMT']
+      Date: ['Fri, 14 Jun 2019 15:50:41 GMT']
       Server: [Apache/2.4.6 (CentOS) OpenSSL/1.0.2k-fips]
-      Set-Cookie: [JSESSIONID=2a0908021493a2c45b6f11541717; Path=/; Secure; HttpOnly]
+      Set-Cookie: [JSESSIONID=6af0f729295ad30cd30065a955d8; Path=/; Secure; HttpOnly]
     status: {code: 200, message: OK}
 - request:
     body: null
@@ -71,78 +71,8 @@ interactions:
       Connection: [close]
       Content-Length: ['6513']
       Content-Type: [application/json]
-      Date: ['Thu, 13 Jun 2019 20:56:23 GMT']
+      Date: ['Fri, 14 Jun 2019 15:50:41 GMT']
       Server: [Apache/2.4.6 (CentOS) OpenSSL/1.0.2k-fips]
-      Set-Cookie: [JSESSIONID=2a09141cfdba1b0be2e816945fb7; Path=/; Secure; HttpOnly]
-    status: {code: 200, message: OK}
-- request:
-    body: null
-    headers:
-      Accept: ['*/*']
-      Accept-Encoding: ['gzip, deflate']
-      Connection: [keep-alive]
-      Girder-Token: [affEVYUIP4r1nFx0qjGzG7o18zfXk3kEhR1mfmzFRjKP1QOXOvlfr1E9ekJ5QW0O]
-      User-Agent: [python-requests/2.21.0]
-    method: GET
-    uri: http://localhost:20200/api/v1/dm/session/5d02b8775de525773cc09876?loadObjects=true
-  response:
-    body: {string: '{"_accessLevel": 2, "_id": "5d02b8775de525773cc09876", "_modelType":
-        "session", "dataSet": [{"itemId": "5d02b8775de525773cc09866", "mountPath":
-        "/apt.txt", "obj": {"_id": "5d02b8775de525773cc09866", "baseParentId": "5d02b8765de525773cc09862",
-        "baseParentType": "collection", "created": "2019-06-13T20:56:23.187000+00:00",
-        "creatorId": "5d02b8765de525773cc09856", "description": "", "folderId": "5d02b8775de525773cc09865",
-        "lowerName": "apt.txt", "meta": {"identifier": "10.5072/FK2/NYNHAM", "provider":
-        "Dataverse"}, "name": "apt.txt", "size": 5, "updated": "2019-06-13T20:56:23.191000+00:00"},
-        "type": "item"}, {"itemId": "5d02b8775de525773cc09868", "mountPath": "/index.ipynb",
-        "obj": {"_id": "5d02b8775de525773cc09868", "baseParentId": "5d02b8765de525773cc09862",
-        "baseParentType": "collection", "created": "2019-06-13T20:56:23.208000+00:00",
-        "creatorId": "5d02b8765de525773cc09856", "description": "", "folderId": "5d02b8775de525773cc09865",
-        "lowerName": "index.ipynb", "meta": {"identifier": "10.5072/FK2/NYNHAM", "provider":
-        "Dataverse"}, "name": "index.ipynb", "size": 20183, "updated": "2019-06-13T20:56:23.212000+00:00"},
-        "type": "item"}, {"itemId": "5d02b8775de525773cc0986a", "mountPath": "/install.R",
-        "obj": {"_id": "5d02b8775de525773cc0986a", "baseParentId": "5d02b8765de525773cc09862",
-        "baseParentType": "collection", "created": "2019-06-13T20:56:23.226000+00:00",
-        "creatorId": "5d02b8765de525773cc09856", "description": "", "folderId": "5d02b8775de525773cc09865",
-        "lowerName": "install.r", "meta": {"identifier": "10.5072/FK2/NYNHAM", "provider":
-        "Dataverse"}, "name": "install.R", "size": 110, "updated": "2019-06-13T20:56:23.228000+00:00"},
-        "type": "item"}, {"itemId": "5d02b8775de525773cc0986c", "mountPath": "/irclog.tsv",
-        "obj": {"_id": "5d02b8775de525773cc0986c", "baseParentId": "5d02b8765de525773cc09862",
-        "baseParentType": "collection", "created": "2019-06-13T20:56:23.236000+00:00",
-        "creatorId": "5d02b8765de525773cc09856", "description": "", "folderId": "5d02b8775de525773cc09865",
-        "lowerName": "irclog.tsv", "meta": {"identifier": "10.5072/FK2/NYNHAM", "provider":
-        "Dataverse"}, "name": "irclog.tsv", "size": 9694487, "updated": "2019-06-13T20:56:23.238000+00:00"},
-        "type": "item"}, {"itemId": "5d02b8775de525773cc0986e", "mountPath": "/README.md",
-        "obj": {"_id": "5d02b8775de525773cc0986e", "baseParentId": "5d02b8765de525773cc09862",
-        "baseParentType": "collection", "created": "2019-06-13T20:56:23.246000+00:00",
-        "creatorId": "5d02b8765de525773cc09856", "description": "", "folderId": "5d02b8775de525773cc09865",
-        "lowerName": "readme.md", "meta": {"identifier": "10.5072/FK2/NYNHAM", "provider":
-        "Dataverse"}, "name": "README.md", "size": 430, "updated": "2019-06-13T20:56:23.248000+00:00"},
-        "type": "item"}, {"itemId": "5d02b8775de525773cc09870", "mountPath": "/runtime.txt",
-        "obj": {"_id": "5d02b8775de525773cc09870", "baseParentId": "5d02b8765de525773cc09862",
-        "baseParentType": "collection", "created": "2019-06-13T20:56:23.256000+00:00",
-        "creatorId": "5d02b8765de525773cc09856", "description": "", "folderId": "5d02b8775de525773cc09865",
-        "lowerName": "runtime.txt", "meta": {"identifier": "10.5072/FK2/NYNHAM", "provider":
-        "Dataverse"}, "name": "runtime.txt", "size": 13, "updated": "2019-06-13T20:56:23.258000+00:00"},
-        "type": "item"}, {"itemId": "5d02b8775de525773cc09872", "mountPath": "/superuser_graph.ipynb",
-        "obj": {"_id": "5d02b8775de525773cc09872", "baseParentId": "5d02b8765de525773cc09862",
-        "baseParentType": "collection", "created": "2019-06-13T20:56:23.267000+00:00",
-        "creatorId": "5d02b8765de525773cc09856", "description": "", "folderId": "5d02b8775de525773cc09865",
-        "lowerName": "superuser_graph.ipynb", "meta": {"identifier": "10.5072/FK2/NYNHAM",
-        "provider": "Dataverse"}, "name": "superuser_graph.ipynb", "size": 39258,
-        "updated": "2019-06-13T20:56:23.269000+00:00"}, "type": "item"}, {"itemId":
-        "5d02b8775de525773cc09874", "mountPath": "/superuser_graph-monthly.ipynb",
-        "obj": {"_id": "5d02b8775de525773cc09874", "baseParentId": "5d02b8765de525773cc09862",
-        "baseParentType": "collection", "created": "2019-06-13T20:56:23.278000+00:00",
-        "creatorId": "5d02b8765de525773cc09856", "description": "", "folderId": "5d02b8775de525773cc09865",
-        "lowerName": "superuser_graph-monthly.ipynb", "meta": {"identifier": "10.5072/FK2/NYNHAM",
-        "provider": "Dataverse"}, "name": "superuser_graph-monthly.ipynb", "size":
-        36087, "updated": "2019-06-13T20:56:23.279000+00:00"}, "type": "item"}], "ownerId":
-        "5d02b8765de525773cc09856", "seq": 0, "taleId": null}'}
-    headers:
-      Allow: ['DELETE, GET, HEAD, OPTIONS, PATCH, POST, PUT']
-      Content-Length: ['4493']
-      Content-Type: [application/json]
-      Date: ['Thu, 13 Jun 2019 20:56:23 GMT']
-      Server: [Girder 2.5.0]
+      Set-Cookie: [JSESSIONID=6af103017379ae687467904cfb89; Path=/; Secure; HttpOnly]
     status: {code: 200, message: OK}
 version: 1
