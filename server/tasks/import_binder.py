@@ -123,6 +123,12 @@ def run(job):
                     "images/whole_tale_logo.png"
                 ),
             )
+        if "illustration" not in tale_kwargs:
+            tale_kwargs["illustration"] = (
+                'https://raw.githubusercontent.com/'
+                'whole-tale/dashboard/master/public/'
+                'images/demo-graph2.jpg'
+            )
 
         tale = Tale().createTale(
             image,
