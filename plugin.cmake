@@ -30,6 +30,7 @@ add_python_test(dataverse
   PLUGIN wholetale
   EXTERNAL_DATA
   plugins/wholetale/dataverse_lookup.txt
+  plugins/wholetale/dataverse_hierarchy.txt
   plugins/wholetale/dataverse_listFiles.json
 )
 add_python_test(integration PLUGIN wholetale)
