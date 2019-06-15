@@ -65,6 +65,7 @@ def dataverseExternalTools(self, fileId, siteUrl, apiToken, fullDataset):
                 scheme=site.scheme, netloc=site.netloc, doi=doi
             )
             query['uri'] = url
+        query['asTale'] = True
     except (HTTPError, URLError):
         # This doesn't bode well, but let's fail later when tale import happens
         pass
