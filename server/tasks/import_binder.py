@@ -163,7 +163,6 @@ def run(job):
             copy_fs(source_fs, destination_fs)
 
         Session().deleteSession(user, session)
-
         if spawn:
             jobModel.updateJob(
                 job,

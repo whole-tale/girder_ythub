@@ -1,0 +1,52 @@
+interactions:
+- request:
+    body: null
+    headers:
+      Connection: [close]
+      Host: [dataverse.harvard.edu]
+      User-Agent: [Python-urllib/3.6]
+    method: GET
+    uri: https://dataverse.harvard.edu/api/search?q=entityId:3020113
+  response:
+    body: {string: '{"status":"OK","data":{"q":"entityId:3020113","total_count":1,"start":0,"spelling_alternatives":{},"items":[{"name":"data_study2.tab","type":"file","url":"https://dataverse.harvard.edu/api/access/datafile/3020113","file_id":"3020113","published_at":"2017-07-05T13:25:21Z","file_type":"Tab-Delimited","file_content_type":"text/tab-separated-values","size_in_bytes":97247,"md5":"223e50347f3443a70a0209eaa9b3f9bc","checksum":{"type":"MD5","value":"223e50347f3443a70a0209eaa9b3f9bc"},"unf":"UNF:6:oav9YMfSTA7HCJW0daUKGw==","file_persistent_id":"doi:10.7910/DVN/R3GZZW/YTPHP6","dataset_name":"Replication
+        Data for: The Economic Consequences of Partisanship in a Polarized Era","dataset_id":"3011019","dataset_persistent_id":"doi:10.7910/DVN/R3GZZW","dataset_citation":"McConnell,
+        Christopher; Margalit, Yotam; Malhotra, Neil; Levendusky, Matthew, 2017, \"Replication
+        Data for: The Economic Consequences of Partisanship in a Polarized Era\",
+        https://doi.org/10.7910/DVN/R3GZZW, Harvard Dataverse, V1, UNF:6:f4jgHeelNfPN7J+6Gkp2UA==
+        [fileUNF]"}],"count_in_response":1}}'}
+    headers:
+      Access-Control-Allow-Origin: ['*']
+      Cache-control: [no-cache="set-cookie"]
+      Connection: [Close]
+      Content-Length: ['1062']
+      Content-Type: [application/json]
+      Date: ['Mon, 17 Jun 2019 20:23:11 GMT']
+      Server: [Apache/2.4.6 (Red Hat Enterprise Linux) OpenSSL/1.0.2k-fips]
+      Set-Cookie: [AWSELB=EB1179591E49E298C6825A3028F74991071DEE12D3FE010BDBAE7AE7E438B31BFA0246B9F2DBD3EC37C4E69D8B958E3FBF8CF814030B5CB9749AB70FE33A8BB5BB36A149CB;PATH=/;MAX-AGE=28800]
+    status: {code: 200, message: OK}
+- request:
+    body: null
+    headers:
+      Connection: [close]
+      Host: [dataverse.harvard.edu]
+      User-Agent: [Python-urllib/3.6]
+    method: GET
+    uri: https://dataverse.harvard.edu/api/search?q=entityId:3020113
+  response:
+    body: {string: '{"status":"OK","data":{"q":"entityId:3020113","total_count":1,"start":0,"spelling_alternatives":{},"items":[{"name":"data_study2.tab","type":"file","url":"https://dataverse.harvard.edu/api/access/datafile/3020113","file_id":"3020113","published_at":"2017-07-05T13:25:21Z","file_type":"Tab-Delimited","file_content_type":"text/tab-separated-values","size_in_bytes":97247,"md5":"223e50347f3443a70a0209eaa9b3f9bc","checksum":{"type":"MD5","value":"223e50347f3443a70a0209eaa9b3f9bc"},"unf":"UNF:6:oav9YMfSTA7HCJW0daUKGw==","file_persistent_id":"doi:10.7910/DVN/R3GZZW/YTPHP6","dataset_name":"Replication
+        Data for: The Economic Consequences of Partisanship in a Polarized Era","dataset_id":"3011019","dataset_persistent_id":"doi:10.7910/DVN/R3GZZW","dataset_citation":"McConnell,
+        Christopher; Margalit, Yotam; Malhotra, Neil; Levendusky, Matthew, 2017, \"Replication
+        Data for: The Economic Consequences of Partisanship in a Polarized Era\",
+        https://doi.org/10.7910/DVN/R3GZZW, Harvard Dataverse, V1, UNF:6:f4jgHeelNfPN7J+6Gkp2UA==
+        [fileUNF]"}],"count_in_response":1}}'}
+    headers:
+      Access-Control-Allow-Origin: ['*']
+      Cache-control: [no-cache="set-cookie"]
+      Connection: [Close]
+      Content-Length: ['1062']
+      Content-Type: [application/json]
+      Date: ['Mon, 17 Jun 2019 20:23:12 GMT']
+      Server: [Apache/2.4.6 (Red Hat Enterprise Linux) OpenSSL/1.0.2k-fips]
+      Set-Cookie: [AWSELB=EB1179591E49E298C6825A3028F74991071DEE12D3CF6A1B0A2CD5F2F144400DE0E06A10F0DBD3EC37C4E69D8B958E3FBF8CF81403222DF6AABE0F6509EF79AB1D548B7265;PATH=/;MAX-AGE=28800]
+    status: {code: 200, message: OK}
+version: 1

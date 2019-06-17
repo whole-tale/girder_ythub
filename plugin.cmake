@@ -9,10 +9,13 @@ add_python_test(harvester
 add_python_test(image PLUGIN wholetale)
 add_python_test(tale
   PLUGIN wholetale
+)
+add_python_test(import
+  PLUGIN wholetale
   EXTERNAL_DATA
   plugins/wholetale/5c92fbd472a9910001fbff72.zip
-  plugins/wholetale/tale_import_zip.txt
   plugins/wholetale/tale_import_binder.txt
+  plugins/wholetale/tale_import_zip.txt
 )
 add_python_test(instance PLUGIN wholetale)
 add_python_test(constants PLUGIN wholetale)
@@ -38,7 +41,11 @@ add_python_test(dataverse
   plugins/wholetale/dataverse_lookup.txt
   plugins/wholetale/dataverse_listFiles.json
 )
-add_python_test(integration PLUGIN wholetale)
+add_python_test(integration
+  PLUGIN wholetale
+  EXTERNAL_DATA
+  plugins/wholetale/dataverse_integration.txt
+)
 add_python_test(repository
   PLUGIN wholetale
 )
