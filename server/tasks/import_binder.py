@@ -72,7 +72,7 @@ def run(job):
         # Warning: We assume it's coming from a provider that creates a root folder for ds,
         # i.e. it's not HTTP/HTTPS resource, which makes sense at the time when I'm writing this
         # since we support only D1 and DV
-        data_folder = Folder().load(imported_data[0], user=user)
+        data_folder = Folder().load(imported_data[0], user=user, level=AccessType.READ)
         # Create a dataset with the content of root ds folder, so that it looks nicely and it's easy
         # to copy to workspace later on
         data_set = [
