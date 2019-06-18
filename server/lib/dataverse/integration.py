@@ -15,16 +15,36 @@ from .provider import DataverseImportProvider
 @access.public
 @autoDescribeRoute(
     Description('Convert external tools request and bounce it to the dashboard.')
-    .param('fileId', 'The Dataverse database ID of a file the external tool has '
-           'been launched on.', required=True)
-    .param('siteUrl', 'The URL of the Dataverse installation that hosts the file '
-           'with the fileId above', required=True)
-    .param('apiToken', 'The Dataverse API token of the user launching the external'
-           ' tool, if available.', required=False)
+    .param(
+        'fileId',
+        'The Dataverse database ID of a file the external tool has '
+        'been launched on.',
+        required=True,
+    )
+    .param(
+        'siteUrl',
+        'The URL of the Dataverse installation that hosts the file '
+        'with the fileId above',
+        required=True,
+    )
+    .param(
+        'apiToken',
+        'The Dataverse API token of the user launching the external'
+        ' tool, if available.',
+        required=False,
+    )
+    .param(
+        'fullDataset',
+        'If True, imports the full dataset that '
+        'contains the file defined by fileId.',
+        dataType='boolean',
+        default=True,
+        required=False,
+    )
     .notes('apiToken is currently ignored.')
 )
 @boundHandler()
-def dataverseExternalTools(self, fileId, siteUrl, apiToken):
+def dataverseExternalTools(self, fileId, siteUrl, apiToken, fullDataset):
     if not validators.url(siteUrl):
         raise RestException('Not a valid URL: siteUrl')
     try:
@@ -38,8 +58,14 @@ def dataverseExternalTools(self, fileId, siteUrl, apiToken):
     )
     query = {'uri': url}
     try:
-        title, _, _ = DataverseImportProvider._parse_access_url(urlparse(url))
+        title, _, doi = DataverseImportProvider._parse_access_url(urlparse(url))
         query['name'] = title
+        if fullDataset:
+            url = "{scheme}://{netloc}/dataset.xhtml?persistentId=doi:{doi}".format(
+                scheme=site.scheme, netloc=site.netloc, doi=doi
+            )
+            query['uri'] = url
+        query['asTale'] = True
     except (HTTPError, URLError):
         # This doesn't bode well, but let's fail later when tale import happens
         pass
@@ -47,9 +73,7 @@ def dataverseExternalTools(self, fileId, siteUrl, apiToken):
     # TODO: Make base url a plugin setting, defaulting to dashboard.<domain>
     dashboard_url = os.environ.get('DASHBOARD_URL', 'https://dashboard.wholetale.org')
     location = urlunparse(
-        urlparse(dashboard_url)._replace(
-            path='/compose',
-            query=urlencode(query))
+        urlparse(dashboard_url)._replace(path='/compose', query=urlencode(query))
     )
     setResponseHeader('Location', location)
     cherrypy.response.status = 303

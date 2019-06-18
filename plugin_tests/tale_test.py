@@ -10,14 +10,13 @@ import re
 import time
 import urllib.request
 import tempfile
-import vcr
 import zipfile
 import shutil
 from tests import base
-from .tests_helpers import mockOtherRequest
 
 from girder.utility import assetstore_utilities
 from girder.models.assetstore import Assetstore
+from .tests_helpers import mockOtherRequest
 from girder.models.item import Item
 from girder.models.upload import Upload
 from girder.models.folder import Folder
@@ -517,58 +516,6 @@ class TaleTestCase(base.TestCase):
         self.assertEqual(tale['licenseSPDX'], WholeTaleLicense.default_spdx())
         self.assertTrue(isinstance(tale['authors'], list))
         self.model('tale', 'wholetale').remove(tale)
-
-    @mock.patch('gwvolman.tasks.import_tale')
-    def testTaleImport(self, it):
-        with mock.patch('girder_worker.task.celery.Task.apply_async', spec=True) \
-                as mock_apply_async:
-            # mock_apply_async.return_value = 1
-            mock_apply_async().job.return_value = json.dumps({'job': 1, 'blah': 2})
-            resp = self.request(
-                path='/tale/import', method='POST', user=self.user,
-                params={'url': 'http://blah.com/', 'spawn': False,
-                        'imageId': self.image['_id']}
-            )
-            self.assertStatusOk(resp)
-            job_call = mock_apply_async.call_args_list[-1][-1]
-            self.assertEqual(
-                job_call['args'],
-                ({'dataId': ['http://blah.com/']}, {'imageId': str(self.image['_id'])})
-            )
-            self.assertEqual(job_call['kwargs'], {'spawn': False})
-            self.assertEqual(job_call['headers']['girder_job_title'], 'Import Tale')
-
-    @vcr.use_cassette(os.path.join(DATA_PATH, 'tale_import_zip.txt'))
-    def testTaleImportZip(self):
-        image = self.model('image', 'wholetale').createImage(
-            name="Jupyter Classic", creator=self.user, public=True,
-            config=dict(template='base.tpl', buildpack='PythonBuildPack',
-                        user='someUser', port=8888, urlPath=''))
-        with mock.patch('fs.copy.copy_fs') as mock_copy:
-            with open(os.path.join(DATA_PATH, '5c92fbd472a9910001fbff72.zip'), 'rb') as fp:
-                resp = self.request(
-                    path='/tale/import', method='POST', user=self.user,
-                    type='application/zip',
-                    body=fp.read(),
-                )
-
-            self.assertStatusOk(resp)
-            job = resp.json
-
-            from girder.plugins.jobs.models.job import Job
-            self.assertEqual(job['type'], 'wholetale.import_tale')
-            for i in range(300):
-                if job['status'] in {JobStatus.SUCCESS, JobStatus.ERROR}:
-                    break
-                time.sleep(0.1)
-                job = Job().load(job['_id'], force=True)
-            self.assertEqual(job['status'], JobStatus.SUCCESS)
-        mock_copy.assert_called_once()
-        # TODO: make it more extensive...
-        self.assertTrue(
-            self.model('tale', 'wholetale').findOne({'title': 'Water Tale'}) is not None
-        )
-        self.model('image', 'wholetale').remove(image)
 
     def testTaleUpdate(self):
         from server.lib.license import WholeTaleLicense

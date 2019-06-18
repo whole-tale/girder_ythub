@@ -4,6 +4,7 @@ kombu==4.2.2post1
 idna==2.7  # pin for requests
 requests==2.20.1  # https://github.com/requests/requests/issues/4890
 redis==2.10.6
+git+https://github.com/whole-tale/girderfs@master#egg=girderfs
 git+https://github.com/whole-tale/gwvolman@master#egg=gwvolman
 dataone.common==3.2.0
 dataone.libclient==3.2.0
