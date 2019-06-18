@@ -168,7 +168,7 @@ class DataverseImportProvider(ImportProvider):
 
         for fobj in files:
             temp = hierarchy
-            for subdir in pathlib.Path(fobj.get('directoryLabel', '')).parts[1:]:
+            for subdir in pathlib.Path(fobj.get('directoryLabel', '')).parts:
                 if subdir not in temp:
                     temp[subdir] = {'+files+': []}
                 temp = temp[subdir]

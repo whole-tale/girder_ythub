@@ -279,8 +279,9 @@ class DataverseHarversterTestCase(base.TestCase):
             ])}
         )
         self.assertStatus(resp, 200)
+        root_folder = 'dataverse-irc-metrics-8f0b5b505de7730ebd9d57439952542a66a6bae0'
         self.assertEqual(
-            resp.json[0]['Dataverse IRC Metrics']['data'],
+            resp.json[0]['Dataverse IRC Metrics'][root_folder]['data'],
             {'fileList': [{'irclog.tsv': {'size': 9694487}}]}
         )
 
