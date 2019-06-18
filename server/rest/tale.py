@@ -196,8 +196,11 @@ class Tale(Resource):
         user = self.getCurrentUser()
         image = imageModel().load(imageId, user=user, level=AccessType.READ,
                                   exc=True)
-        token = self.getCurrentToken()
-        Token().addScope(token, scope=REST_CREATE_JOB_TOKEN_SCOPE)
+        token = Token().createToken(
+            user=user,
+            days=0.5,
+            scope=(TokenScope.USER_AUTH, REST_CREATE_JOB_TOKEN_SCOPE)
+        )
 
         try:
             lookupKwargs['dataId'] = [url]
@@ -336,10 +339,8 @@ class Tale(Resource):
         .errorResponse('Admin access was denied for the tale.', 403)
     )
     def buildImage(self, tale, force):
-        token = self.getCurrentToken()
         user = self.getCurrentUser()
-
-        return self._model.buildImage(tale, user, token, force=force)
+        return self._model.buildImage(tale, user, force=force)
 
     def updateBuildStatus(self, event):
         """

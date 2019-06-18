@@ -149,9 +149,8 @@ class Instance(Resource):
 
         # Digest ensures that container runs from newest image version
         self._model.updateAndRestartInstance(
-            currentUser,
             instance,
-            self.getCurrentToken(),
+            currentUser,
             tale['imageInfo']['digest'])
         return instance
 
@@ -164,7 +163,7 @@ class Instance(Resource):
     )
     def deleteInstance(self, instance, params):
         self.model('instance', 'wholetale').deleteInstance(
-            instance, self.getCurrentToken())
+            instance, self.getCurrentUser())
 
     @access.user
     @filtermodel(model='instance', plugin='wholetale')
@@ -184,7 +183,6 @@ class Instance(Resource):
     )
     def createInstance(self, taleId, name, spawn):
         user = self.getCurrentUser()
-        token = self.getCurrentToken()
 
         taleModel = self.model('tale', 'wholetale')
         tale = taleModel.load(
@@ -204,8 +202,7 @@ class Instance(Resource):
         if len(running_instances) + 1 > int(instance_cap):
             raise RestException(instanceCapErrMsg.format(instance_cap))
 
-        return self._model.createInstance(tale, user, token, name=name,
-                                          save=True, spawn=spawn)
+        return self._model.createInstance(tale, user, name=name, save=True, spawn=spawn)
 
     def handleUpdateJob(self, event):
         job = event.info['job']
