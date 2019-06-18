@@ -10,6 +10,7 @@ import re
 import time
 import urllib.request
 import tempfile
+import vcr
 import zipfile
 import shutil
 from tests import base
@@ -536,6 +537,38 @@ class TaleTestCase(base.TestCase):
             )
             self.assertEqual(job_call['kwargs'], {'spawn': False})
             self.assertEqual(job_call['headers']['girder_job_title'], 'Import Tale')
+
+    @vcr.use_cassette(os.path.join(DATA_PATH, 'tale_import_zip.txt'))
+    def testTaleImportZip(self):
+        image = self.model('image', 'wholetale').createImage(
+            name="Jupyter Classic", creator=self.user, public=True,
+            config=dict(template='base.tpl', buildpack='PythonBuildPack',
+                        user='someUser', port=8888, urlPath=''))
+        with mock.patch('fs.copy.copy_fs') as mock_copy:
+            with open(os.path.join(DATA_PATH, '5c92fbd472a9910001fbff72.zip'), 'rb') as fp:
+                resp = self.request(
+                    path='/tale/import', method='POST', user=self.user,
+                    type='application/zip',
+                    body=fp.read(),
+                )
+
+            self.assertStatusOk(resp)
+            job = resp.json
+
+            from girder.plugins.jobs.models.job import Job
+            self.assertEqual(job['type'], 'wholetale.import_tale')
+            for i in range(300):
+                if job['status'] in {JobStatus.SUCCESS, JobStatus.ERROR}:
+                    break
+                time.sleep(0.1)
+                job = Job().load(job['_id'], force=True)
+            self.assertEqual(job['status'], JobStatus.SUCCESS)
+        mock_copy.assert_called_once()
+        # TODO: make it more extensive...
+        self.assertTrue(
+            self.model('tale', 'wholetale').findOne({'title': 'Water Tale'}) is not None
+        )
+        self.model('image', 'wholetale').remove(image)
 
     def testTaleUpdate(self):
         from server.lib.license import WholeTaleLicense

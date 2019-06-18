@@ -1,16 +1,24 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import cherrypy
+import json
+import tempfile
 import time
+import zipfile
+
 from girder import events
 from girder.api import access
+from girder.api.rest import iterBody
 from girder.api.docs import addModel
 from girder.api.describe import Description, autoDescribeRoute
 from girder.api.rest import Resource, filtermodel, RestException,\
     setResponseHeader, setContentDisposition
 
 from girder.constants import AccessType, SortDir, TokenScope
+from girder.utility import assetstore_utilities
 from girder.utility.path import getResourcePath
 from girder.utility.progress import ProgressContext
+from girder.models.assetstore import Assetstore
 from girder.models.token import Token
 from girder.models.folder import Folder
 from girder.plugins.jobs.models.job import Job
@@ -179,9 +187,13 @@ class Tale(Resource):
     @autoDescribeRoute(
         Description('Create a new tale from an external dataset.')
         .notes('Currently, this task only handles importing raw data. '
-               'In the future, it should also allow importing serialized Tales.')
-        .param('imageId', "The ID of the tale's image.", required=True)
-        .param('url', 'External dataset identifier.', required=True)
+               'A serialized Tale can be sent as the body of the request using an '
+               'appropriate content-type and with the other parameters as part '
+               'of the query string. The file will be stored in a temporary '
+               'space. However, it is not currently being processed in any '
+               'way.')
+        .param('imageId', "The ID of the tale's image.", required=False)
+        .param('url', 'External dataset identifier.', required=False)
         .param('spawn', 'If false, create only Tale object without a corresponding '
                         'Instance.',
                default=True, required=False, dataType='boolean')
@@ -194,29 +206,87 @@ class Tale(Resource):
     )
     def createTaleFromDataset(self, imageId, url, spawn, lookupKwargs, taleKwargs):
         user = self.getCurrentUser()
-        image = imageModel().load(imageId, user=user, level=AccessType.READ,
-                                  exc=True)
         token = Token().createToken(
             user=user,
             days=0.5,
             scope=(TokenScope.USER_AUTH, REST_CREATE_JOB_TOKEN_SCOPE)
         )
 
-        try:
-            lookupKwargs['dataId'] = [url]
-        except TypeError:
-            lookupKwargs = dict(dataId=[url])
+        if cherrypy.request.headers.get('Content-Type') == 'application/zip':
+            # TODO: Move assetstore type to wholetale.
+            assetstore = next((_ for _ in Assetstore().list() if _['type'] == 101), None)
+            if assetstore:
+                adapter = assetstore_utilities.getAssetstoreAdapter(assetstore)
+                tempDir = adapter.tempDir
+            else:
+                tempDir = None
 
-        try:
-            taleKwargs['imageId'] = str(image['_id'])
-        except TypeError:
-            taleKwargs = dict(imageId=str(image['_id']))
+            with tempfile.NamedTemporaryFile(dir=tempDir) as fp:
+                for chunk in iterBody(2 * 1024 ** 3):
+                    fp.write(chunk)
+                fp.seek(0)
+                if not zipfile.is_zipfile(fp):
+                    raise RestException("Provided file is not a zipfile")
 
-        taleTask = import_tale.delay(
-            lookupKwargs, taleKwargs, spawn=spawn,
-            girder_client_token=str(token['_id'])
-        )
-        return taleTask.job
+                with zipfile.ZipFile(fp) as z:
+                    manifest_file = next(
+                        (_ for _ in z.namelist() if _.endswith('manifest.json')),
+                        None
+                    )
+                    if not manifest_file:
+                        raise RestException("Provided file doesn't contain a Tale")
+
+                    try:
+                        manifest = json.loads(z.read(manifest_file).decode())
+                        # TODO: is there a better check?
+                        manifest['@id'].startswith('https://data.wholetale.org')
+                    except Exception as e:
+                        raise RestException(
+                            "Couldn't read manifest.json or not a Tale: {}".format(str(e))
+                        )
+
+                    # Extract files to tmp on workspace assetstore
+                    temp_dir = tempfile.mkdtemp(dir=tempDir)
+                    # In theory malicious content like: abs path for a member, or relative path with
+                    # ../.. etc., is taken care of by zipfile.extractall, but in the end we're still
+                    # unzipping an untrusted content. What could possibly go wrong...?
+                    z.extractall(path=temp_dir)
+
+            job = Job().createLocalJob(
+                title='Import Tale from zip', user=user,
+                type='wholetale.import_tale', public=False, async=True,
+                module='girder.plugins.wholetale.tasks.import_tale',
+                args=(temp_dir, manifest_file),
+                kwargs={'user': user, 'token': token}
+            )
+            Job().scheduleJob(job)
+            return job
+        else:
+            if not (imageId or url):
+                msg = (
+                    "You need to provide either a zipfile with an exported Tale or "
+                    " both 'imageId' and 'url' parameters."
+                )
+                raise RestException(msg)
+
+            image = imageModel().load(imageId, user=user, level=AccessType.READ,
+                                      exc=True)
+
+            try:
+                lookupKwargs['dataId'] = [url]
+            except TypeError:
+                lookupKwargs = dict(dataId=[url])
+
+            try:
+                taleKwargs['imageId'] = str(image['_id'])
+            except TypeError:
+                taleKwargs = dict(imageId=str(image['_id']))
+
+            taleTask = import_tale.delay(
+                lookupKwargs, taleKwargs, spawn=spawn,
+                girder_client_token=str(token['_id'])
+            )
+            return taleTask.job
 
     @access.user
     @autoDescribeRoute(
