@@ -23,7 +23,6 @@ from girder.models.token import Token
 from girder.models.folder import Folder
 from girder.plugins.jobs.models.job import Job
 from girder.plugins.jobs.constants import REST_CREATE_JOB_TOKEN_SCOPE
-from girder.plugins.jobs.models.job import Job
 from gwvolman.tasks import import_tale
 
 from girder.plugins.jobs.constants import JobStatus

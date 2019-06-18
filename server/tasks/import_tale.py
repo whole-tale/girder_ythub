@@ -44,7 +44,9 @@ def run(job):
         # 1. Register data
         dataIds = [_['identifier'] for _ in manifest["Datasets"]]
         if dataIds:
-            jobModel.updateJob(job, status=JobStatus.RUNNING, log="Registering external data")
+            jobModel.updateJob(
+                job, status=JobStatus.RUNNING, log="Registering external data"
+            )
             dataMap = pids_to_entities(
                 dataIds, user=user, base_url=DataONELocations.prod_cn, lookup=True
             )  # DataONE shouldn't be here
@@ -62,13 +64,17 @@ def run(job):
             if 'bundledAs' not in obj:
                 continue
             uri = obj['uri']
-            fobj = File().findOne({'linkUrl': uri})  # TODO: That's expensive, use something else
+            fobj = File().findOne(
+                {'linkUrl': uri}
+            )  # TODO: That's expensive, use something else
             if fobj:
-                dataSet.append({
-                    'itemId': fobj['itemId'],
-                    '_modelType': 'item',
-                    'mountPath': obj['bundledAs']['filename']
-                })
+                dataSet.append(
+                    {
+                        'itemId': fobj['itemId'],
+                        '_modelType': 'item',
+                        'mountPath': obj['bundledAs']['filename'],
+                    }
+                )
             # TODO: handle folders
 
         # 3. Create a Tale
@@ -93,7 +99,14 @@ def run(job):
             ),
             WholeTaleLicense.default_spdx(),
         )
-        authors = " ".join((user["firstName"], user["lastName"]))
+        authors = [
+            {
+                "firstName": author["schema:givenName"],
+                "lastName": author["schema:familyName"],
+                "orcid": author["@id"],
+            }
+            for author in manifest["schema:author"]
+        ]
 
         tale = Tale().createTale(
             image,
