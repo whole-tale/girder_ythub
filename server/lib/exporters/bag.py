@@ -37,8 +37,7 @@ docker run  \
 
 docker run --rm \
     -v "`pwd`:/bag" \
-    -ti jfloff/alpine-python:2.7-slim \
-      -p bdbag -- bdbag --resolve-fetch all /bag
+    -ti {repo2docker} bdbag -- bdbag --resolve-fetch all /bag
 
 echo "========================================================================"
 echo " Open your browser and go to: http://localhost:{port}/{urlPath} "
