@@ -80,7 +80,7 @@ def pids_to_entities(pids, user=None, base_url=None, lookup=True):
     return [x.toDict() for x in results]
 
 
-def register_dataMap(dataMaps, parent, parentType, user=None, base_url=None):
+def register_dataMap(dataMaps, parent, parentType, user=None, base_url=None, progress=False):
     """
     Register a list of Data Maps into a given Girder object
 
@@ -89,9 +89,9 @@ def register_dataMap(dataMaps, parent, parentType, user=None, base_url=None):
     :param parentType: Either a 'collection' or a 'folder'
     :param user: User performing the registration
     :param base_url: DataONE's node endpoint url
+    :param progress: If True, emit 'progress' notification for each registered file.
     :return: List of ids of registered objects
     """
-    progress = True
     importedData = []
     with ProgressContext(progress, user=user, title="Registering resources") as ctx:
         for dataMap in DataMap.fromList(dataMaps):
