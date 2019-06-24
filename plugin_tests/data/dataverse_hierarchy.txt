@@ -1,0 +1,49 @@
+interactions:
+- request:
+    body: null
+    headers:
+      Connection: [close]
+      Host: [dev2.dataverse.org]
+      User-Agent: [Python-urllib/3.6]
+    method: GET
+    uri: https://dev2.dataverse.org/api/info/version
+  response:
+    body: {string: '{"status":"OK","data":{"version":"4.14","build":"cannot-create-a-dataverse-3961134"}}'}
+    headers:
+      Access-Control-Allow-Origin: ['*']
+      Connection: [close]
+      Content-Length: ['85']
+      Content-Type: [application/json]
+      Date: ['Sat, 15 Jun 2019 21:02:33 GMT']
+      Server: [Apache/2.4.6 (CentOS) OpenSSL/1.0.2k-fips]
+    status: {code: 200, message: OK}
+- request:
+    body: null
+    headers:
+      Connection: [close]
+      Host: [dev2.dataverse.org]
+      User-Agent: [Python-urllib/3.6]
+    method: GET
+    uri: https://dev2.dataverse.org/api/datasets/:persistentId?persistentId=doi:10.5072/FK2/NYNHAM
+  response:
+    body: {string: '{"status":"OK","data":{"id":18,"identifier":"FK2/NYNHAM","persistentUrl":"https://doi.org/10.5072/FK2/NYNHAM","protocol":"doi","authority":"10.5072","publisher":"Root","publicationDate":"2019-06-11","storageIdentifier":"file://10.5072/FK2/NYNHAM","latestVersion":{"id":5,"storageIdentifier":"file://10.5072/FK2/NYNHAM","versionNumber":1,"versionMinorNumber":1,"versionState":"RELEASED","productionDate":"Production
+        Date","lastUpdateTime":"2019-06-13T20:01:46Z","releaseTime":"2019-06-13T20:01:46Z","createTime":"2019-06-13T19:59:10Z","license":"NONE","fileAccessRequest":false,"metadataBlocks":{"citation":{"displayName":"Citation
+        Metadata","fields":[{"typeName":"title","multiple":false,"typeClass":"primitive","value":"Dataverse
+        IRC Metrics"},{"typeName":"author","multiple":true,"typeClass":"compound","value":[{"authorName":{"typeName":"authorName","multiple":false,"typeClass":"primitive","value":"Durbin,
+        Philip"},"authorAffiliation":{"typeName":"authorAffiliation","multiple":false,"typeClass":"primitive","value":"Harvard
+        University"},"authorIdentifierScheme":{"typeName":"authorIdentifierScheme","multiple":false,"typeClass":"controlledVocabulary","value":"ORCID"},"authorIdentifier":{"typeName":"authorIdentifier","multiple":false,"typeClass":"primitive","value":"0000-0002-9528-9470"}}]},{"typeName":"datasetContact","multiple":true,"typeClass":"compound","value":[{"datasetContactName":{"typeName":"datasetContactName","multiple":false,"typeClass":"primitive","value":"Durbin,
+        Philip"},"datasetContactAffiliation":{"typeName":"datasetContactAffiliation","multiple":false,"typeClass":"primitive","value":"Harvard
+        University"},"datasetContactEmail":{"typeName":"datasetContactEmail","multiple":false,"typeClass":"primitive","value":"philip_durbin@harvard.edu"}}]},{"typeName":"dsDescription","multiple":true,"typeClass":"compound","value":[{"dsDescriptionValue":{"typeName":"dsDescriptionValue","multiple":false,"typeClass":"primitive","value":"See
+        <a href=\"https://github.com/pdurbin/dataverse-irc-metrics\">https://github.com/pdurbin/dataverse-irc-metrics</a>."}}]},{"typeName":"subject","multiple":true,"typeClass":"controlledVocabulary","value":["Social
+        Sciences"]},{"typeName":"depositor","multiple":false,"typeClass":"primitive","value":"Durbin,
+        Philip"},{"typeName":"dateOfDeposit","multiple":false,"typeClass":"primitive","value":"2019-06-11"}]}},"files":[{"label":"apt.txt","restricted":false,"directoryLabel":"dataverse-irc-metrics-8f0b5b505de7730ebd9d57439952542a66a6bae0","version":2,"datasetVersionId":5,"categories":["Config"],"dataFile":{"id":28,"persistentId":"","pidURL":"","filename":"apt.txt","contentType":"text/plain","filesize":5,"storageIdentifier":"16b47a77833-0d15a8c6c14f","rootDataFileId":-1,"md5":"37055243218efa7c8adb2346f2386f7a","checksum":{"type":"MD5","value":"37055243218efa7c8adb2346f2386f7a"},"creationDate":"2019-06-11"}},{"label":"index.ipynb","restricted":false,"directoryLabel":"dataverse-irc-metrics-8f0b5b505de7730ebd9d57439952542a66a6bae0","version":1,"datasetVersionId":5,"categories":["Code"],"dataFile":{"id":30,"persistentId":"","pidURL":"","filename":"index.ipynb","contentType":"application/x-ipynb+json","filesize":20183,"storageIdentifier":"16b47a778c3-ad1b9509edeb","rootDataFileId":-1,"md5":"50ca9eeaa8c53c25567b9c8789fb0a82","checksum":{"type":"MD5","value":"50ca9eeaa8c53c25567b9c8789fb0a82"},"creationDate":"2019-06-11"}},{"label":"install.R","restricted":false,"directoryLabel":"dataverse-irc-metrics-8f0b5b505de7730ebd9d57439952542a66a6bae0","version":1,"datasetVersionId":5,"categories":["Code"],"dataFile":{"id":31,"persistentId":"","pidURL":"","filename":"install.R","contentType":"type/x-r-syntax","filesize":110,"storageIdentifier":"16b47a778ce-a8a9457ad7db","rootDataFileId":-1,"md5":"f7ed6200bcf1e18c14043c92d7ee1dee","checksum":{"type":"MD5","value":"f7ed6200bcf1e18c14043c92d7ee1dee"},"creationDate":"2019-06-11"}},{"label":"irclog.tsv","restricted":false,"directoryLabel":"dataverse-irc-metrics-8f0b5b505de7730ebd9d57439952542a66a6bae0/data","version":2,"datasetVersionId":5,"categories":["Data"],"dataFile":{"id":29,"persistentId":"","pidURL":"","filename":"irclog.tsv","contentType":"text/tsv","filesize":9694487,"storageIdentifier":"16b47a7788a-303e78082102","rootDataFileId":-1,"md5":"aed0e229f872dbb66aa1e4e6550bcbbb","checksum":{"type":"MD5","value":"aed0e229f872dbb66aa1e4e6550bcbbb"},"creationDate":"2019-06-11"}},{"label":"README.md","restricted":false,"directoryLabel":"dataverse-irc-metrics-8f0b5b505de7730ebd9d57439952542a66a6bae0","version":2,"datasetVersionId":5,"categories":["Documentation"],"dataFile":{"id":27,"persistentId":"","pidURL":"","filename":"README.md","contentType":"text/markdown","filesize":430,"storageIdentifier":"16b47a7781d-d4d481ae9509","rootDataFileId":-1,"md5":"5120a762443f13fccfcd29e9fffb0b77","checksum":{"type":"MD5","value":"5120a762443f13fccfcd29e9fffb0b77"},"creationDate":"2019-06-11"}},{"label":"runtime.txt","restricted":false,"directoryLabel":"dataverse-irc-metrics-8f0b5b505de7730ebd9d57439952542a66a6bae0","version":2,"datasetVersionId":5,"categories":["Config"],"dataFile":{"id":32,"persistentId":"","pidURL":"","filename":"runtime.txt","contentType":"text/plain","filesize":13,"storageIdentifier":"16b47a778d6-9daf3c49a3f1","rootDataFileId":-1,"md5":"376951af4316f01f81578c82f243aab7","checksum":{"type":"MD5","value":"376951af4316f01f81578c82f243aab7"},"creationDate":"2019-06-11"}},{"label":"superuser_graph.ipynb","restricted":false,"directoryLabel":"dataverse-irc-metrics-8f0b5b505de7730ebd9d57439952542a66a6bae0","version":1,"datasetVersionId":5,"categories":["Code"],"dataFile":{"id":34,"persistentId":"","pidURL":"","filename":"superuser_graph.ipynb","contentType":"application/x-ipynb+json","filesize":39258,"storageIdentifier":"16b47a778f4-57c48842a04f","rootDataFileId":-1,"md5":"b56361b57210966d9947ac75105dfc74","checksum":{"type":"MD5","value":"b56361b57210966d9947ac75105dfc74"},"creationDate":"2019-06-11"}},{"label":"superuser_graph-monthly.ipynb","restricted":false,"directoryLabel":"dataverse-irc-metrics-8f0b5b505de7730ebd9d57439952542a66a6bae0","version":1,"datasetVersionId":5,"categories":["Code"],"dataFile":{"id":33,"persistentId":"","pidURL":"","filename":"superuser_graph-monthly.ipynb","contentType":"application/x-ipynb+json","filesize":36087,"storageIdentifier":"16b47a778de-5c9102662203","rootDataFileId":-1,"md5":"eeb3449182e758c50f2b0cdac84430c8","checksum":{"type":"MD5","value":"eeb3449182e758c50f2b0cdac84430c8"},"creationDate":"2019-06-11"}}]}}}'}
+    headers:
+      Access-Control-Allow-Origin: ['*']
+      Connection: [close]
+      Content-Length: ['6513']
+      Content-Type: [application/json]
+      Date: ['Sat, 15 Jun 2019 21:02:34 GMT']
+      Server: [Apache/2.4.6 (CentOS) OpenSSL/1.0.2k-fips]
+      Set-Cookie: [JSESSIONID=cf2f337ad6c16aefa25b2f426137; Path=/; Secure; HttpOnly]
+    status: {code: 200, message: OK}
+version: 1

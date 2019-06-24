@@ -110,14 +110,17 @@ class FileMap:
         else:
             return self.children.getChild(name)
 
-    def toDict(self):
+    def toDict(self, root=True):
         d = {}
         if self.fileList is not None:
             d['fileList'] = self.fileList.toList()
         if self.children is not None:
             for name in self.children.names():
-                d[name] = self.getChild(name).toDict()
-        return {self.name: d}
+                d[name] = self.getChild(name).toDict(root=False)
+        if root:
+            return {self.name: d}
+        else:
+            return d
 
     @staticmethod
     def fromDict(d: Dict):

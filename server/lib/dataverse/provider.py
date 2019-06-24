@@ -1,6 +1,7 @@
 import json
 import re
 import os
+import pathlib
 from urllib.parse import urlparse, urlunparse, parse_qs
 from urllib.request import urlopen, Request
 from urllib.error import HTTPError
@@ -155,10 +156,25 @@ class DataverseImportProvider(ImportProvider):
                 'filesize': obj['dataFile']['filesize'],
                 'mimeType': obj['dataFile']['contentType'],
                 'id': obj['dataFile']['id'],
-                'doi': obj['dataFile']['persistentId']
+                'doi': obj['dataFile']['persistentId'],
+                'directoryLabel': obj.get('directoryLabel', ''),
             })
 
         return title, files, doi
+
+    @staticmethod
+    def _files_to_hierarchy(files):
+        hierarchy = {'+files+': []}
+
+        for fobj in files:
+            temp = hierarchy
+            for subdir in pathlib.Path(fobj.get('directoryLabel', '')).parts:
+                if subdir not in temp:
+                    temp[subdir] = {'+files+': []}
+                temp = temp[subdir]
+            temp['+files+'].append(fobj)
+
+        return hierarchy
 
     @staticmethod
     def _parse_file_url(url):
@@ -269,14 +285,24 @@ class DataverseImportProvider(ImportProvider):
 
     def _listRecursive(self, user, pid: str, name: str, base_url: str = None,
                        progress=None):
+
+        def _recurse_hierarchy(hierarchy):
+            files = hierarchy.pop('+files+')
+            for obj in files:
+                yield ImportItem(
+                    ImportItem.FILE, obj['filename'],
+                    size=obj['filesize'],
+                    mimeType=obj.get('mimeType', 'application/octet-stream'),
+                    url=obj['url'],
+                    identifier=obj.get('doi') or doi
+                )
+            for folder in hierarchy.keys():
+                yield ImportItem(ImportItem.FOLDER, name=folder)
+                yield from _recurse_hierarchy(hierarchy[folder])
+                yield ImportItem(ImportItem.END_FOLDER)
+
         title, files, doi = self.parse_pid(pid, sanitize=True)
+        hierarchy = self._files_to_hierarchy(files)
         yield ImportItem(ImportItem.FOLDER, name=title, identifier=doi)
-        for obj in files:
-            yield ImportItem(
-                ImportItem.FILE, obj['filename'],
-                size=obj['filesize'],
-                mimeType=obj.get('mimeType', 'application/octet-stream'),
-                url=obj['url'],
-                identifier=obj.get('doi') or doi
-            )
+        yield from _recurse_hierarchy(hierarchy)
         yield ImportItem(ImportItem.END_FOLDER)

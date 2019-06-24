@@ -256,6 +256,40 @@ class DataverseHarversterTestCase(base.TestCase):
             params={'key': PluginSettings.DATAVERSE_URL,
                     'value': SettingDefault.defaults[PluginSettings.DATAVERSE_URL]})
 
+    @vcr.use_cassette(os.path.join(DATA_PATH, 'dataverse_hierarchy.txt'))
+    def testDatasetWithHierarchy(self):
+        from girder.plugins.wholetale.constants import PluginSettings, SettingDefault
+        resp = self.request(
+            '/system/setting', user=self.admin, method='PUT',
+            params={'list': json.dumps([
+                {
+                    'key': PluginSettings.DATAVERSE_URL,
+                    'value': 'https://dev2.dataverse.org'
+                },
+            ])}
+        )
+        self.assertStatusOk(resp)
+        resp = self.request(
+            path='/repository/listFiles', method='GET', user=self.user,
+            params={'dataId': json.dumps([
+                (
+                    'https://dev2.dataverse.org/dataset.xhtml?'
+                    'persistentId=doi:10.5072/FK2/NYNHAM'
+                )
+            ])}
+        )
+        self.assertStatus(resp, 200)
+        root_folder = 'dataverse-irc-metrics-8f0b5b505de7730ebd9d57439952542a66a6bae0'
+        self.assertEqual(
+            resp.json[0]['Dataverse IRC Metrics'][root_folder]['data'],
+            {'fileList': [{'irclog.tsv': {'size': 9694487}}]}
+        )
+
+        resp = self.request(
+            '/system/setting', user=self.admin, method='PUT',
+            params={'key': PluginSettings.DATAVERSE_URL,
+                    'value': SettingDefault.defaults[PluginSettings.DATAVERSE_URL]})
+
     def tearDown(self):
         self.model('user').remove(self.user)
         self.model('user').remove(self.admin)
