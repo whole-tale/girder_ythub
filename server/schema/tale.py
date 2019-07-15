@@ -7,12 +7,12 @@ from .misc import containerConfigSchema, \
     publishInfoListSchema
 
 taleModel = {
-    "definitions": {
-        "containerConfig": containerConfigSchema,
-        "dataSet": dataSetSchema,
-        'imageInfo': imageInfoSchema,
-        "publishInfo": publishInfoListSchema,
-    },
+#    "definitions": {
+#        "containerConfig": containerConfigSchema,
+#        "dataSet": dataSetSchema,
+#        'imageInfo': imageInfoSchema,
+#        "publishInfo": publishInfoListSchema,
+#    },
     "description": "Object representing a Tale.",
     "required": [
         "dataSet",

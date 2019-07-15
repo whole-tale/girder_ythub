@@ -4,7 +4,6 @@ from girder.api.docs import addModel
 
 publishInfoSchema = {
     'title': 'publishInfo',
-    '$schema': 'http://json-schema.org/draft-04/schema#',
     'description': 'A schema representing publishing information',
     'type': 'object',
     'properties': {
@@ -29,14 +28,12 @@ publishInfoSchema = {
 
 publishInfoListSchema = {
     'title': 'list of publishInfos',
-    '$schema': 'http://json-schema.org/draft-04/schema#',
     'type': 'array',
     'items': publishInfoSchema,
 }
 
 dataResourceSchema = {
     'title': 'dataResource',
-    '$schema': 'http://json-schema.org/draft-04/schema#',
     'description': 'A schema representing data elements used in WholeTale',
     'type': 'object',
     'properties': {
@@ -56,7 +53,6 @@ dataResourceSchema = {
 
 dataMapSchema = {
     'title': 'dataMap',
-    '$schema': 'http://json-schema.org/draft-04/schema#',
     'description': 'A schema for a WholeTale Data Map',
     'type': 'object',
     'properties': {
@@ -87,14 +83,12 @@ dataMapSchema = {
 
 dataMapListSchema = {
     'title': 'list of dataMaps',
-    '$schema': 'http://json-schema.org/draft-04/schema#',
     'type': 'array',
     'items': dataMapSchema,
 }
 
 dataSetItemSchema = {
     'title': 'dataSetItem',
-    '$schema': 'http://json-schema.org/draft-04/schema#',
     'description': 'A schema representing data elements used in DMS dataSets',
     'type': 'object',
     'properties': {
@@ -117,14 +111,12 @@ dataSetItemSchema = {
 
 dataSetSchema = {
     'title': 'A list of resources with a corresponding mount points in the ESF',
-    '$schema': 'http://json-schema.org/draft-04/schema#',
     'type': 'array',
     'items': dataSetItemSchema,
 }
 
 tagsSchema = {
     'title': 'tags',
-    '$schema': 'http://json-schema.org/draft-04/schema#',
     'description': 'A schema for image tags',
     'type': 'array',
     'items': {
@@ -134,7 +126,6 @@ tagsSchema = {
 
 containerConfigSchema = {
     'title': 'containerConfig',
-    '$schema': 'http://json-schema.org/draft-04/schema#',
     'description': 'A subset of docker runtime configuration used for Tales',
     'type': 'object',
     'properties': {
@@ -180,7 +171,6 @@ containerConfigSchema = {
 
 containerInfoSchema = {
     'title': 'containerInfo',
-    '$schema': 'http://json-schema.org/draft-04/schema#',
     'description': 'A subset of docker info parameters used by Tales',
     'type': 'object',
     'properties': {
@@ -219,7 +209,6 @@ containerInfoSchema = {
 
 imageInfoSchema = {
     'title': 'imageInfo',
-    '$schema': 'http://json-schema.org/draft-04/schema#',
     'description': 'Attributes describing a Tale image',
     'type': 'object',
     'properties': {
@@ -239,5 +228,167 @@ imageInfoSchema = {
     }
 }
 
+"""
+  {
+    "_id": "5d0d369c5276b9e30d9cbc73",
+    "_modelType": "item",
+    "baseParentId": "5cdde4ca84f03ea7329bab0d",
+    "baseParentType": "user",
+    "created": "2019-06-21T19:57:16.031000+00:00",
+    "creatorId": "5cdde4ca84f03ea7329bab0d",
+    "description": "",
+    "folderId": "5cdde4ca84f03ea7329bab0e",
+    "name": "biocaddie.json",
+    "size": 570,
+    "updated": "2019-06-21T19:57:16.031000+00:00"
+  }
+"""
+itemSchema = {
+    'title': 'Upload',
+    'description': 'Attributes describing an item in Girder',
+    'type': 'object',
+    'properties': {
+        '_id': {
+            'type': 'string',
+        },
+        '_modelType': {
+            'type': 'string',
+        },
+        'baseParentId': {
+            'type': 'string',
+        },
+        'baseParentType': {
+            'type': 'string',
+        },
+        'created': {
+            'type': 'string',
+            'format': 'date-time'
+        },
+        'creatorId': {
+            'type': 'string',
+        },
+        'description': {
+            'type': 'string',
+        },
+        'name': {
+            'type': 'string',
+        },
+        'folderId': {
+            'type': 'string',
+        },
+        'size': {
+            'type': 'integer',
+        },
+        'updated': {
+            'type': 'string',
+            'format': 'date-time'
+        }
+    }
+}
+
+
+"""
+  {
+    "_accessLevel": 2,
+    "_id": "5cdde4ca84f03ea7329bab0f",
+    "_modelType": "folder",
+    "baseParentId": "5cdde4ca84f03ea7329bab0d",
+    "baseParentType": "user",
+    "created": "2019-05-16T22:31:38.653000+00:00",
+    "creatorId": "5cdde4ca84f03ea7329bab0d",
+    "description": "",
+    "name": "Data",
+    "parentCollection": "user",
+    "parentId": "5cdde4ca84f03ea7329bab0d",
+    "public": false,
+    "size": 0,
+    "updated": "2019-05-16T22:31:38.653000+00:00"
+  }
+"""
+folderSchema = {
+   'title': 'Folder',
+    'description': 'Attributes describing a folder in Girder',
+    'type': 'object',
+    'properties': {
+        '_accessLevel': {
+            'type': 'string',
+        },
+        '_id': {
+            'type': 'string',
+        },
+        '_modelType': {
+            'type': 'string',
+        },
+        'baseParentId': {
+            'type': 'string',
+        },
+        'baseParentType': {
+            'type': 'string',
+        },
+        'created': {
+            'type': 'string',
+            'format': 'date-time'
+        },
+        'creatorId': {
+            'type': 'string',
+        },
+        'description': {
+            'type': 'string',
+        },
+        'name': {
+            'type': 'string',
+        },
+        'parentCollection': {
+            'type': 'string',
+        },
+        'parentId': {
+            'type': 'string',
+        },
+        'public': {
+            'type': 'boolean',
+        },
+        'size': {
+            'type': 'integer',
+        },
+        'updated': {
+            'type': 'string',
+            'format': 'date-time'
+        }
+    }
+}
+
+stringSchema = {
+    'title': 'string',
+    'description': 'A string',
+    'type': 'object',
+    'properties': {
+        'value': {
+            'type': 'string',
+            'description': 'Value of the string'
+        }
+    }
+}
+
 addModel('containerConfig', containerConfigSchema)
+addModel('containerInfo', containerInfoSchema)
+addModel('imageInfo', imageInfoSchema)
+addModel('publishInfo', publishInfoSchema)
 addModel('dataSet', dataSetSchema)
+
+addModel('Folder', folderSchema)
+addModel('Upload', itemSchema)
+addModel('Item', itemSchema)
+addModel('File', itemSchema)
+addModel('Collection', folderSchema)
+addModel('Assetstore', folderSchema)
+addModel('Group', itemSchema)
+
+addModel('Setting', itemSchema)
+addModel('job', itemSchema)
+addModel('Token', itemSchema)
+addModel('User', itemSchema)
+addModel('folder', folderSchema)
+
+addModel('string', stringSchema)
+
+# TODO: Item, Group, Collection, Assetstore
