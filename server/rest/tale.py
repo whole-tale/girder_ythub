@@ -139,6 +139,12 @@ class Tale(Resource):
 
         for keyword in self._model.modifiableFields:
             try:
+                if keyword == 'imageId':
+                    image = imageModel().load(
+                        tale['imageId'], user=self.getCurrentUser(),
+                        level=AccessType.READ, exc=True)
+                    taleObj['imageId'] = image['_id']
+                    continue
                 taleObj[keyword] = tale.pop(keyword)
             except KeyError:
                 pass

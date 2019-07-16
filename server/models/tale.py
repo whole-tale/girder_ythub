@@ -37,7 +37,7 @@ class Tale(AccessControlledModel):
         self.modifiableFields = {
             'title', 'description', 'public', 'config', 'updated', 'authors',
             'category', 'icon', 'iframe', 'illustration', 'dataSet', 'licenseSPDX',
-            'workspaceModified', 'publishInfo'
+            'workspaceModified', 'publishInfo', 'imageId'
         }
         self.exposeFields(
             level=AccessType.READ,

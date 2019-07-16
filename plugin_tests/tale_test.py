@@ -576,6 +576,13 @@ class TaleTestCase(base.TestCase):
                 "orcid": user_orcid
             }
         ]
+
+        # Create a new image that the updated Tale will use
+        image = self.model('image', 'wholetale').createImage(
+            name="New Image", creator=self.user, public=True,
+            config=dict(template='base.tpl', buildpack='SomeBuildPack2',
+                        user='someUser', port=8888, urlPath=''))
+
         # Update the Tale with new values
         resp = self.request(
             path='/tale/{}'.format(str(resp.json['_id'])),
@@ -585,7 +592,7 @@ class TaleTestCase(base.TestCase):
             body=json.dumps({
                 'authors': new_authors,
                 'folderId': '1234',
-                'imageId': str(self.image['_id']),
+                'imageId': str(image['_id']),
                 'dataSet': [],
                 'title': title,
                 'description': description,
@@ -604,7 +611,7 @@ class TaleTestCase(base.TestCase):
 
         # Check that the updates happened
         # self.assertStatus(resp, 200)
-        self.assertEqual(resp.json['imageId'], str(self.image['_id']))
+        self.assertEqual(resp.json['imageId'], str(image['_id']))
         self.assertEqual(resp.json['title'], title)
         self.assertEqual(resp.json['description'], description)
         self.assertEqual(resp.json['config'], config)
