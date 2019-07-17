@@ -286,7 +286,8 @@ class Tale(AccessControlledModel):
 
         resource = {
             'type': 'wt_build_image',
-            'tale_id': tale['_id']
+            'tale_id': tale['_id'],
+            'title_title': tale['title']
         }
 
         token = Token().createToken(user=user, days=0.5)

@@ -151,7 +151,7 @@ class Instance(Resource):
         self._model.updateAndRestartInstance(
             instance,
             currentUser,
-            tale['imageInfo']['digest'])
+            tale)
         return instance
 
     @access.user
