@@ -102,7 +102,7 @@ def update_citation(event):
             )
             provider_name = doc['meta']['provider']
             if provider_name.startswith('HTTP'):
-                provider_name = 'HTTP'  # TODO: handle HTTPS to make it unnecessary
+                continue
             provider = IMPORT_PROVIDERS.providerMap[provider_name]
         except (KeyError, ValidationException):
             continue
