@@ -78,7 +78,7 @@ class Instance(AccessControlledModel):
                 limit=limit, offset=offset):
             yield r
 
-    def updateAndRestartInstance(self, instance, user, digest):
+    def updateAndRestartInstance(self, instance, user, tale):
         """
         Updates and restarts an instance.
 
@@ -88,9 +88,12 @@ class Instance(AccessControlledModel):
         """
         token = Token().createToken(user=user, days=0.5)
 
+        digest = tale['imageInfo']['digest']
+
         resource = {
             'type': 'wt_update_instance',
-            'instance_id': instance['_id']
+            'instance_id': instance['_id'],
+            'tale_title': tale['title']
         }
         total = UPDATE_CONTAINER_STEP_TOTAL
 
@@ -175,6 +178,7 @@ class Instance(AccessControlledModel):
                 'type': 'wt_create_instance',
                 'tale_id': tale['_id'],
                 'instance_id': instance['_id'],
+                'tale_title': tale['title']
             }
 
             total = BUILD_TALE_IMAGE_STEP_TOTAL + CREATE_VOLUME_STEP_TOTAL + \
