@@ -73,7 +73,7 @@ def dataverseExternalTools(self, fileId, siteUrl, apiToken, fullDataset):
     # TODO: Make base url a plugin setting, defaulting to dashboard.<domain>
     dashboard_url = os.environ.get('DASHBOARD_URL', 'https://dashboard.wholetale.org')
     location = urlunparse(
-        urlparse(dashboard_url)._replace(path='/compose', query=urlencode(query))
+        urlparse(dashboard_url)._replace(path='/browse', query=urlencode(query))
     )
     setResponseHeader('Location', location)
     cherrypy.response.status = 303
