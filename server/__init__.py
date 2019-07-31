@@ -3,6 +3,8 @@
 
 import six
 import validators
+from datetime import datetime, timedelta
+from bson.objectid import ObjectId
 
 from girder import events, logprint, logger
 from girder.api import access
@@ -357,6 +359,82 @@ def getJobResult(self, job):
     return result
 
 
+@access.cookie
+@access.token
+@autoDescribeRoute(
+    Description('Create a notification for the current user')
+    .param('type', 'The notification type.', strip=True)
+    .jsonParam('data', 'The notification payload.', requireObject=True, default={},
+               required=False)
+    .param('expires', 'Expiration date (for transient notifications).',
+           dataType='dateTime', required=False)
+    .param('useToken', 'If True, the notification should correspond to a token '
+           'instead of a user.', required=False, dataType='boolean', default=False)
+)
+@boundHandler()
+def createNotification(self, type, data, expires, useToken):
+    user, token = self.getCurrentUser(returnToken=True)
+    if not expires:
+        expires = datetime.now() + timedelta(seconds=30)
+    if useToken:
+        return Notification().createNotification(
+            type, data, user, expires=expires, token=token)
+    else:
+        return Notification().createNotification(type, data, user, expires=expires)
+
+
+def _get_single_notification(notification_id, user_id, token_id, useToken=False):
+    q = {'_id': ObjectId(notification_id)}
+    if useToken:
+        q['tokenId'] = token_id
+    else:
+        q['userId'] = user_id
+    return Notification().findOne(q)
+
+
+@access.cookie
+@access.token
+@autoDescribeRoute(
+    Description('Modify a notification')
+    .param('id', 'The ID of a notification.', paramType='path')
+    .jsonParam('data', 'The notification payload.', requireObject=True,
+               required=False)
+    .param('expires', 'Expiration date (for transient notifications).',
+           dataType='dateTime', required=False)
+    .param('useToken', 'If True, the notification should correspond to a token '
+           'instead of a user.', required=False, dataType='boolean', default=False)
+)
+@boundHandler()
+def modifyNotification(self, id, data, expires, useToken):
+    user, token = self.getCurrentUser(returnToken=True)
+    notification = _get_single_notification(id, user['_id'], token['_id'], useToken=useToken)
+    if notification is None:
+        raise RestException('Notification {} not found'.format(id), 404)
+
+    if expires:
+        notification['expires'] = expires
+    if data:
+        notification['data'] = data
+    return Notification().save(notification)
+
+
+@access.cookie
+@access.token
+@autoDescribeRoute(
+    Description('Delete a notification')
+    .param('id', 'The ID of a notification.', paramType='path')
+    .param('useToken', 'If True, the notification should correspond to a token '
+           'instead of a user.', required=False, dataType='boolean', default=False)
+)
+@boundHandler()
+def deleteNotification(self, id, useToken):
+    user, token = self.getCurrentUser(returnToken=True)
+    notification = _get_single_notification(id, user['_id'], token['_id'], useToken=useToken)
+    if notification is None:
+        raise RestException('Notification {} not found'.format(id), 404)
+    return Notification().remove(notification)
+
+
 def load(info):
     info['apiRoot'].wholetale = wholeTale()
     info['apiRoot'].instance = Instance()
@@ -401,5 +479,8 @@ def load(info):
 
     info['apiRoot'].user.route('PUT', ('settings',), setUserMetadata)
     info['apiRoot'].user.route('GET', ('settings',), getUserMetadata)
+    info['apiRoot'].notification.route('POST', (), createNotification)
+    info['apiRoot'].notification.route('PUT', (':id', ), modifyNotification)
+    info['apiRoot'].notification.route('DELETE', (':id', ), deleteNotification)
     ModelImporter.model('user').exposeFields(
         level=AccessType.WRITE, fields=('meta', 'myData'))

@@ -1,6 +1,9 @@
+from datetime import datetime, timedelta
+import json
 import time
 from tests import base
 from girder.models.setting import Setting
+from girder.utility import parseTimestamp
 
 
 def setUpModule():
@@ -141,3 +144,51 @@ class NotificationTestCase(base.TestCase):
         self.assertEqual(notification['data']['total'], 2)
         self.assertEqual(notification['data']['current'], 1)
         self.assertEqual(notification['data']['message'], 'Success test message')
+
+    def testNotificationREST(self):
+        resp = self.request(
+            path='/notification', method='POST', user=self.user,
+            params={
+                'type': 'my_type',
+                'data': json.dumps({'foo': 'bar'}),
+                'expires': datetime.now() + timedelta(hours=24)
+            },
+        )
+        self.assertStatusOk(resp)
+        notification = resp.json
+
+        self.assertEqual(notification['type'], 'my_type')
+        self.assertEqual(notification['data'], {'foo': 'bar'})
+        self.assertGreater(parseTimestamp(notification['expires']), datetime.now())
+
+        resp = self.request(
+            path='/notification/{_id}'.format(**notification),
+            method='PUT', user=self.user, params={
+                'expires': datetime.now(),
+                'data': json.dumps({'baz': 1})
+            },
+        )
+        self.assertStatusOk(resp)
+        expired_notification = resp.json
+        self.assertEqual(expired_notification['_id'], notification['_id'])
+        self.assertGreater(
+            parseTimestamp(notification['expires']),
+            parseTimestamp(expired_notification['expires']),
+        )
+        self.assertGreater(datetime.now(), parseTimestamp(expired_notification['expires']))
+
+        resp = self.request(
+            path='/notification/{_id}'.format(**notification),
+            method='DELETE', user=self.user,
+        )
+        self.assertStatusOk(resp)
+        resp = self.request(
+            path='/notification', method='GET', user=self.user,
+        )
+        self.assertStatusOk(resp)
+        self.assertEqual(resp.json, [])
+        resp = self.request(
+            path='/notification/{_id}'.format(**notification),
+            method='DELETE', user=self.user,
+        )
+        self.assertStatus(resp, 404)
