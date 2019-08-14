@@ -122,7 +122,7 @@ class BagTaleExporter(TaleExporter):
         for i in range(len(self.manifest['aggregates'])):
             uri = self.manifest['aggregates'][i]['uri']
             # Don't touch any of the extra files
-            if len([key for key in extra_files.keys() if key in uri]):
+            if len([key for key in extra_files.keys() if '../' + key in uri]):
                 continue
             if uri.startswith('../'):
                 self.manifest['aggregates'][i]['uri'] = uri.replace('..', '../data')
