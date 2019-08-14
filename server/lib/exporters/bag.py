@@ -134,6 +134,12 @@ class BagTaleExporter(TaleExporter):
         # Update manifest with hashes
         self.append_aggergate_checksums()
 
+        # Update manifest with filesizes and mimeTypes for workspace items
+        self.append_aggregate_filesize_mimetypes('../data/workspace/')
+
+        # Update manifest with filesizes and mimeTypes for extra items
+        self.append_extras_filesize_mimetypes(extra_files)
+
         # Create the fetch file
         fetch_file = ""
         for bundle in self.manifest['aggregates']:
@@ -192,6 +198,5 @@ class BagTaleExporter(TaleExporter):
             (lambda: tagmanifest['sha256'], 'tagmanifest-sha256.txt'),
         ):
             yield from self.zip_generator.addFile(payload, fname)
-
 
         yield self.zip_generator.footer()
