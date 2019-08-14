@@ -26,18 +26,7 @@ class NativeTaleExporter(TaleExporter):
             yield from self.dump_and_checksum(payload, path)
 
         # Update manifest with hashes
-        for path, chksum in self.state['md5']:
-            uri = '../' + path
-            index = next(
-                (
-                    i
-                    for (i, d) in enumerate(self.manifest['aggregates'])
-                    if d['uri'] == uri
-                ),
-                None,
-            )
-            if index is not None:
-                self.manifest['aggregates'][index]['md5'] = chksum
+        self.append_aggergate_checksums()
 
         # Update manifest with filesizes and mimeTypes
         for path, fobj in Folder().fileList(

@@ -95,3 +95,21 @@ class TaleExporter:
             yield data
         for alg in self.algs:
             self.state[alg].append((zip_path, getattr(hash_file_stream, alg)))
+
+    def append_aggergate_checksums(self):
+        """
+        Takes the md5 checksums and adds them to the files in the 'aggregates' section
+        :return: None
+        """
+        for path, chksum in self.state['md5']:
+            uri = '../' + path
+            index = next(
+                (
+                    i
+                    for (i, d) in enumerate(self.manifest['aggregates'])
+                    if d['uri'] == uri
+                ),
+                None,
+            )
+            if index is not None:
+                self.manifest['aggregates'][index]['md5'] = chksum

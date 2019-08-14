@@ -131,9 +131,11 @@ class BagTaleExporter(TaleExporter):
                 self.manifest['aggregates'][i]['bundledAs']['folder'] = folder.replace(
                     '..', '../data'
                 )
-
-        fetch_file = ""
         # Update manifest with hashes
+        self.append_aggergate_checksums()
+
+        # Create the fetch file
+        fetch_file = ""
         for bundle in self.manifest['aggregates']:
             if 'bundledAs' not in bundle:
                 continue
@@ -190,5 +192,6 @@ class BagTaleExporter(TaleExporter):
             (lambda: tagmanifest['sha256'], 'tagmanifest-sha256.txt'),
         ):
             yield from self.zip_generator.addFile(payload, fname)
+
 
         yield self.zip_generator.footer()
