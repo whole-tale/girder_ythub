@@ -131,9 +131,17 @@ class BagTaleExporter(TaleExporter):
                 self.manifest['aggregates'][i]['bundledAs']['folder'] = folder.replace(
                     '..', '../data'
                 )
-
-        fetch_file = ""
         # Update manifest with hashes
+        self.append_aggergate_checksums()
+
+        # Update manifest with filesizes and mimeTypes for workspace items
+        self.append_aggregate_filesize_mimetypes('../data/workspace/')
+
+        # Update manifest with filesizes and mimeTypes for extra items
+        self.append_extras_filesize_mimetypes(extra_files)
+
+        # Create the fetch file
+        fetch_file = ""
         for bundle in self.manifest['aggregates']:
             if 'bundledAs' not in bundle:
                 continue
