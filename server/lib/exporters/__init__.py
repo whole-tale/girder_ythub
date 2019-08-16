@@ -49,8 +49,13 @@ class HashFileStream:
 
 
 class TaleExporter:
+    default_top_readme = """This zip file contains the code, data, and information about a Tale.
 
-    default_top_readme = "Instructions on running the docker container"
+    Directory Structure:
+       metadata/: Holds information about the runtime environment and Tale attributes
+       workspace/: Contains the files and folders that were used in the Tale
+       LICENSE: The license that the code and data falls under
+       README.md: This file"""
     default_bagit = "BagIt-Version: 0.97\nTag-File-Character-Encoding: UTF-8\n"
 
     def __init__(self, tale, user, algs=None, expand_folders=False):
