@@ -125,14 +125,14 @@ class TaleTestCase(base.TestCase):
                     'spawn': False,
                     'imageId': self.image['_id'],
                     'asTale': False,
+                    'taleKwargs': json.dumps({'title': 'blah'}),
                 },
             )
             self.assertStatusOk(resp)
+            tale = resp.json
             job_call = mock_apply_async.call_args_list[-1][-1]
-            self.assertEqual(
-                job_call['args'],
-                ({'dataId': ['http://blah.com/']}, {'imageId': str(self.image['_id'])}),
-            )
+            self.assertEqual(job_call['args'][0], {'dataId': ['http://blah.com/']})
+            self.assertEqual(str(job_call['args'][1]['_id']), tale['_id'])
             self.assertEqual(job_call['kwargs'], {'spawn': False})
             self.assertEqual(job_call['headers']['girder_job_title'], 'Import Tale')
 
@@ -208,11 +208,13 @@ class TaleTestCase(base.TestCase):
                 )
 
                 self.assertStatusOk(resp)
-                job = resp.json
+                tale = resp.json
 
                 from girder.plugins.jobs.models.job import Job
 
-                self.assertEqual(job['type'], 'wholetale.import_binder')
+                job = Job().findOne({'type': 'wholetale.import_binder'})
+                self.assertEqual(json.loads(job['kwargs'])['tale']['_id']['$oid'], tale['_id'])
+
                 for i in range(300):
                     if job['status'] in {JobStatus.SUCCESS, JobStatus.ERROR}:
                         break
@@ -255,11 +257,12 @@ class TaleTestCase(base.TestCase):
                 )
 
             self.assertStatusOk(resp)
-            job = resp.json
+            tale = resp.json
 
             from girder.plugins.jobs.models.job import Job
 
-            self.assertEqual(job['type'], 'wholetale.import_tale')
+            job = Job().findOne({'type': 'wholetale.import_tale'})
+            self.assertEqual(json.loads(job['kwargs'])['tale']['_id']['$oid'], tale['_id'])
             for i in range(300):
                 if job['status'] in {JobStatus.SUCCESS, JobStatus.ERROR}:
                     break

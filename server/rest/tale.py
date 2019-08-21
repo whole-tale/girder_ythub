@@ -3,6 +3,7 @@
 import cherrypy
 import json
 import tempfile
+import textwrap
 import time
 import zipfile
 
@@ -30,6 +31,9 @@ from girder.plugins.jobs.constants import JobStatus
 from ..schema.tale import taleModel as taleSchema
 from ..models.tale import Tale as taleModel
 from ..models.image import Image as imageModel
+from ..lib import pids_to_entities
+from ..lib.dataone import DataONELocations  # TODO: get rid of it
+from ..lib.license import WholeTaleLicense
 from ..lib.manifest import Manifest
 from ..lib.exporters.bag import BagTaleExporter
 from ..lib.exporters.native import NativeTaleExporter
@@ -52,8 +56,8 @@ class Tale(Resource):
         self.route('GET', (), self.listTales)
         self.route('GET', (':id',), self.getTale)
         self.route('PUT', (':id',), self.updateTale)
-        self.route('POST', (), self.createTale)
         self.route('POST', ('import', ), self.createTaleFromDataset)
+        self.route('POST', (), self.createTale)
         self.route('POST', (':id', 'copy'), self.copyTale)
         self.route('DELETE', (':id',), self.deleteTale)
         self.route('GET', (':id', 'access'), self.getTaleAccess)
@@ -120,6 +124,7 @@ class Tale(Resource):
         return tale
 
     @access.user
+    @filtermodel(model='tale', plugin='wholetale')
     @autoDescribeRoute(
         Description('Update an existing tale.')
         .modelParam('id', model='tale', plugin='wholetale',
@@ -190,6 +195,7 @@ class Tale(Resource):
         self._model.remove(tale)
 
     @access.user
+    @filtermodel(model='tale', plugin='wholetale')
     @autoDescribeRoute(
         Description('Create a new tale from an external dataset.')
         .notes('Currently, this task only handles importing raw data. '
@@ -208,8 +214,8 @@ class Tale(Resource):
         .jsonParam('lookupKwargs', 'Optional keyword arguments passed to '
                    'GET /repository/lookup', requireObject=True, required=False)
         .jsonParam('taleKwargs', 'Optional keyword arguments passed to POST /tale',
-                   required=False)
-        .responseClass('job')
+                   required=False, default={})
+        .responseClass('tale')
         .errorResponse('You are not authorized to create tales.', 403)
     )
     def createTaleFromDataset(self, imageId, url, spawn, asTale, lookupKwargs, taleKwargs):
@@ -221,54 +227,58 @@ class Tale(Resource):
         )
 
         if cherrypy.request.headers.get('Content-Type') == 'application/zip':
-            # TODO: Move assetstore type to wholetale.
-            assetstore = next((_ for _ in Assetstore().list() if _['type'] == 101), None)
-            if assetstore:
-                adapter = assetstore_utilities.getAssetstoreAdapter(assetstore)
-                tempDir = adapter.tempDir
-            else:
-                tempDir = None
+            temp_dir, manifest_file, manifest, environment = self._extractZipPayload()
+            image = imageModel().findOne({"name": environment["name"]})
+            image = imageModel().filter(image, user)
+            icon = image.get(
+                "icon",
+                (
+                    "https://raw.githubusercontent.com/"
+                    "whole-tale/dashboard/master/public/"
+                    "images/whole_tale_logo.png"
+                ),
+            )
+            licenseSPDX = next(
+                (
+                    _["schema:license"]
+                    for _ in manifest["aggregates"]
+                    if "schema:license" in _
+                ),
+                WholeTaleLicense.default_spdx(),
+            )
+            authors = [
+                {
+                    "firstName": author["schema:givenName"],
+                    "lastName": author["schema:familyName"],
+                    "orcid": author["@id"],
+                }
+                for author in manifest["schema:author"]
+            ]
 
-            with tempfile.NamedTemporaryFile(dir=tempDir) as fp:
-                for chunk in iterBody(2 * 1024 ** 3):
-                    fp.write(chunk)
-                fp.seek(0)
-                if not zipfile.is_zipfile(fp):
-                    raise RestException("Provided file is not a zipfile")
-
-                with zipfile.ZipFile(fp) as z:
-                    manifest_file = next(
-                        (_ for _ in z.namelist() if _.endswith('manifest.json')),
-                        None
-                    )
-                    if not manifest_file:
-                        raise RestException("Provided file doesn't contain a Tale")
-
-                    try:
-                        manifest = json.loads(z.read(manifest_file).decode())
-                        # TODO: is there a better check?
-                        manifest['@id'].startswith('https://data.wholetale.org')
-                    except Exception as e:
-                        raise RestException(
-                            "Couldn't read manifest.json or not a Tale: {}".format(str(e))
-                        )
-
-                    # Extract files to tmp on workspace assetstore
-                    temp_dir = tempfile.mkdtemp(dir=tempDir)
-                    # In theory malicious content like: abs path for a member, or relative path with
-                    # ../.. etc., is taken care of by zipfile.extractall, but in the end we're still
-                    # unzipping an untrusted content. What could possibly go wrong...?
-                    z.extractall(path=temp_dir)
+            tale = taleModel().createTale(
+                image,
+                [],
+                creator=user,
+                save=True,
+                title=manifest["schema:name"],
+                description=manifest["schema:description"],
+                public=False,
+                config={},
+                icon=icon,
+                illustration=manifest["schema:image"],
+                authors=authors,
+                category=manifest["schema:category"],
+                licenseSPDX=licenseSPDX,
+            )
 
             job = Job().createLocalJob(
                 title='Import Tale from zip', user=user,
                 type='wholetale.import_tale', public=False, async=True,
                 module='girder.plugins.wholetale.tasks.import_tale',
                 args=(temp_dir, manifest_file),
-                kwargs={'user': user, 'token': token}
+                kwargs={'user': user, 'token': token, 'tale': tale}
             )
             Job().scheduleJob(job)
-            return job
         else:
             if not (imageId or url):
                 msg = (
@@ -285,10 +295,43 @@ class Tale(Resource):
             except TypeError:
                 lookupKwargs = dict(dataId=[url])
 
-            try:
-                taleKwargs['imageId'] = str(image['_id'])
-            except TypeError:
-                taleKwargs = dict(imageId=str(image['_id']))
+            if "title" not in taleKwargs:
+                dataMap = pids_to_entities(
+                    lookupKwargs["dataId"],
+                    user=user,
+                    base_url=lookupKwargs.get("base_url", DataONELocations.prod_cn),
+                    lookup=True
+                )
+                long_name = dataMap[0]["name"]
+                long_name = long_name.replace('-', ' ').replace('_', ' ')
+                shortened_name = textwrap.shorten(text=long_name, width=30)
+                taleKwargs["title"] = "A Tale for \"{}\"".format(shortened_name)
+
+            if "icon" not in taleKwargs:
+                taleKwargs["icon"] = image.get(
+                    "icon",
+                    (
+                        "https://raw.githubusercontent.com/"
+                        "whole-tale/dashboard/master/public/"
+                        "images/whole_tale_logo.png"
+                    ),
+                )
+
+            if "illustration" not in taleKwargs:
+                taleKwargs["illustration"] = (
+                    "https://raw.githubusercontent.com/"
+                    "whole-tale/dashboard/master/public/"
+                    "images/demo-graph2.jpg"
+                )
+
+            tale = taleModel().createTale(
+                image,
+                [],
+                creator=user,
+                save=True,
+                public=False,
+                **taleKwargs
+            )
 
             if asTale:
                 job = Job().createLocalJob(
@@ -298,17 +341,16 @@ class Tale(Resource):
                     public=False,
                     async=True,
                     module="girder.plugins.wholetale.tasks.import_binder",
-                    args=(taleKwargs, lookupKwargs),
-                    kwargs={"user": user, "spawn": spawn},
+                    args=(lookupKwargs,),
+                    kwargs={"user": user, "tale": tale, "spawn": spawn},
                 )
                 Job().scheduleJob(job)
-                return job
             else:
-                taleTask = import_tale.delay(
-                    lookupKwargs, taleKwargs, spawn=spawn,
+                import_tale.delay(
+                    lookupKwargs, tale, spawn=spawn,
                     girder_client_token=str(token['_id'])
                 )
-                return taleTask.job
+        return tale
 
     @access.user
     @autoDescribeRoute(
@@ -535,3 +577,56 @@ class Tale(Resource):
         )
         Job().scheduleJob(job)
         return new_tale
+
+    @staticmethod
+    def _extractZipPayload():
+        # TODO: Move assetstore type to wholetale.
+        assetstore = next((_ for _ in Assetstore().list() if _['type'] == 101), None)
+        if assetstore:
+            adapter = assetstore_utilities.getAssetstoreAdapter(assetstore)
+            tempDir = adapter.tempDir
+        else:
+            tempDir = None
+
+        with tempfile.NamedTemporaryFile(dir=tempDir) as fp:
+            for chunk in iterBody(2 * 1024 ** 3):
+                fp.write(chunk)
+            fp.seek(0)
+            if not zipfile.is_zipfile(fp):
+                raise RestException("Provided file is not a zipfile")
+
+            with zipfile.ZipFile(fp) as z:
+                manifest_file = next(
+                    (_ for _ in z.namelist() if _.endswith('manifest.json')),
+                    None
+                )
+                if not manifest_file:
+                    raise RestException("Provided file doesn't contain a Tale manifest")
+
+                try:
+                    manifest = json.loads(z.read(manifest_file).decode())
+                    # TODO: is there a better check?
+                    manifest['@id'].startswith('https://data.wholetale.org')
+                except Exception as e:
+                    raise RestException(
+                        "Couldn't read manifest.json or not a Tale: {}".format(str(e))
+                    )
+
+                env_file = next(
+                    (_ for _ in z.namelist() if _.endswith("environment.json")),
+                    None
+                )
+                try:
+                    environment = json.loads(z.read(env_file).decode())
+                except Exception as e:
+                    raise RestException(
+                        "Couldn't read environment.json or not a Tale: {}".format(str(e))
+                    )
+
+                # Extract files to tmp on workspace assetstore
+                temp_dir = tempfile.mkdtemp(dir=tempDir)
+                # In theory malicious content like: abs path for a member, or relative path with
+                # ../.. etc., is taken care of by zipfile.extractall, but in the end we're still
+                # unzipping an untrusted content. What could possibly go wrong...?
+                z.extractall(path=temp_dir)
+        return temp_dir, manifest_file, manifest, environment

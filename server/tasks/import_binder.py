@@ -5,7 +5,6 @@ import json
 import os
 import stat
 import sys
-import textwrap
 import time
 import traceback
 from webdavfs.webdavfs import WebDAVFS
@@ -30,9 +29,7 @@ from girder.plugins.jobs.models.job import Job
 from ..constants import CATALOG_NAME, InstanceStatus
 from ..lib import pids_to_entities, register_dataMap
 from ..lib.dataone import DataONELocations  # TODO: get rid of it
-from ..models.image import Image
 from ..models.instance import Instance
-from ..models.tale import Tale
 from ..utils import getOrCreateRootFolder
 
 
@@ -40,11 +37,12 @@ def run(job):
     jobModel = Job()
     jobModel.updateJob(job, status=JobStatus.RUNNING)
 
-    tale_kwargs, lookup_kwargs = job["args"]
+    lookup_kwargs, = job["args"]
     user = job["kwargs"]["user"]
     spawn = job["kwargs"]["spawn"]
+    tale = job["kwargs"]["tale"]
 
-    progressTotal = 4 + int(spawn)
+    progressTotal = 3 + int(spawn)
     progressCurrent = 0
 
     try:
@@ -95,51 +93,7 @@ def run(job):
         # how to handler transfers. DMS will do that for us <3
         session = Session().createSession(user, dataSet=data_set)
 
-        # 3. Create a Tale
-        jobModel.updateJob(
-            job,
-            status=JobStatus.RUNNING,
-            log="Creating a Tale object",
-            progressTotal=progressTotal,
-            progressCurrent=progressCurrent + 1,
-            progressMessage="Creating a Tale object",
-        )
-
-        # Figure out a good Tale title default based on the name of imported dataset
-        if "title" not in tale_kwargs:
-            long_name = data_folder['name']
-            long_name = long_name.replace('-', ' ').replace('_', ' ')
-            shortened_name = textwrap.shorten(text=long_name, width=30)
-            tale_kwargs["title"] = "A Tale for \"{}\"".format(shortened_name)
-
-        image_id = tale_kwargs.pop('imageId')
-        image = Image().load(image_id, user=user, level=AccessType.READ, exc=True)
-        if "icon" not in tale_kwargs:
-            tale_kwargs["icon"] = image.get(
-                "icon",
-                (
-                    "https://raw.githubusercontent.com/"
-                    "whole-tale/dashboard/master/public/"
-                    "images/whole_tale_logo.png"
-                ),
-            )
-        if "illustration" not in tale_kwargs:
-            tale_kwargs["illustration"] = (
-                'https://raw.githubusercontent.com/'
-                'whole-tale/dashboard/master/public/'
-                'images/demo-graph2.jpg'
-            )
-
-        tale = Tale().createTale(
-            image,
-            [],  # empty dataset
-            creator=user,
-            save=True,
-            public=False,
-            **tale_kwargs
-        )
-
-        # 4. Copy data to the workspace using WebDAVFS
+        # 3. Copy data to the workspace using WebDAVFS
         jobModel.updateJob(
             job,
             status=JobStatus.RUNNING,
