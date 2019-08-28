@@ -41,11 +41,16 @@ def run(job):
     user = job["kwargs"]["user"]
     spawn = job["kwargs"]["spawn"]
     tale = job["kwargs"]["tale"]
+    token = Token().createToken(user=user, days=0.5)
 
     progressTotal = 3 + int(spawn)
     progressCurrent = 0
 
     try:
+        # 0. Spawn instance in the background
+        if spawn:
+            instance = Instance().createInstance(tale, user, token, spawn=spawn)
+
         # 1. Register data using url
         jobModel.updateJob(
             job,
@@ -102,7 +107,6 @@ def run(job):
             progressCurrent=progressCurrent + 1,
             progressMessage="Copying files to workspace",
         )
-        token = Token().createToken(user=user, days=0.5)
         girder_root = "http://localhost:{}".format(
             config.getConfig()['server.socket_port']
         )
@@ -117,17 +121,17 @@ def run(job):
             copy_fs(source_fs, destination_fs)
 
         Session().deleteSession(user, session)
+
+        # 4. Wait for container to show up
         if spawn:
             jobModel.updateJob(
                 job,
                 status=JobStatus.RUNNING,
-                log="Creating a Tale container",
+                log="Waiting for a Tale container",
                 progressTotal=progressTotal,
                 progressCurrent=progressCurrent + 1,
-                progressMessage="Creating a Tale container",
+                progressMessage="Waiting for a Tale container",
             )
-
-            instance = Instance().createInstance(tale, user, token, spawn=spawn)
 
             sleep_step = 10
             timeout = 15 * 60
