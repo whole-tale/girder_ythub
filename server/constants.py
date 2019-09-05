@@ -65,3 +65,9 @@ class ImageStatus(object):
 
         return status in (ImageStatus.INVALID, ImageStatus.UNAVAILABLE,
                           ImageStatus.BUILDING, ImageStatus.AVAILABLE)
+
+
+class TaleStatus(object):
+    PREPARING = 0
+    READY = 1
+    ERROR = 2

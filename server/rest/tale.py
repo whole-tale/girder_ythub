@@ -1,18 +1,28 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import cherrypy
+import json
+import tempfile
+import textwrap
 import time
+import zipfile
+
 from girder import events
 from girder.api import access
+from girder.api.rest import iterBody
 from girder.api.docs import addModel
 from girder.api.describe import Description, autoDescribeRoute
 from girder.api.rest import Resource, filtermodel, RestException,\
     setResponseHeader, setContentDisposition
 
 from girder.constants import AccessType, SortDir, TokenScope
+from girder.utility import assetstore_utilities
 from girder.utility.path import getResourcePath
 from girder.utility.progress import ProgressContext
+from girder.models.assetstore import Assetstore
 from girder.models.token import Token
 from girder.models.folder import Folder
+from girder.plugins.jobs.models.job import Job
 from girder.plugins.jobs.constants import REST_CREATE_JOB_TOKEN_SCOPE
 from gwvolman.tasks import import_tale
 
@@ -21,6 +31,9 @@ from girder.plugins.jobs.constants import JobStatus
 from ..schema.tale import taleModel as taleSchema
 from ..models.tale import Tale as taleModel
 from ..models.image import Image as imageModel
+from ..lib import pids_to_entities
+from ..lib.dataone import DataONELocations  # TODO: get rid of it
+from ..lib.license import WholeTaleLicense
 from ..lib.manifest import Manifest
 from ..lib.exporters.bag import BagTaleExporter
 from ..lib.exporters.native import NativeTaleExporter
@@ -43,8 +56,9 @@ class Tale(Resource):
         self.route('GET', (), self.listTales)
         self.route('GET', (':id',), self.getTale)
         self.route('PUT', (':id',), self.updateTale)
-        self.route('POST', (), self.createTale)
         self.route('POST', ('import', ), self.createTaleFromDataset)
+        self.route('POST', (), self.createTale)
+        self.route('POST', (':id', 'copy'), self.copyTale)
         self.route('DELETE', (':id',), self.deleteTale)
         self.route('GET', (':id', 'access'), self.getTaleAccess)
         self.route('PUT', (':id', 'access'), self.updateTaleAccess)
@@ -110,6 +124,7 @@ class Tale(Resource):
         return tale
 
     @access.user
+    @filtermodel(model='tale', plugin='wholetale')
     @autoDescribeRoute(
         Description('Update an existing tale.')
         .modelParam('id', model='tale', plugin='wholetale',
@@ -129,6 +144,12 @@ class Tale(Resource):
 
         for keyword in self._model.modifiableFields:
             try:
+                if keyword == 'imageId':
+                    image = imageModel().load(
+                        tale['imageId'], user=self.getCurrentUser(),
+                        level=AccessType.READ, exc=True)
+                    taleObj['imageId'] = image['_id']
+                    continue
                 taleObj[keyword] = tale.pop(keyword)
             except KeyError:
                 pass
@@ -174,44 +195,162 @@ class Tale(Resource):
         self._model.remove(tale)
 
     @access.user
+    @filtermodel(model='tale', plugin='wholetale')
     @autoDescribeRoute(
         Description('Create a new tale from an external dataset.')
         .notes('Currently, this task only handles importing raw data. '
-               'In the future, it should also allow importing serialized Tales.')
-        .param('imageId', "The ID of the tale's image.", required=True)
-        .param('url', 'External dataset identifier.', required=True)
+               'A serialized Tale can be sent as the body of the request using an '
+               'appropriate content-type and with the other parameters as part '
+               'of the query string. The file will be stored in a temporary '
+               'space. However, it is not currently being processed in any '
+               'way.')
+        .param('imageId', "The ID of the tale's image.", required=False)
+        .param('url', 'External dataset identifier.', required=False)
         .param('spawn', 'If false, create only Tale object without a corresponding '
                         'Instance.',
                default=True, required=False, dataType='boolean')
+        .param('asTale', 'If True, assume that external dataset is a Tale.',
+               default=False, required=False, dataType='boolean')
         .jsonParam('lookupKwargs', 'Optional keyword arguments passed to '
                    'GET /repository/lookup', requireObject=True, required=False)
         .jsonParam('taleKwargs', 'Optional keyword arguments passed to POST /tale',
-                   required=False)
-        .responseClass('job')
+                   required=False, default={})
+        .responseClass('tale')
         .errorResponse('You are not authorized to create tales.', 403)
     )
-    def createTaleFromDataset(self, imageId, url, spawn, lookupKwargs, taleKwargs):
+    def createTaleFromDataset(self, imageId, url, spawn, asTale, lookupKwargs, taleKwargs):
         user = self.getCurrentUser()
-        image = imageModel().load(imageId, user=user, level=AccessType.READ,
-                                  exc=True)
-        token = self.getCurrentToken()
-        Token().addScope(token, scope=REST_CREATE_JOB_TOKEN_SCOPE)
-
-        try:
-            lookupKwargs['dataId'] = [url]
-        except TypeError:
-            lookupKwargs = dict(dataId=[url])
-
-        try:
-            taleKwargs['imageId'] = str(image['_id'])
-        except TypeError:
-            taleKwargs = dict(imageId=str(image['_id']))
-
-        taleTask = import_tale.delay(
-            lookupKwargs, taleKwargs, spawn=spawn,
-            girder_client_token=str(token['_id'])
+        token = Token().createToken(
+            user=user,
+            days=0.5,
+            scope=(TokenScope.USER_AUTH, REST_CREATE_JOB_TOKEN_SCOPE)
         )
-        return taleTask.job
+
+        if cherrypy.request.headers.get('Content-Type') == 'application/zip':
+            temp_dir, manifest_file, manifest, environment = self._extractZipPayload()
+            image = imageModel().findOne({"name": environment["name"]})
+            image = imageModel().filter(image, user)
+            icon = image.get(
+                "icon",
+                (
+                    "https://raw.githubusercontent.com/"
+                    "whole-tale/dashboard/master/public/"
+                    "images/whole_tale_logo.png"
+                ),
+            )
+            licenseSPDX = next(
+                (
+                    _["schema:license"]
+                    for _ in manifest["aggregates"]
+                    if "schema:license" in _
+                ),
+                WholeTaleLicense.default_spdx(),
+            )
+            authors = [
+                {
+                    "firstName": author["schema:givenName"],
+                    "lastName": author["schema:familyName"],
+                    "orcid": author["@id"],
+                }
+                for author in manifest["schema:author"]
+            ]
+
+            tale = taleModel().createTale(
+                image,
+                [],
+                creator=user,
+                save=True,
+                title=manifest["schema:name"],
+                description=manifest["schema:description"],
+                public=False,
+                config={},
+                icon=icon,
+                illustration=manifest["schema:image"],
+                authors=authors,
+                category=manifest["schema:category"],
+                licenseSPDX=licenseSPDX,
+            )
+
+            job = Job().createLocalJob(
+                title='Import Tale from zip', user=user,
+                type='wholetale.import_tale', public=False, async=True,
+                module='girder.plugins.wholetale.tasks.import_tale',
+                args=(temp_dir, manifest_file),
+                kwargs={'user': user, 'token': token, 'tale': tale}
+            )
+            Job().scheduleJob(job)
+        else:
+            if not (imageId or url):
+                msg = (
+                    "You need to provide either a zipfile with an exported Tale or "
+                    " both 'imageId' and 'url' parameters."
+                )
+                raise RestException(msg)
+
+            image = imageModel().load(imageId, user=user, level=AccessType.READ,
+                                      exc=True)
+
+            try:
+                lookupKwargs['dataId'] = [url]
+            except TypeError:
+                lookupKwargs = dict(dataId=[url])
+
+            if "title" not in taleKwargs:
+                dataMap = pids_to_entities(
+                    lookupKwargs["dataId"],
+                    user=user,
+                    base_url=lookupKwargs.get("base_url", DataONELocations.prod_cn),
+                    lookup=True
+                )
+                long_name = dataMap[0]["name"]
+                long_name = long_name.replace('-', ' ').replace('_', ' ')
+                shortened_name = textwrap.shorten(text=long_name, width=30)
+                taleKwargs["title"] = "A Tale for \"{}\"".format(shortened_name)
+
+            if "icon" not in taleKwargs:
+                taleKwargs["icon"] = image.get(
+                    "icon",
+                    (
+                        "https://raw.githubusercontent.com/"
+                        "whole-tale/dashboard/master/public/"
+                        "images/whole_tale_logo.png"
+                    ),
+                )
+
+            if "illustration" not in taleKwargs:
+                taleKwargs["illustration"] = (
+                    "https://raw.githubusercontent.com/"
+                    "whole-tale/dashboard/master/public/"
+                    "images/demo-graph2.jpg"
+                )
+
+            tale = taleModel().createTale(
+                image,
+                [],
+                creator=user,
+                save=True,
+                public=False,
+                **taleKwargs
+            )
+
+            if asTale:
+                job = Job().createLocalJob(
+                    title="Import Tale from external dataset",
+                    user=user,
+                    type="wholetale.import_binder",
+                    public=False,
+                    async=True,
+                    module="girder.plugins.wholetale.tasks.import_binder",
+                    args=(lookupKwargs,),
+                    kwargs={"user": user, "tale": tale, "spawn": spawn},
+                )
+                Job().scheduleJob(job)
+            else:
+                import_tale.delay(
+                    lookupKwargs, tale, spawn=spawn,
+                    girder_client_token=str(token['_id'])
+                )
+        return tale
 
     @access.user
     @autoDescribeRoute(
@@ -334,10 +473,8 @@ class Tale(Resource):
         .errorResponse('Admin access was denied for the tale.', 403)
     )
     def buildImage(self, tale, force):
-        token = self.getCurrentToken()
         user = self.getCurrentUser()
-
-        return self._model.buildImage(tale, user, token, force=force)
+        return self._model.buildImage(tale, user, force=force)
 
     def updateBuildStatus(self, event):
         """
@@ -395,3 +532,101 @@ class Tale(Resource):
             tale = self.model('tale', 'wholetale').load(taleId, force=True)
             tale['workspaceModified'] = int(time.time())
             self.model('tale', 'wholetale').save(tale)
+
+    @access.user
+    @autoDescribeRoute(
+        Description('Copy a tale.')
+        .modelParam('id', model='tale', plugin='wholetale', level=AccessType.READ)
+        .responseClass('tale')
+        .errorResponse('ID was invalid.')
+        .errorResponse('You are not authorized to copy this tale.', 403)
+    )
+    @filtermodel(model='tale', plugin='wholetale')
+    def copyTale(self, tale):
+        user = self.getCurrentUser()
+        image = self.model('image', 'wholetale').load(
+            tale['imageId'], user=user, level=AccessType.READ, exc=True)
+        default_author = ' '.join((user['firstName'], user['lastName']))
+        new_tale = self._model.createTale(
+            image, tale['dataSet'], creator=user, save=True,
+            title=tale.get('title'), description=tale.get('description'),
+            public=False, config=tale.get('config'),
+            icon=image.get('icon', ('https://raw.githubusercontent.com/'
+                                    'whole-tale/dashboard/master/public/'
+                                    'images/whole_tale_logo.png')),
+            illustration=tale.get(
+                'illustration', ('https://raw.githubusercontent.com/'
+                                 'whole-tale/dashboard/master/public/'
+                                 'images/demo-graph2.jpg')),
+            authors=tale.get('authors', default_author),
+            category=tale.get('category', 'science'),
+            narrative=tale.get('narrative'),
+            licenseSPDX=tale.get('licenseSPDX'),
+        )
+        new_tale['copyOfTale'] = tale['_id']
+        new_tale = self._model.save(new_tale)
+        # asynchronously copy the workspace of a source Tale
+        tale_workspaceId = self._model.createWorkspace(tale)['_id']
+        new_tale_workspaceId = self._model.createWorkspace(new_tale)['_id']
+        job = Job().createLocalJob(
+            title='Copy "{title}" workspace'.format(**tale), user=user,
+            type='wholetale.copy_workspace', public=False, async=True,
+            module='girder.plugins.wholetale.tasks.copy_workspace',
+            args=(tale_workspaceId, new_tale_workspaceId),
+            kwargs={'user': user}
+        )
+        Job().scheduleJob(job)
+        return new_tale
+
+    @staticmethod
+    def _extractZipPayload():
+        # TODO: Move assetstore type to wholetale.
+        assetstore = next((_ for _ in Assetstore().list() if _['type'] == 101), None)
+        if assetstore:
+            adapter = assetstore_utilities.getAssetstoreAdapter(assetstore)
+            tempDir = adapter.tempDir
+        else:
+            tempDir = None
+
+        with tempfile.NamedTemporaryFile(dir=tempDir) as fp:
+            for chunk in iterBody(2 * 1024 ** 3):
+                fp.write(chunk)
+            fp.seek(0)
+            if not zipfile.is_zipfile(fp):
+                raise RestException("Provided file is not a zipfile")
+
+            with zipfile.ZipFile(fp) as z:
+                manifest_file = next(
+                    (_ for _ in z.namelist() if _.endswith('manifest.json')),
+                    None
+                )
+                if not manifest_file:
+                    raise RestException("Provided file doesn't contain a Tale manifest")
+
+                try:
+                    manifest = json.loads(z.read(manifest_file).decode())
+                    # TODO: is there a better check?
+                    manifest['@id'].startswith('https://data.wholetale.org')
+                except Exception as e:
+                    raise RestException(
+                        "Couldn't read manifest.json or not a Tale: {}".format(str(e))
+                    )
+
+                env_file = next(
+                    (_ for _ in z.namelist() if _.endswith("environment.json")),
+                    None
+                )
+                try:
+                    environment = json.loads(z.read(env_file).decode())
+                except Exception as e:
+                    raise RestException(
+                        "Couldn't read environment.json or not a Tale: {}".format(str(e))
+                    )
+
+                # Extract files to tmp on workspace assetstore
+                temp_dir = tempfile.mkdtemp(dir=tempDir)
+                # In theory malicious content like: abs path for a member, or relative path with
+                # ../.. etc., is taken care of by zipfile.extractall, but in the end we're still
+                # unzipping an untrusted content. What could possibly go wrong...?
+                z.extractall(path=temp_dir)
+        return temp_dir, manifest_file, manifest, environment

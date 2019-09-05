@@ -117,7 +117,11 @@ taleModel = {
         },
         "publishInfo": {
             "$ref": "#/definitions/publishInfo"
-        }
+        },
+        "copyOfTale": {
+            "type": ["string", "null"],
+            "description": "An ID of a source Tale, if the Tale is a copy."
+        },
     },
     'example': {
         "_accessLevel": 2,
@@ -137,6 +141,7 @@ taleModel = {
         ],
         "category": "science",
         "config": {},
+        "copyOfTale": "5c4887409759c200017b231f",
         "created": "2019-01-23T15:24:48.217000+00:00",
         "creatorId": "5c4887149759c200017b22c0",
         "dataSet": [

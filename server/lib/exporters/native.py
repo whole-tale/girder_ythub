@@ -26,52 +26,13 @@ class NativeTaleExporter(TaleExporter):
             yield from self.dump_and_checksum(payload, path)
 
         # Update manifest with hashes
-        for path, chksum in self.state['md5']:
-            uri = '../' + path
-            index = next(
-                (
-                    i
-                    for (i, d) in enumerate(self.manifest['aggregates'])
-                    if d['uri'] == uri
-                ),
-                None,
-            )
-            if index is not None:
-                self.manifest['aggregates'][index]['md5'] = chksum
+        self.append_aggergate_checksums()
 
         # Update manifest with filesizes and mimeTypes
-        for path, fobj in Folder().fileList(
-            self.workspace, user=self.user, subpath=False, data=False
-        ):
-            uri = '../workspace/' + path
-            index = next(
-                (
-                    i
-                    for (i, d) in enumerate(self.manifest['aggregates'])
-                    if d['uri'] == uri
-                ),
-                None,
-            )
-            if index is not None:
-                self.manifest['aggregates'][index]['mimeType'] = (
-                    fobj['mimeType'] or 'application/octet-stream'
-                )
-                self.manifest['aggregates'][index]['size'] = fobj['size']
+        self.append_aggregate_filesize_mimetypes('../workspace/')
 
-        # Need to handle extra files coming not from girder...
-        for path, content in extra_files.items():
-            uri = '../' + path
-            index = next(
-                (
-                    i
-                    for (i, d) in enumerate(self.manifest['aggregates'])
-                    if d['uri'] == uri
-                ),
-                None,
-            )
-            if index is not None:
-                self.manifest['aggregates'][index]['mimeType'] = 'text/plain'
-                self.manifest['aggregates'][index]['size'] = len(content)
+        # Update manifest with filesizes and mimeTypes for extra items
+        self.append_extras_filesize_mimetypes(extra_files)
 
         for data in self.zip_generator.addFile(
             lambda: json.dumps(self.manifest, indent=4), 'metadata/manifest.json'

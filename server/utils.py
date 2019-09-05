@@ -63,3 +63,22 @@ def init_progress(resource, user, title, message, total):
 
     return Notification().createNotification(
         type="wt_progress", data=data, user=user, expires=expires)
+
+
+def deep_get(dikt, path):
+    """Get a value located in `path` from a nested dictionary.
+
+    Use a string separated by periods as the path to access
+    values in a nested dictionary:
+
+    deep_get(data, "data.files.0") == data["data"]["files"][0]
+
+    Taken from jupyter/repo2docker
+    """
+    value = dikt
+    for component in path.split("."):
+        if component.isdigit():
+            value = value[int(component)]
+        else:
+            value = value[component]
+    return value

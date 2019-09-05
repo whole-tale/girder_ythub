@@ -5,6 +5,7 @@ from girder.api import access
 from girder.api.describe import Description, autoDescribeRoute
 from girder.constants import AccessType, TokenScope
 from girder.api.rest import Resource, filtermodel
+from girder.models.token import Token
 from girder.plugins.jobs.models.job import Job
 
 from ..models.tale import Tale
@@ -57,7 +58,7 @@ class Publish(Resource):
     )
     def dataonePublish(self, tale, remoteMemberNode, coordinatingNode, authToken):
         user = self.getCurrentUser()
-        token = self.getCurrentToken()
+        token = Token().createToken(user=user, days=0.5)
 
         publishTask = publish.delay(
             tale=str(tale['_id']),

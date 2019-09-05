@@ -355,6 +355,9 @@ def getJobResult(self, job):
         else:
             self.ensureTokenScopes('jobs.job_' + str(job['_id']))
 
+    if 'result' in job:
+        return job['result']
+
     celeryTaskId = job.get('celeryTaskId')
     if celeryTaskId is None:
         logger.warn(

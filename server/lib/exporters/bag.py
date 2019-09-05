@@ -37,8 +37,7 @@ docker run  \
 
 docker run --rm \
     -v "`pwd`:/bag" \
-    -ti jfloff/alpine-python:2.7-slim \
-      -p bdbag -- bdbag --resolve-fetch all /bag
+    -ti {repo2docker} bdbag -- bdbag --resolve-fetch all /bag
 
 echo "========================================================================"
 echo " Open your browser and go to: http://localhost:{port}/{urlPath} "
@@ -119,9 +118,12 @@ class BagTaleExporter(TaleExporter):
             payload = self.stream_string(content)
             yield from self.dump_and_checksum(payload, path)
 
-        # In Bag there's an aditional 'data' folder where everything lives
+        # In Bag there's an additional 'data' folder where everything lives
         for i in range(len(self.manifest['aggregates'])):
             uri = self.manifest['aggregates'][i]['uri']
+            # Don't touch any of the extra files
+            if len([key for key in extra_files.keys() if '../' + key in uri]):
+                continue
             if uri.startswith('../'):
                 self.manifest['aggregates'][i]['uri'] = uri.replace('..', '../data')
             if 'bundledAs' in self.manifest['aggregates'][i]:
@@ -129,9 +131,17 @@ class BagTaleExporter(TaleExporter):
                 self.manifest['aggregates'][i]['bundledAs']['folder'] = folder.replace(
                     '..', '../data'
                 )
-
-        fetch_file = ""
         # Update manifest with hashes
+        self.append_aggergate_checksums()
+
+        # Update manifest with filesizes and mimeTypes for workspace items
+        self.append_aggregate_filesize_mimetypes('../data/workspace/')
+
+        # Update manifest with filesizes and mimeTypes for extra items
+        self.append_extras_filesize_mimetypes(extra_files)
+
+        # Create the fetch file
+        fetch_file = ""
         for bundle in self.manifest['aggregates']:
             if 'bundledAs' not in bundle:
                 continue

@@ -1,0 +1,428 @@
+interactions:
+- request:
+    body: null
+    headers:
+      Connection: [close]
+      Host: [doi.org]
+      User-Agent: [Python-urllib/3.6]
+    method: HEAD
+    uri: https://doi.org/10.5065/D6862DM8
+  response:
+    body: {string: ''}
+    headers:
+      CF-RAY: [4bde163b28abc536-ORD]
+      Connection: [close]
+      Content-Length: ['197']
+      Content-Type: [text/html;charset=utf-8]
+      Date: ['Wed, 27 Mar 2019 02:55:41 GMT']
+      Expect-CT: ['max-age=604800, report-uri="https://report-uri.cloudflare.com/cdn-cgi/beacon/expect-ct"']
+      Expires: ['Wed, 27 Mar 2019 03:45:47 GMT']
+      Location: ['https://arcticdata.io/catalog/#view/doi:10.5065/D6862DM8']
+      Server: [cloudflare]
+      Set-Cookie: ['__cfduid=db0ef16fe1b337903f2b8fd69befae3e41553655341; expires=Thu,
+          26-Mar-20 02:55:41 GMT; path=/; domain=.doi.org; HttpOnly']
+      Vary: [Accept]
+    status: {code: 302, message: ''}
+- request:
+    body: null
+    headers:
+      Connection: [close]
+      Host: [arcticdata.io]
+      User-Agent: [Python-urllib/3.6]
+    method: HEAD
+    uri: https://arcticdata.io/catalog/
+  response:
+    body: {string: ''}
+    headers:
+      Accept-Ranges: [bytes]
+      Access-Control-Allow-Credentials: ['true']
+      Access-Control-Allow-Headers: ['Authorization, Content-Type, Origin, Cache-Control']
+      Access-Control-Allow-Methods: ['GET, POST, PUT, OPTIONS']
+      Access-Control-Allow-Origin: ['']
+      Connection: [close]
+      Content-Length: ['6275']
+      Content-Type: [text/html]
+      Date: ['Wed, 27 Mar 2019 02:55:41 GMT']
+      ETag: ['"1883-5849c078f58eb"']
+      Last-Modified: ['Thu, 21 Mar 2019 15:02:40 GMT']
+      Server: [Apache/2.4.7 (Ubuntu)]
+      Vary: [Accept-Encoding]
+      X-Frame-Options: [SAMEORIGIN, sameorigin]
+    status: {code: 200, message: OK}
+- request:
+    body: null
+    headers:
+      Connection: [close]
+      Host: [services.dataverse.harvard.edu]
+      User-Agent: [Python-urllib/3.6]
+    method: GET
+    uri: https://services.dataverse.harvard.edu/miniverse/map/installations-json
+  response:
+    body: {string: '{"installations": [{"id": 1740, "name": "Abacus", "full_name":
+        "Abacus (British Columbia Research Libraries'' Data Services) Dataverse",
+        "is_active": true, "description": "Open for researchers associated with British
+        Columbia universities to deposit data.", "lat": 49.259982, "lng": -123.250212,
+        "logo": "https://dvn-h-prod.hz.lib.harvard.edu/media/logos/abacus-46x46.jpg",
+        "url": "https://dvn.library.ubc.ca/dvn/", "slug": "abacus", "version": "3.6"},
+        {"id": 1771, "name": "ADA Dataverse", "full_name": "Australian Data Archive",
+        "is_active": true, "description": "The Australian Data Archive provides a
+        national service for collecting, preserving, publishing and accessing digital
+        research data.", "lat": -35.343784, "lng": 149.082977, "logo": "https://dvn-h-prod.hz.lib.harvard.edu/media/logos/ada-46x46.jpg",
+        "url": "https://dataverse.ada.edu.au/", "slug": "ada-dataverse", "version":
+        "4.6.1"}, {"id": 1773, "name": "AUSSDA Dataverse", "full_name": "Austrian
+        Social Science Data Archive", "is_active": true, "description": "AUSSDA -
+        The Austrian Social Science Data Archive makes social science data accessible,
+        creating opportunities for research and data reuse, benefitting science and
+        society. AUSSDA serves as the Austrian representative in the Consortium of
+        European Social Science Data Archives (CESSDA ERIC).", "lat": 48.210033, "lng":
+        16.363449, "logo": "https://dvn-h-prod.hz.lib.harvard.edu/media/logos/aussda-46x46.png",
+        "url": "https://data.aussda.at/", "slug": "aussda-dataverse", "version": "4.6.2"},
+        {"id": 1778, "name": "Botswana Harvard Data", "full_name": "Botswana Harvard
+        AIDS Institute Partnership", "is_active": true, "description": "The Botswana
+        Harvard AIDS Institute Partneship is a world-renowned educational institution
+        of excellence in research and education pertinent to HIV/AIDS and other emerging
+        public health challenges. Established in 1996, the Botswana Harvard AIDS Institute
+        Partnership (BHP) is a collaborative research and training initiative between
+        Botswana\u2019s Ministry of Health and Wellness and the Harvard T.H. Chan
+        School of Public Health AIDS Initiative. The BHP Dataverse is a data repository
+        for all the research done at BHP. Raw data, anonymised data and final analysis
+        data for every research. This repository will achieve and also easy data sharing
+        within the organisation and outside.", "lat": -24.653257, "lng": 25.906792,
+        "logo": "https://dvn-h-prod.hz.lib.harvard.edu/media/logos/botswana-46x46.png",
+        "url": "https://dataverse.bhp.org.bw/", "slug": "botswana-harvard-data", "version":
+        "4.9.4"}, {"id": 1759, "name": "Catalogues (CDSP)", "full_name": "Catalogues
+        (CDSP)", "is_active": true, "description": "Open for researchers and organizations
+        associated with\r\nFrench universities to deposit data. Hosted by the Center
+        for\r\nSocio-Political Data (Sciences Po and CNRS).", "lat": 48.854027, "lng":
+        2.328351, "logo": "https://dvn-h-prod.hz.lib.harvard.edu/media/logos/catalogues-46x46.png",
+        "url": "https://catalogues.cdsp.sciences-po.fr/", "slug": "catalogues-cdsp",
+        "version": "4.6.1"}, {"id": 1763, "name": "CIFOR", "full_name": "Center for
+        International Forestry Research (CIFOR) Dataverse", "is_active": true, "description":
+        "Center for International Forestry Research (CIFOR) Dataverse", "lat": -6.594293,
+        "lng": 106.806000, "logo": "https://dvn-h-prod.hz.lib.harvard.edu/media/logos/CIFOR-46x46.png",
+        "url": "https://data.cifor.org/dataverse/s", "slug": "cifor", "version": "4.6"},
+        {"id": 1741, "name": "CIMMYT", "full_name": "CIMMYT Dataverse", "is_active":
+        true, "description": "Free, open access repository of research data and software
+        produced and developed by CIMMYT scientists.", "lat": 19.531535, "lng": -98.846064,
+        "logo": "https://dvn-h-prod.hz.lib.harvard.edu/media/logos/cimmyt-46x46.jpg",
+        "url": "http://data.cimmyt.org/", "slug": "cimmyt", "version": "3.0"}, {"id":
+        1764, "name": "CIRAD", "full_name": "CIRAD Dataverse", "is_active": true,
+        "description": "Organisme fran\u00e7ais de recherche agronomique et de coop\u00e9ration
+        internationale pour le d\u00e9veloppement durable des r\u00e9gions tropicales
+        et m\u00e9diterran\u00e9ennes, les activit\u00e9s du CIRAD rel\u00e8vent des
+        sciences du vivant, des sciences sociales et des sciences de l\u2019ing\u00e9nieur
+        appliqu\u00e9es \u00e0 l\u2019agriculture, \u00e0 l\u2019alimentation, \u00e0
+        l\u2019environnement et \u00e0 la gestion des territoires.\r\n\r\nFrench agricultural
+        research and international cooperation organization working for the sustainable
+        development of tropical and Mediterranean regions, CIRAD''s activities concern
+        the life sciences, social sciences and engineering sciences, applied to agriculture,
+        the environment and territorial management.", "lat": 43.650089, "lng": 3.869122,
+        "logo": "https://dvn-h-prod.hz.lib.harvard.edu/media/logos/cirad-46x46.jpg",
+        "url": "https://dataverse.cirad.fr/", "slug": "cirad", "version": "4.5"},
+        {"id": 1774, "name": "Dalhousie University Dataverse", "full_name": "Dalhousie
+        University", "is_active": true, "description": "Share, publish and get credit
+        for your data. Find and cite research data from across all research fields.",
+        "lat": 44.637484, "lng": -63.591220, "logo": "https://dvn-h-prod.hz.lib.harvard.edu/media/logos/dalhousie-46x46.png",
+        "url": "https://dataverse.library.dal.ca", "slug": "dalhousie-university-dataverse",
+        "version": "4.7"}, {"id": 1777, "name": "Data Inra", "full_name": "National
+        Institute of Agricultural Research (INRA)", "is_active": true, "description":
+        "INRA is Europe\u2019s top agricultural research institute and the world\u2019s
+        number two centre for the agricultural sciences. Data Inra is offered by INRA
+        as part of its mission to open the results of its research.\r\n\r\nData Inra
+        will share research data in relation with food, nutrition, agriculture and
+        environment. It includes experimental, simulation and observation data, omic
+        data, survey and text data.\r\n\r\nOnly data produced by or in collaboration
+        with INRA will be hosted in the repository, but anyone can access the metadata
+        and the open data.", "lat": 48.801407, "lng": 2.130122, "logo": "https://dvn-h-prod.hz.lib.harvard.edu/media/logos/inra-46x46-2.jpg",
+        "url": "https://data.inra.fr/", "slug": "data-inra", "version": "4.5.1"},
+        {"id": 1743, "name": "DataSpace@HKUST", "full_name": "DataSpace@HKUST", "is_active":
+        true, "description": "", "lat": 22.336281, "lng": 114.266721, "logo": "https://dvn-h-prod.hz.lib.harvard.edu/media/logos/dataspace-46x46.jpg",
+        "url": "https://dataspace.ust.hk/", "slug": "dataspacehkust", "version": "4.2"},
+        {"id": 1762, "name": "Dataverse e-cienciaDatos", "full_name": "Dataverse e-cienciaDatos",
+        "is_active": true, "description": "Repositorio de Datos del Consorcio Madro\u00f1o.",
+        "lat": 40.416775, "lng": -3.749200, "logo": "https://dvn-h-prod.hz.lib.harvard.edu/media/logos/consorciomadrono-46x46.gif",
+        "url": "https://edatos.consorciomadrono.es/", "slug": "dataverse-e-cienciadatos",
+        "version": "4.8.4"}, {"id": 1742, "name": "DataverseNL", "full_name": "DataverseNL",
+        "is_active": true, "description": "Open for researchers and organizations
+        associated with Dutch universities to deposit data.", "lat": 52.547260, "lng":
+        5.242346, "logo": "https://dvn-h-prod.hz.lib.harvard.edu/media/logos/logosdataverseNL-46x46.png",
+        "url": "https://dataverse.nl/", "slug": "dataversenl", "version": "4.6.1"},
+        {"id": 1767, "name": "DataverseNO", "full_name": "Dataverse Network Norway",
+        "is_active": true, "description": "Research data archive open for Norwegian
+        research institutions. Operated by UiT The Arctic University of Norway.",
+        "lat": 69.649208, "lng": 18.955324, "logo": "https://dvn-h-prod.hz.lib.harvard.edu/media/logos/dataverseNO-46x46.png",
+        "url": "https://dataverse.no/", "slug": "dataverseno", "version": "4.9.4"},
+        {"id": 1768, "name": "DR-NTU (Data)", "full_name": "Nanyang Technological
+        University", "is_active": true, "description": "The institutional open access
+        research data repository for Nanyang Technological University (NTU). NTU researchers
+        are encouraged to use DR-NTU (Data) to deposit, publish and archive their
+        final research data in order to make their research data discoverable, accessible
+        and reusable.", "lat": 1.348668, "lng": 103.683104, "logo": "https://dvn-h-prod.hz.lib.harvard.edu/media/logos/NTULogo_2.gif",
+        "url": "https://researchdata.ntu.edu.sg", "slug": "dr-ntu-data", "version":
+        "4.7.1"}, {"id": 1744, "name": "Fudan University", "full_name": "Fudan University
+        Dataverse", "is_active": true, "description": "Open for Fudan University affiliated
+        researchers to deposit data.", "lat": 31.298531, "lng": 121.501446, "logo":
+        "https://dvn-h-prod.hz.lib.harvard.edu/media/logos/fudan-46x46.png", "url":
+        "https://dvn.fudan.edu.cn/home/", "slug": "fudan-university", "version": "4.x"},
+        {"id": 1745, "name": "Harvard University", "full_name": "Harvard University",
+        "is_active": true, "description": "Share, archive, and get credit for your
+        data. Find and cite data across all research fields.", "lat": 42.380098, "lng":
+        -71.116629, "logo": "https://dvn-h-prod.hz.lib.harvard.edu/media/logos/harvard-46x46.png",
+        "url": "https://dataverse.harvard.edu", "slug": "harvard-university", "version":
+        "4.8.4"}, {"id": 1746, "name": "HeiDATA", "full_name": "Heidelberg University",
+        "is_active": true, "description": "Open for Heidelberg University affiliated
+        researchers to deposit data.", "lat": 49.398750, "lng": 8.672434, "logo":
+        "https://dvn-h-prod.hz.lib.harvard.edu/media/logos/heidelberg-46x46.jpg",
+        "url": "https://heidata.uni-heidelberg.de/", "slug": "heidata", "version":
+        "4.8.2"}, {"id": 1747, "name": "IBICT", "full_name": "IBICT (Brazil)", "is_active":
+        true, "description": "The network Cariniana, cariniana.ibict.br,  is funded
+        entirely by the Brazilian government and in particular by MCTI (Minist\u00e9rio
+        da Ci\u00eancia, Tecnologia e Inova\u00e7\u00e3o). It is a project for long-term
+        preservation of scientific publications in Brazil.", "lat": -15.805842, "lng":
+        -47.881369, "logo": "https://dvn-h-prod.hz.lib.harvard.edu/media/logos/ibict-46x46.jpg",
+        "url": "https://repositoriopesquisas.ibict.br/", "slug": "ibict", "version":
+        "4.5.1"}, {"id": 1757, "name": "ICRISAT", "full_name": "ICRISAT", "is_active":
+        true, "description": "International Crops Research Institute for the Semi-Arid
+        Tropics.  Free open data repository of ICRISAT research data including Social
+        science, Phenotypic, Genotypic, Spatial and Soil & Weather data which are
+        linked with open publications.", "lat": 17.385000, "lng": 78.486700, "logo":
+        "https://dvn-h-prod.hz.lib.harvard.edu/media/logos/icrisat-46x46.png", "url":
+        "http://dataverse.icrisat.org/", "slug": "icrisat", "version": "4.8.1"}, {"id":
+        1784, "name": "ICWSM", "full_name": "International AAAI Conference on Web
+        and Social Media", "is_active": true, "description": "Datasets from the International
+        AAAI Conference on Web and Social Media (ICWSM).", "lat": 37.432057, "lng":
+        -122.175297, "logo": "https://dvn-h-prod.hz.lib.harvard.edu/media/logos/icwsm-46x46.jpg",
+        "url": "https://dataverse.mpi-sws.org/dataverse/icwsm", "slug": "icwsm", "version":
+        "4.8.5"}, {"id": 1782, "name": "Ifsttar Dataverse", "full_name": "French Institute
+        of Science and Technology for Transport, Development and Networks", "is_active":
+        true, "description": "Ifsttar Dataverse is an institutional repository for
+        research data of the French Institute of Science and Technology for Transport,
+        Development and Networks. It catalogues research data in the field of transports,
+        spatial planning and civil engineering.", "lat": 48.852800, "lng": 2.602700,
+        "logo": "https://dvn-h-prod.hz.lib.harvard.edu/media/logos/ifsttar-46x46.jpg",
+        "url": "https://research-data.ifsttar.fr/dataverse/data", "slug": "ifsttar-dataverse",
+        "version": "4.10.1"}, {"id": 1748, "name": "IISH Dataverse", "full_name":
+        "International Institute of Social History", "is_active": true, "description":
+        "The IISH Dataverse contains micro-, meso-, and macro-level datasets on social
+        and economic history.", "lat": 52.369021, "lng": 4.939226, "logo": "https://dvn-h-prod.hz.lib.harvard.edu/media/logos/internationalInstituteOfSocialHistory-46x46.jpg",
+        "url": "https://datasets.socialhistory.org/", "slug": "iish-dataverse", "version":
+        "4.3"}, {"id": 1783, "name": "International Potato Center", "full_name": "International
+        Potato Center", "is_active": true, "description": "Centro Internacional De
+        La Papa (International Potato Center) is a member of the CGIAR Consortium,
+        an international organization made up of 15 centers engaged in research for
+        a food secure future.", "lat": -12.077791, "lng": -76.946888, "logo": "https://dvn-h-prod.hz.lib.harvard.edu/media/logos/cip-46x46.png",
+        "url": "https://data.cipotato.org/dataverse.xhtml", "slug": "international-potato-center",
+        "version": "4.8.1"}, {"id": 1749, "name": "Johns Hopkins University", "full_name":
+        "Johns Hopkins", "is_active": true, "description": "Johns Hopkins University
+        Data Archive", "lat": 39.329055, "lng": -76.620335, "logo": "https://dvn-h-prod.hz.lib.harvard.edu/media/logos/johns-46x46.jpg",
+        "url": "https://archive.data.jhu.edu/", "slug": "johns-hopkins-university",
+        "version": "4.6"}, {"id": 1750, "name": "Libra Data", "full_name": "Libra
+        Data (University of Virginia)", "is_active": true, "description": "Libra Data
+        is a place for UVA researchers to share data publicly, and is part of the
+        Libra Scholarly Repository suite of services which includes works of UVA scholarship
+        such as articles, books, theses, and data.", "lat": 38.034578, "lng": -78.507394,
+        "logo": "https://dvn-h-prod.hz.lib.harvard.edu/media/logos/libra-46x46.jpg",
+        "url": "https://dataverse.lib.virginia.edu/", "slug": "libra-data", "version":
+        "4.7.1"}, {"id": 1776, "name": "LIPI Dataverse", "full_name": "Lembaga Ilmu
+        Pengetahuan Indonesia (LIPI) Dataverse", "is_active": true, "description":
+        "The Repositori Ilmiah Nasional (RIN) is a means to share, preserve, cite,
+        explore, and analyze research data. RIN increases data availability and allows
+        others to reproduce research more easily. Researchers, data authors, publishers,
+        data distributors, and affiliate institutions all receive academic credit
+        and web visibility. Researchers, agencies, and funders have full control over
+        research data.", "lat": -6.228771, "lng": 106.818082, "logo": "https://dvn-h-prod.hz.lib.harvard.edu/media/logos/LIPI-46x46.png",
+        "url": "https://rin.lipi.go.id", "slug": "lipi-dataverse", "version": "4.6.2"},
+        {"id": 1756, "name": "Maine Dataverse Network", "full_name": "Maine Dataverse
+        Network", "is_active": true, "description": "A service brought to you by the
+        ACG@UMaine. The way Supercomputing should be!", "lat": 44.901349, "lng": -68.671815,
+        "logo": "https://dvn-h-prod.hz.lib.harvard.edu/media/logos/uOfMaine-46x46.jpg",
+        "url": "http://dataverse.acg.maine.edu/dvn/", "slug": "maine-dataverse-network",
+        "version": "3.5.1"}, {"id": 1752, "name": "Peking University", "full_name":
+        "Peking University", "is_active": true, "description": "Peking University
+        Open Research Data Platform", "lat": 39.993923, "lng": 116.306539, "logo":
+        "https://dvn-h-prod.hz.lib.harvard.edu/media/logos/peking-46x46.jpg", "url":
+        "http://opendata.pku.edu.cn/", "slug": "peking-university", "version": "4.0"},
+        {"id": 1781, "name": "QDR Main Collection", "full_name": "Qualitative Data
+        Repository", "is_active": true, "description": "QDR curates, stores, preserves,
+        publishes, and enables the download of digital data generated through qualitative
+        and multi-method research in the social sciences. The repository develops
+        and disseminates guidance for managing, sharing, citing, and reusing qualitative
+        data, and contributes to the generation of common standards for doing so.
+        QDR\u2019s overarching goals are to make sharing qualitative data customary
+        in the social sciences, to broaden access to social science data, and to strengthen
+        qualitative and multi-method research.", "lat": 43.038013, "lng": -76.135566,
+        "logo": "https://dvn-h-prod.hz.lib.harvard.edu/media/logos/qdr-46x46_kCBOWwk.png",
+        "url": "https://data.qdr.syr.edu", "slug": "qdr-main-collection", "version":
+        "4.10.1"}, {"id": 1780, "name": "Reposit\u00f3rio de Dados de Pesquisa da
+        UFABC", "full_name": "Universidade Federal do ABC (UFABC)", "is_active": true,
+        "description": "", "lat": -23.643807, "lng": -46.528304, "logo": "https://dvn-h-prod.hz.lib.harvard.edu/media/logos/ufabc-46x46_pWiXhTC.png",
+        "url": "http://dataverse.ufabc.edu.br", "slug": "repositorio-de-dados-de-pesquisa-da-ufabc",
+        "version": "4.8.5"}, {"id": 1785, "name": "Reposit\u00f3rio de Dados de Pesquisa
+        do ILEEL", "full_name": "Institute of Linguistics and Literature (Federal
+        University of Uberl\u00e2ndia)", "is_active": true, "description": "Research
+        data repository of Institute of Linguistics and Literature / Federal University
+        of Uberlandia", "lat": -18.908702, "lng": -48.291944, "logo": "https://dvn-h-prod.hz.lib.harvard.edu/media/logos/ileel-46x46_JPxxGBm.png",
+        "url": "http://dataverse.ileel.ufu.br", "slug": "repositorio-de-dados-de-pesquisa-do-ileel",
+        "version": "4.11"}, {"id": 1758, "name": "Scholars Portal", "full_name": "Scholars
+        Portal Dataverse", "is_active": true, "description": "Open for researchers
+        and organizations associated with Ontario universities to deposit data.",
+        "lat": 43.653200, "lng": -79.383200, "logo": "https://dvn-h-prod.hz.lib.harvard.edu/media/logos/scholarsportal-46x46.jpg",
+        "url": "https://dataverse.scholarsportal.info/", "slug": "scholars-portal",
+        "version": "4.10.1"}, {"id": 1761, "name": "Texas Data Repository Dataverse",
+        "full_name": "Texas Data Repository Dataverse", "is_active": true, "description":
+        "A statewide archive of research data from Texas Digital Library (TDL) member
+        institutions.", "lat": 30.307182, "lng": -97.755996, "logo": "https://dvn-h-prod.hz.lib.harvard.edu/media/logos/tdl-46x46.png",
+        "url": "https://dataverse.tdl.org/", "slug": "texas-data-repository-dataverse",
+        "version": "4.7.1"}, {"id": 1755, "name": "UAL Dataverse", "full_name": "University
+        of Alberta Libraries Dataverse", "is_active": true, "description": "Open for
+        University of Alberta affiliated researchers to deposit data.", "lat": 53.494321,
+        "lng": -113.549027, "logo": "https://dvn-h-prod.hz.lib.harvard.edu/media/logos/uOfAlberta-46x46.jpg",
+        "url": "https://dataverse.library.ualberta.ca/dvn/", "slug": "ual-dataverse",
+        "version": "4.5.1"}, {"id": 1772, "name": "UNB Libraries Dataverse", "full_name":
+        "University of New Brunswick Libraries", "is_active": true, "description":
+        "", "lat": 45.964993, "lng": -66.646332, "logo": "https://dvn-h-prod.hz.lib.harvard.edu/media/logos/unbDataverse-46x46.png",
+        "url": "https://dataverse.lib.unb.ca/", "slug": "unb-libraries-dataverse",
+        "version": "4.8.2"}, {"id": 1751, "name": "UNC Dataverse", "full_name": "Odum
+        Institute for Research in Social Science", "is_active": true, "description":
+        "Open for all researchers worldwide from all disciplines to deposit data.
+        The Odum Institute also offers multiple data curation service levels. For
+        more information, go to http://www.irss.unc.edu/odum/contentPrimary.jsp?nodeid=5.",
+        "lat": 35.905022, "lng": -79.050851, "logo": "https://dvn-h-prod.hz.lib.harvard.edu/media/logos/unc-46x46.png",
+        "url": "https://dataverse.unc.edu/", "slug": "unc-dataverse", "version": "4.7.1"},
+        {"id": 1765, "name": "University of Manitoba Dataverse", "full_name": "University
+        of Manitoba Dataverse", "is_active": true, "description": "", "lat": 49.895077,
+        "lng": -97.138451, "logo": "https://dvn-h-prod.hz.lib.harvard.edu/media/logos/manitoba-46x46.jpg",
+        "url": "https://dataverse.lib.umanitoba.ca/", "slug": "university-of-manitoba-dataverse",
+        "version": "4.8.4"}, {"id": 1775, "name": "UWI", "full_name": "The University
+        of the West Indies", "is_active": true, "description": "The University of
+        the West Indies Research Datasets Repository.", "lat": 18.006372, "lng": -76.747148,
+        "logo": "https://dvn-h-prod.hz.lib.harvard.edu/media/logos/uwi-46x46.png",
+        "url": "http://dataverse.sta.uwi.edu/", "slug": "uwi", "version": "4.8.4"},
+        {"id": 1779, "name": "VTTI", "full_name": "Virginia Tech Transportation Institute",
+        "is_active": true, "description": "Transportation data repository maintained
+        by the Virginia Tech Transportation Institute.", "lat": 37.190102, "lng":
+        -80.396776, "logo": "https://dvn-h-prod.hz.lib.harvard.edu/media/logos/vtti-46x46_Q6PC6r7.png",
+        "url": "https://dataverse.vtti.vt.edu/", "slug": "vtti", "version": "4.9.4"}]}'}
+    headers:
+      Cache-Control: [max-age=7200]
+      Connection: [Close]
+      Content-Length: ['20353']
+      Content-Type: [application/json]
+      Date: ['Wed, 27 Mar 2019 02:55:42 GMT']
+      Expires: ['Wed, 27 Mar 2019 03:53:34 GMT']
+      Last-Modified: ['Wed, 27 Mar 2019 01:53:34 GMT']
+      Server: [Apache/2.4.6 (Red Hat Enterprise Linux) OpenSSL/1.0.2k-fips mod_wsgi/3.4
+          Python/2.7.5]
+      X-Frame-Options: [SAMEORIGIN]
+    status: {code: 200, message: OK}
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Connection: [keep-alive]
+      User-Agent: [python-requests/2.19.1]
+    method: GET
+    uri: https://cn.dataone.org/cn/v2/query/solr/?q=identifier:%22doi%3A10.5065%2FD6862DM8%22&fl=identifier,formatType,formatId,resourceMap&rows=1000&start=0&wt=json
+  response:
+    body: {string: '{"responseHeader":{"status":0,"QTime":3,"params":{"q":"identifier:\"doi:10.5065/D6862DM8\"","fl":"identifier,formatType,formatId,resourceMap","start":"0","rows":"1000","wt":"json"}},"response":{"numFound":1,"start":0,"docs":[{"identifier":"doi:10.5065/D6862DM8","formatId":"eml://ecoinformatics.org/eml-2.1.1","formatType":"METADATA","resourceMap":["resource_map_doi:10.5065/D6862DM8"]}]}}
+
+'}
+    headers:
+      Access-Control-Allow-Credentials: ['true']
+      Access-Control-Allow-Headers: ['Authorization, Content-Type, Location, Content-Length,
+          x-annotator-auth-token']
+      Access-Control-Allow-Methods: ['POST, GET, OPTIONS, PUT, DELETE']
+      Access-Control-Allow-Origin: ['']
+      Access-Control-Expose-Headers: ['Content-Length, Content-Type, Location']
+      Connection: [Keep-Alive]
+      Content-Type: [application/json; charset=UTF-8]
+      Date: ['Wed, 27 Mar 2019 02:55:42 GMT']
+      Keep-Alive: ['timeout=5, max=100']
+      Server: [Apache/2.4.7 (Ubuntu)]
+      Transfer-Encoding: [chunked]
+    status: {code: 200, message: OK}
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Connection: [keep-alive]
+      User-Agent: [python-requests/2.19.1]
+    method: GET
+    uri: https://cn.dataone.org/cn/v2/query/solr/?q=identifier:%22doi%3A10.5065%2FD6862DM8%22&fl=identifier,formatType,formatId,resourceMap&rows=1000&start=0&wt=json
+  response:
+    body: {string: '{"responseHeader":{"status":0,"QTime":3,"params":{"q":"identifier:\"doi:10.5065/D6862DM8\"","fl":"identifier,formatType,formatId,resourceMap","start":"0","rows":"1000","wt":"json"}},"response":{"numFound":1,"start":0,"docs":[{"identifier":"doi:10.5065/D6862DM8","formatId":"eml://ecoinformatics.org/eml-2.1.1","formatType":"METADATA","resourceMap":["resource_map_doi:10.5065/D6862DM8"]}]}}
+
+'}
+    headers:
+      Access-Control-Allow-Credentials: ['true']
+      Access-Control-Allow-Headers: ['Authorization, Content-Type, Location, Content-Length,
+          x-annotator-auth-token']
+      Access-Control-Allow-Methods: ['POST, GET, OPTIONS, PUT, DELETE']
+      Access-Control-Allow-Origin: ['']
+      Access-Control-Expose-Headers: ['Content-Length, Content-Type, Location']
+      Connection: [Keep-Alive]
+      Content-Type: [application/json; charset=UTF-8]
+      Date: ['Wed, 27 Mar 2019 02:55:43 GMT']
+      Keep-Alive: ['timeout=5, max=100']
+      Server: [Apache/2.4.7 (Ubuntu)]
+      Transfer-Encoding: [chunked]
+    status: {code: 200, message: OK}
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Connection: [keep-alive]
+      User-Agent: [python-requests/2.19.1]
+    method: GET
+    uri: https://cn.dataone.org/cn/v2/query/solr/?q=resourceMap:%22resource_map_doi%3A10.5065%2FD6862DM8%22&fl=identifier,formatType,title,size,formatId,fileName,documents&rows=1000&start=0&wt=json
+  response:
+    body: {string: '{"responseHeader":{"status":0,"QTime":3,"params":{"q":"resourceMap:\"resource_map_doi:10.5065/D6862DM8\"","fl":"identifier,formatType,title,size,formatId,fileName,documents","start":"0","rows":"1000","wt":"json"}},"response":{"numFound":17,"start":0,"docs":[{"identifier":"urn:uuid:75308ecc-cdc2-4ce0-a1b0-2cd829ce46c8","fileName":"datadict2000.html","formatId":"text/html","formatType":"DATA","size":8784},{"identifier":"urn:uuid:80977cc2-1422-4369-804d-90a2e2109a92","fileName":"AK_counties_2000.xls","formatId":"application/vnd.ms-excel","formatType":"DATA","size":53248},{"identifier":"doi:10.5065/D6862DM8","fileName":"science_metadata.xml","formatId":"eml://ecoinformatics.org/eml-2.1.1","formatType":"METADATA","size":7841,"title":"Humans
+        and Hydrology at High Latitudes: Water Use Information","documents":["urn:uuid:36f3673b-1f01-4eac-8d9e-7aff619edde6","doi:10.5065/D6862DM8","urn:uuid:75308ecc-cdc2-4ce0-a1b0-2cd829ce46c8","urn:uuid:62e1a8c5-406b-43f9-9234-1415277674cb","urn:uuid:b4831b1b-7472-4015-b795-836d01ad0592","urn:uuid:4b56f9ba-c654-4692-83b6-6c72968893f1","urn:uuid:051184f2-2ee1-44db-8b5b-7fdd5b96d96d","urn:uuid:01a53103-8db1-46b3-967c-b42acf69ae08","urn:uuid:bbec7da2-6789-4c5b-9736-f0db470cd0ad","urn:uuid:1938c259-3b7e-4937-b79f-e26067bdab01","urn:uuid:7f3d0f47-56db-4562-bdff-1182b78302ef","urn:uuid:9440d2bc-234c-4955-85d7-2b144c8b71bd","urn:uuid:03c24891-8fd4-4286-bfdf-cc6e6858a672","urn:uuid:80977cc2-1422-4369-804d-90a2e2109a92","urn:uuid:86ba12d0-82da-48bf-a73a-3e0cccf5455d","urn:uuid:92312ab7-ee0c-4874-ab4b-6944e1376265","urn:uuid:e0064b54-ee0e-42c1-891d-742bef38243a"]},{"identifier":"urn:uuid:4b56f9ba-c654-4692-83b6-6c72968893f1","fileName":"dictionary95.txt","formatId":"text/plain","formatType":"DATA","size":26803},{"identifier":"urn:uuid:36f3673b-1f01-4eac-8d9e-7aff619edde6","fileName":"estimated_use_of_water_in_US_2005.pdf","formatId":"application/pdf","formatType":"DATA","size":5011961},{"identifier":"urn:uuid:62e1a8c5-406b-43f9-9234-1415277674cb","fileName":"usco2000.xls","formatId":"application/vnd.ms-excel","formatType":"DATA","size":1558016},{"identifier":"urn:uuid:b4831b1b-7472-4015-b795-836d01ad0592","fileName":"us85co.xls","formatId":"application/vnd.ms-excel","formatType":"DATA","size":2680787},{"identifier":"urn:uuid:051184f2-2ee1-44db-8b5b-7fdd5b96d96d","fileName":"datadict2005.html","formatId":"text/html","formatType":"DATA","size":13783},{"identifier":"urn:uuid:01a53103-8db1-46b3-967c-b42acf69ae08","fileName":"usco2005.xls","formatId":"application/vnd.ms-excel","formatType":"DATA","size":6427136},{"identifier":"urn:uuid:bbec7da2-6789-4c5b-9736-f0db470cd0ad","fileName":"wastewaterNWT.xls","formatId":"application/vnd.ms-excel","formatType":"DATA","size":15360},{"identifier":"urn:uuid:1938c259-3b7e-4937-b79f-e26067bdab01","fileName":"withdrawal_ob_engl.xls","formatId":"application/vnd.ms-excel","formatType":"DATA","size":45056},{"identifier":"urn:uuid:7f3d0f47-56db-4562-bdff-1182b78302ef","fileName":"readme.html","formatId":"text/html","formatType":"DATA","size":8087},{"identifier":"urn:uuid:9440d2bc-234c-4955-85d7-2b144c8b71bd","fileName":"us90co.xls","formatId":"application/vnd.ms-excel","formatType":"DATA","size":2686433},{"identifier":"urn:uuid:03c24891-8fd4-4286-bfdf-cc6e6858a672","fileName":"first_nations_canada_water_and_wastewater_systems.pdf","formatId":"application/pdf","formatType":"DATA","size":373893},{"identifier":"urn:uuid:86ba12d0-82da-48bf-a73a-3e0cccf5455d","fileName":"usco95.xls","formatId":"application/vnd.ms-excel","formatType":"DATA","size":4139493},{"identifier":"urn:uuid:92312ab7-ee0c-4874-ab4b-6944e1376265","fileName":"estimated_use_of_water_in_US_2000.pdf","formatId":"application/pdf","formatType":"DATA","size":5775705},{"identifier":"urn:uuid:e0064b54-ee0e-42c1-891d-742bef38243a","fileName":"wudict.txt","formatId":"text/plain","formatType":"DATA","size":23909}]}}
+
+'}
+    headers:
+      Access-Control-Allow-Credentials: ['true']
+      Access-Control-Allow-Headers: ['Authorization, Content-Type, Location, Content-Length,
+          x-annotator-auth-token']
+      Access-Control-Allow-Methods: ['POST, GET, OPTIONS, PUT, DELETE']
+      Access-Control-Allow-Origin: ['']
+      Access-Control-Expose-Headers: ['Content-Length, Content-Type, Location']
+      Connection: [Keep-Alive]
+      Content-Type: [application/json; charset=UTF-8]
+      Date: ['Wed, 27 Mar 2019 02:55:43 GMT']
+      Keep-Alive: ['timeout=5, max=100']
+      Server: [Apache/2.4.7 (Ubuntu)]
+      Transfer-Encoding: [chunked]
+    status: {code: 200, message: OK}
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Connection: [keep-alive]
+      User-Agent: [python-requests/2.19.1]
+    method: GET
+    uri: https://cn.dataone.org/cn/v2/query/solr/?q=resourceMap:%22resource_map_doi%3A10.5065%2FD6862DM8%22&fl=identifier,formatType,title,size,formatId,fileName,documents&rows=1000&start=0&wt=json
+  response:
+    body: {string: '{"responseHeader":{"status":0,"QTime":3,"params":{"q":"resourceMap:\"resource_map_doi:10.5065/D6862DM8\"","fl":"identifier,formatType,title,size,formatId,fileName,documents","start":"0","rows":"1000","wt":"json"}},"response":{"numFound":17,"start":0,"docs":[{"identifier":"urn:uuid:75308ecc-cdc2-4ce0-a1b0-2cd829ce46c8","fileName":"datadict2000.html","formatId":"text/html","formatType":"DATA","size":8784},{"identifier":"urn:uuid:80977cc2-1422-4369-804d-90a2e2109a92","fileName":"AK_counties_2000.xls","formatId":"application/vnd.ms-excel","formatType":"DATA","size":53248},{"identifier":"doi:10.5065/D6862DM8","fileName":"science_metadata.xml","formatId":"eml://ecoinformatics.org/eml-2.1.1","formatType":"METADATA","size":7841,"title":"Humans
+        and Hydrology at High Latitudes: Water Use Information","documents":["urn:uuid:36f3673b-1f01-4eac-8d9e-7aff619edde6","doi:10.5065/D6862DM8","urn:uuid:75308ecc-cdc2-4ce0-a1b0-2cd829ce46c8","urn:uuid:62e1a8c5-406b-43f9-9234-1415277674cb","urn:uuid:b4831b1b-7472-4015-b795-836d01ad0592","urn:uuid:4b56f9ba-c654-4692-83b6-6c72968893f1","urn:uuid:051184f2-2ee1-44db-8b5b-7fdd5b96d96d","urn:uuid:01a53103-8db1-46b3-967c-b42acf69ae08","urn:uuid:bbec7da2-6789-4c5b-9736-f0db470cd0ad","urn:uuid:1938c259-3b7e-4937-b79f-e26067bdab01","urn:uuid:7f3d0f47-56db-4562-bdff-1182b78302ef","urn:uuid:9440d2bc-234c-4955-85d7-2b144c8b71bd","urn:uuid:03c24891-8fd4-4286-bfdf-cc6e6858a672","urn:uuid:80977cc2-1422-4369-804d-90a2e2109a92","urn:uuid:86ba12d0-82da-48bf-a73a-3e0cccf5455d","urn:uuid:92312ab7-ee0c-4874-ab4b-6944e1376265","urn:uuid:e0064b54-ee0e-42c1-891d-742bef38243a"]},{"identifier":"urn:uuid:4b56f9ba-c654-4692-83b6-6c72968893f1","fileName":"dictionary95.txt","formatId":"text/plain","formatType":"DATA","size":26803},{"identifier":"urn:uuid:36f3673b-1f01-4eac-8d9e-7aff619edde6","fileName":"estimated_use_of_water_in_US_2005.pdf","formatId":"application/pdf","formatType":"DATA","size":5011961},{"identifier":"urn:uuid:62e1a8c5-406b-43f9-9234-1415277674cb","fileName":"usco2000.xls","formatId":"application/vnd.ms-excel","formatType":"DATA","size":1558016},{"identifier":"urn:uuid:b4831b1b-7472-4015-b795-836d01ad0592","fileName":"us85co.xls","formatId":"application/vnd.ms-excel","formatType":"DATA","size":2680787},{"identifier":"urn:uuid:051184f2-2ee1-44db-8b5b-7fdd5b96d96d","fileName":"datadict2005.html","formatId":"text/html","formatType":"DATA","size":13783},{"identifier":"urn:uuid:01a53103-8db1-46b3-967c-b42acf69ae08","fileName":"usco2005.xls","formatId":"application/vnd.ms-excel","formatType":"DATA","size":6427136},{"identifier":"urn:uuid:bbec7da2-6789-4c5b-9736-f0db470cd0ad","fileName":"wastewaterNWT.xls","formatId":"application/vnd.ms-excel","formatType":"DATA","size":15360},{"identifier":"urn:uuid:1938c259-3b7e-4937-b79f-e26067bdab01","fileName":"withdrawal_ob_engl.xls","formatId":"application/vnd.ms-excel","formatType":"DATA","size":45056},{"identifier":"urn:uuid:7f3d0f47-56db-4562-bdff-1182b78302ef","fileName":"readme.html","formatId":"text/html","formatType":"DATA","size":8087},{"identifier":"urn:uuid:9440d2bc-234c-4955-85d7-2b144c8b71bd","fileName":"us90co.xls","formatId":"application/vnd.ms-excel","formatType":"DATA","size":2686433},{"identifier":"urn:uuid:03c24891-8fd4-4286-bfdf-cc6e6858a672","fileName":"first_nations_canada_water_and_wastewater_systems.pdf","formatId":"application/pdf","formatType":"DATA","size":373893},{"identifier":"urn:uuid:86ba12d0-82da-48bf-a73a-3e0cccf5455d","fileName":"usco95.xls","formatId":"application/vnd.ms-excel","formatType":"DATA","size":4139493},{"identifier":"urn:uuid:92312ab7-ee0c-4874-ab4b-6944e1376265","fileName":"estimated_use_of_water_in_US_2000.pdf","formatId":"application/pdf","formatType":"DATA","size":5775705},{"identifier":"urn:uuid:e0064b54-ee0e-42c1-891d-742bef38243a","fileName":"wudict.txt","formatId":"text/plain","formatType":"DATA","size":23909}]}}
+
+'}
+    headers:
+      Access-Control-Allow-Credentials: ['true']
+      Access-Control-Allow-Headers: ['Authorization, Content-Type, Location, Content-Length,
+          x-annotator-auth-token']
+      Access-Control-Allow-Methods: ['POST, GET, OPTIONS, PUT, DELETE']
+      Access-Control-Allow-Origin: ['']
+      Access-Control-Expose-Headers: ['Content-Length, Content-Type, Location']
+      Connection: [Keep-Alive]
+      Content-Type: [application/json; charset=UTF-8]
+      Date: ['Wed, 27 Mar 2019 02:55:44 GMT']
+      Keep-Alive: ['timeout=5, max=100']
+      Server: [Apache/2.4.7 (Ubuntu)]
+      Transfer-Encoding: [chunked]
+    status: {code: 200, message: OK}
+version: 1
