@@ -15,7 +15,7 @@ from girder.utility import config
 from girder.plugins.jobs.constants import JobStatus
 from girder.plugins.jobs.models.job import Job
 
-from ..constants import CATALOG_NAME
+from ..constants import CATALOG_NAME, TaleStatus
 from ..lib import pids_to_entities, register_dataMap
 from ..lib.dataone import DataONELocations  # TODO: get rid of it
 from ..models.tale import Tale
@@ -104,8 +104,16 @@ def run(job):
             ) as webdav_handle:
                 copy_fs(OSFS(workdir), webdav_handle)
 
+        # Tale is ready to be built
+        tale = Tale().load(tale["_id"], user=user)  # Refresh state
+        tale["status"] = TaleStatus.READY
+        tale = Tale().updateTale(tale)
+
         jobModel.updateJob(job, status=JobStatus.SUCCESS, log="Tale created")
     except Exception:
+        tale = Tale().load(tale["_id"], user=user)  # Refresh state
+        tale["status"] = TaleStatus.ERROR
+        tale = Tale().updateTale(tale)
         t, val, tb = sys.exc_info()
         log = "%s: %s\n%s" % (t.__name__, repr(val), traceback.extract_tb(tb))
         jobModel.updateJob(job, status=JobStatus.ERROR, log=log)

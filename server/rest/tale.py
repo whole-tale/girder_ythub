@@ -40,7 +40,7 @@ from ..lib.exporters.native import NativeTaleExporter
 
 from girder.plugins.worker import getCeleryApp
 
-from ..constants import ImageStatus
+from ..constants import ImageStatus, TaleStatus
 
 
 addModel('tale', taleSchema, resources='tale')
@@ -269,6 +269,7 @@ class Tale(Resource):
                 authors=authors,
                 category=manifest["schema:category"],
                 licenseSPDX=licenseSPDX,
+                status=TaleStatus.PREPARING,
             )
 
             job = Job().createLocalJob(
@@ -330,6 +331,7 @@ class Tale(Resource):
                 creator=user,
                 save=True,
                 public=False,
+                status=TaleStatus.PREPARING,
                 **taleKwargs
             )
 
@@ -564,6 +566,7 @@ class Tale(Resource):
             licenseSPDX=tale.get('licenseSPDX'),
         )
         new_tale['copyOfTale'] = tale['_id']
+        new_tale["status"] = TaleStatus.PREPARING
         new_tale = self._model.save(new_tale)
         # asynchronously copy the workspace of a source Tale
         tale_workspaceId = self._model.createWorkspace(tale)['_id']
@@ -573,7 +576,7 @@ class Tale(Resource):
             type='wholetale.copy_workspace', public=False, async=True,
             module='girder.plugins.wholetale.tasks.copy_workspace',
             args=(tale_workspaceId, new_tale_workspaceId),
-            kwargs={'user': user}
+            kwargs={'user': user, 'tale': new_tale}
         )
         Job().scheduleJob(job)
         return new_tale

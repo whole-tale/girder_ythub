@@ -118,7 +118,8 @@ class Tale(AccessControlledModel):
     def createTale(self, image, data, creator=None, save=True, title=None,
                    description=None, public=None, config=None, authors=None,
                    icon=None, category=None, illustration=None, narrative=None,
-                   licenseSPDX=WholeTaleLicense.default_spdx()):
+                   licenseSPDX=WholeTaleLicense.default_spdx(),
+                   status=TaleStatus.READY):
 
         if creator is None:
             creatorId = None
@@ -149,7 +150,8 @@ class Tale(AccessControlledModel):
             'title': title,
             'public': public,
             'updated': now,
-            'licenseSPDX': licenseSPDX
+            'licenseSPDX': licenseSPDX,
+            'status': status,
         }
         if public is not None and isinstance(public, bool):
             self.setPublic(tale, public, save=False)
