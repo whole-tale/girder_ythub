@@ -10,7 +10,6 @@ from girder.models.folder import Folder
 from girder.models.token import Token
 from girder.constants import AccessType
 from girder.exceptions import AccessException
-from girder.plugins.jobs.constants import JobStatus
 
 from ..constants import WORKSPACE_NAME, DATADIRS_NAME, SCRIPTDIRS_NAME, TaleStatus
 from ..utils import getOrCreateRootFolder, init_progress
@@ -307,16 +306,3 @@ class Tale(AccessControlledModel):
         ).apply_async()
 
         return buildTask.job
-
-    @staticmethod
-    def updateTaleStatus(event):
-        job = event.info['job']
-        if job['type'] == 'wholetale.copy_workspace' and job.get('status') is not None:
-            status = int(job['status'])
-            workspace = Folder().load(job['args'][1], force=True)
-            tale = Tale().load(workspace['meta']['taleId'], force=True)
-            if status == JobStatus.SUCCESS:
-                tale['status'] = TaleStatus.READY
-            elif status == JobStatus.ERROR:
-                tale['status'] = TaleStatus.ERROR
-            Tale().updateTale(tale)
