@@ -36,16 +36,15 @@ class Tale(AccessControlledModel):
         self.modifiableFields = {
             'title', 'description', 'public', 'config', 'updated', 'authors',
             'category', 'icon', 'iframe', 'illustration', 'dataSet', 'licenseSPDX',
-            'workspaceModified', 'publishInfo', 'imageId'
+            'workspaceModified', 'publishInfo', 'imageId', 'status'
         }
         self.exposeFields(
             level=AccessType.READ,
             fields=({'_id', 'folderId', 'imageId', 'creatorId', 'created',
                      'format', 'dataSet', 'narrative', 'narrativeId', 'licenseSPDX',
                      'imageInfo', 'publishInfo', 'workspaceId',
-                     'workspaceModified', 'dataSetCitation', 'copyOfTale',
-                     'status'} | self.modifiableFields))
-        events.bind('jobs.job.update.after', 'wholetale', self.updateTaleStatus)
+                     'workspaceModified', 'dataSetCitation',
+                     'copyOfTale'} | self.modifiableFields))
 
     def validate(self, tale):
         if 'status' not in tale:
