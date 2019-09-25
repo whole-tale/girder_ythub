@@ -53,7 +53,7 @@ class DataverseHarversterTestCase(base.TestCase):
             {
                 "dataId": "https://dataverse.harvard.edu/dataset.xhtml"
                           "?persistentId=doi:10.7910/DVN/RLMYMR",
-                "doi": "10.7910/DVN/RLMYMR",
+                "doi": "doi:10.7910/DVN/RLMYMR",
                 "name": "Karnataka Diet Diversity and Food Security for "
                         "Agricultural Biodiversity Assessment",
                 "repository": "Dataverse",
@@ -62,7 +62,7 @@ class DataverseHarversterTestCase(base.TestCase):
             {
                 "dataId": "https://dataverse.harvard.edu/file.xhtml"
                           "?persistentId=doi:10.7910/DVN/RLMYMR/WNKD3W",
-                "doi": "10.7910/DVN/RLMYMR",
+                "doi": "doi:10.7910/DVN/RLMYMR",
                 "name": "Karnataka Diet Diversity and Food Security for "
                         "Agricultural Biodiversity Assessment",
                 "repository": "Dataverse",
@@ -70,7 +70,7 @@ class DataverseHarversterTestCase(base.TestCase):
             },
             {
                 "dataId": "https://dataverse.harvard.edu/api/access/datafile/3040230",
-                "doi": "10.7910/DVN/TJCLKP",
+                "doi": "doi:10.7910/DVN/TJCLKP",
                 "name": "Open Source at Harvard",
                 "repository": "Dataverse",
                 "size": 12025
@@ -165,7 +165,7 @@ class DataverseHarversterTestCase(base.TestCase):
         self.assertEqual(resp.json, [
             {
                 "dataId": "https://demo.dataverse.org/api/access/datafile/300662",
-                "doi": "10.5072/FK2/N7YHEY",
+                "doi": "doi:10.5072/FK2/N7YHEY",
                 "name": "Variable-level metadata always accessible",
                 "repository": "Dataverse",
                 "size": 36843
