@@ -18,6 +18,7 @@ from .null_provider import NullImportProvider
 from .dataone.provider import DataOneImportProvider
 from .dataverse.provider import DataverseImportProvider
 from .globus.globus_provider import GlobusImportProvider
+from .zenodo.provider import ZenodoImportProvider
 
 
 RESOLVERS = Resolvers()
@@ -25,6 +26,7 @@ RESOLVERS.add(DOIResolver())
 
 IMPORT_PROVIDERS = ImportProviders()
 IMPORT_PROVIDERS.addProvider(DataverseImportProvider())
+IMPORT_PROVIDERS.addProvider(ZenodoImportProvider())
 IMPORT_PROVIDERS.addProvider(GlobusImportProvider())
 IMPORT_PROVIDERS.addProvider(DataOneImportProvider())
 # (almost) last resort
