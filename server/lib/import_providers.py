@@ -22,8 +22,7 @@ class ImportProvider:
             self._regex = self.create_regex()
         return self._regex
 
-    @staticmethod
-    def create_regex():
+    def create_regex(self):
         """Create and initialize regular expression used for matching"""
         raise NotImplementedError()
 

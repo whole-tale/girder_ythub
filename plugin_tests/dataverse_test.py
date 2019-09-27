@@ -249,7 +249,7 @@ class DataverseHarversterTestCase(base.TestCase):
         from girder.plugins.wholetale.lib.dataverse.provider import DataverseImportProvider
         self.assertEqual(
             '^https://demo.dataverse.org|https://random.d.org|https://random2.d.org.*$',
-            DataverseImportProvider().dataverse_regex.pattern
+            DataverseImportProvider().regex.pattern
         )
         resp = self.request(
             '/system/setting', user=self.admin, method='PUT',

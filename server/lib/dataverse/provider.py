@@ -72,17 +72,9 @@ def _get_attrs_via_head(obj, url):
 
 
 class DataverseImportProvider(ImportProvider):
-    _dataverse_regex = None
-
     def __init__(self):
         super().__init__('Dataverse')
         events.bind('model.setting.save.after', 'wholetale', self.setting_changed)
-
-    @property
-    def dataverse_regex(self):
-        if not self._dataverse_regex:
-            self._dataverse_regex = self.create_dataverse_regex()
-        return self._dataverse_regex
 
     @staticmethod
     def get_base_url_setting():
@@ -92,7 +84,7 @@ class DataverseImportProvider(ImportProvider):
     def get_extra_hosts_setting():
         return Setting().get(constants.PluginSettings.DATAVERSE_EXTRA_HOSTS)
 
-    def create_dataverse_regex(self):
+    def create_regex(self):
         url = self.get_base_url_setting()
         if not url.endswith('installations-json'):
             url = urlunparse(
@@ -129,11 +121,7 @@ class DataverseImportProvider(ImportProvider):
         }
         if not hasattr(event, "info") or event.info.get('key', '') not in triggers:
             return
-        self._dataverse_regex = None
-
-    def matches(self, entity: Entity) -> bool:
-        url = entity.getValue()
-        return self.dataverse_regex.match(url) is not None
+        self._regex = None
 
     @staticmethod
     def _parse_dataset(url):

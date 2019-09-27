@@ -25,8 +25,7 @@ class GlobusImportProvider(ImportProvider):
         super().__init__('Globus')
         self.clients = Clients()
 
-    @staticmethod
-    def create_regex():
+    def create_regex(self):
         return re.compile(r'^https://petreldata.net/mdf/detail.*')
 
     def lookup(self, entity: Entity) -> DataMap:

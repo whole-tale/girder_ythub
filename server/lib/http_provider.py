@@ -18,8 +18,7 @@ class HTTPImportProvider(ImportProvider):
     def __init__(self):
         super().__init__('HTTP')
 
-    @staticmethod
-    def create_regex():
+    def create_regex(self):
         return re.compile(r'^http(s)?://.*')
 
     def lookup(self, entity: Entity) -> DataMap:
