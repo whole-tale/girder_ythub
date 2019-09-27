@@ -99,7 +99,7 @@ class DataverseImportProvider(ImportProvider):
             else:
                 urls = [self.get_base_url_setting()]
         except Exception:
-            logger.warn('[dataverse] failed to generate regex')
+            logger.warning('[dataverse] failed to generate regex')
             urls = []
 
         urls += self.get_extra_hosts_setting()
