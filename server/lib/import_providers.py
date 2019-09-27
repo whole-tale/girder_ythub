@@ -76,8 +76,13 @@ class ImportProvider:
         folder = self.folderModel.createFolder(parent, item.name, description='',
                                                parentType=parentType, creator=user,
                                                reuseExisting=True)
-        folder = self.folderModel.setMetadata(folder, {'identifier': item.identifier,
-                                                       'provider': self.getName()})
+        meta = {
+            "identifier": item.identifier,
+            "provider": self.getName(),
+        }
+        if item.meta:
+            meta.update(item.meta)
+        folder = self.folderModel.setMetadata(folder, meta)
         stack.append((folder, 'folder'))
         return (folder, 'folder')
 
@@ -87,6 +92,8 @@ class ImportProvider:
         meta = {'provider': self.getName()}
         if item.identifier:
             meta['identifier'] = item.identifier
+        if item.meta:
+            meta.update(item.meta)
         gitem = self.itemModel.setMetadata(gitem, meta)
 
         # girder does not allow anything else than http and https. So we need a better
