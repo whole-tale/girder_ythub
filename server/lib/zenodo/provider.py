@@ -1,34 +1,41 @@
 import json
 import re
 import pathlib
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlunparse
 from urllib.request import urlopen, Request
 
 from girder.models.folder import Folder
 from girder.models.item import Item
+from girder.models.setting import Setting
 
 from ..import_providers import ImportProvider
 from ..data_map import DataMap
 from ..file_map import FileMap
 from ..import_item import ImportItem
 from ..entity import Entity
+from ... import constants
 
 
 class ZenodoImportProvider(ImportProvider):
-    _zenodo_regex = None
-
     def __init__(self):
         super().__init__("Zenodo")
-        self.url_to_api = {
-            "zenodo.org": "https://zenodo.org/api/records/",
-            "data.caltech.edu": "https://data.caltech.edu/api/record/",
-        }
+        # TODO: add 'data.caltech.edu'
+        # however it's totally different in terms of storing data...
+        self.base_targets = ["https://zenodo.org/record/"]
+
+    def create_regex(self):
+        urls = self.get_extra_hosts_setting() + self.base_targets
+
+        locations = []
+        for url in urls:
+            entry = urlparse(url)
+            locations.append(entry.netloc + entry.path)
+
+        return re.compile("^http(s)?://(" + "|".join(locations) + ").*$")
 
     @staticmethod
-    def create_regex():
-        return re.compile(
-            r"^http(s)?://(zenodo.org/record|data.caltech.edu/records)/.*$"
-        )
+    def get_extra_hosts_setting():
+        return Setting().get(constants.PluginSettings.ZENODO_EXTRA_HOSTS)
 
     def getDatasetUID(self, doc: object, user: object) -> str:
         try:
@@ -46,7 +53,7 @@ class ZenodoImportProvider(ImportProvider):
         url = urlparse(raw_url)
         record_id = url.path.rsplit("/", maxsplit=1)[1]
         req = Request(
-            self.url_to_api[url.netloc] + record_id,
+            urlunparse(url._replace(path="/api/records/" + record_id)),
             headers={"accept": "application/vnd.zenodo.v1+json"},
         )
         resp = urlopen(req)
