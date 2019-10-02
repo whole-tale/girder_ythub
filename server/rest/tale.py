@@ -564,9 +564,9 @@ class Tale(Resource):
             category=tale.get('category', 'science'),
             narrative=tale.get('narrative'),
             licenseSPDX=tale.get('licenseSPDX'),
+            status=TaleStatus.PREPARING,
         )
         new_tale['copyOfTale'] = tale['_id']
-        new_tale["status"] = TaleStatus.PREPARING
         new_tale = self._model.save(new_tale)
         # asynchronously copy the workspace of a source Tale
         tale_workspaceId = self._model.createWorkspace(tale)['_id']
