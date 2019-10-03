@@ -414,6 +414,38 @@ class InstanceTestCase(base.TestCase):
             user=self.user)
         self.assertStatus(resp, 400)
 
+    def testBuildFail(self):
+        from girder.plugins.jobs.models.job import Job
+        resp = self.request(
+            path='/instance', method='POST', user=self.user,
+            params={'taleId': str(self.tale_one['_id']),
+                    'name': 'tale that will fail', 'spawn': False}
+        )
+        self.assertStatusOk(resp)
+        instance = resp.json
+
+        job = Job().createJob(
+            title='Fake build job',
+            type='celery',
+            handler='worker_handler',
+            user=self.user,
+            public=False,
+            args=[str(self.tale_one['_id']), False],
+            kwargs={},
+            otherFields={
+                'wt_notification_id': 'nonexisting',
+                'instance_id': instance['_id']
+            }
+        )
+        job = Job().save(job)
+        self.assertEqual(job['status'], JobStatus.INACTIVE)
+        Job().updateJob(job, log='job queued', status=JobStatus.QUEUED)
+        Job().updateJob(job, log='job running', status=JobStatus.RUNNING)
+        Job().updateJob(job, log='job failed', status=JobStatus.ERROR)
+        instance = Instance().load(instance['_id'], force=True)
+        self.assertEqual(instance['status'], InstanceStatus.ERROR)
+        Instance().remove(instance)
+
     def tearDown(self):
         self.model('folder').remove(self.userPrivateFolder)
         self.model('folder').remove(self.userPublicFolder)
