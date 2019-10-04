@@ -969,8 +969,7 @@ class TaleWithWorkspaceTestCase(base.TestCase):
         self.assertEqual(new_tale['copyOfTale'], str(tale['_id']))
         self.assertEqual(new_tale['imageId'], str(tale['imageId']))
         self.assertEqual(new_tale['creatorId'], str(self.user['_id']))
-        # TODO: Delay job execution somehow
-        # self.assertEqual(new_tale['status'], TaleStatus.PREPARING)
+        self.assertEqual(new_tale['status'], TaleStatus.PREPARING)
 
         copied_file_path = re.sub(workspace['name'], new_tale['_id'], fullPath)
         job = Job().findOne({'type': 'wholetale.copy_workspace'})
@@ -980,6 +979,12 @@ class TaleWithWorkspaceTestCase(base.TestCase):
                 break
             time.sleep(0.1)
         self.assertTrue(os.path.isfile(copied_file_path))
+        resp = self.request(
+            path='/tale/{_id}'.format(**new_tale), method='GET',
+            user=self.user
+        )
+        self.assertStatusOk(resp)
+        new_tale = resp.json
         self.assertEqual(new_tale['status'], TaleStatus.READY)
 
         Tale().remove(new_tale)

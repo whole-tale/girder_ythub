@@ -17,6 +17,7 @@ add_python_test(import
   plugins/wholetale/tale_import_binder.txt
   plugins/wholetale/tale_import_zip.txt
 )
+add_python_test(import_failures PLUGIN wholetale)
 add_python_test(instance PLUGIN wholetale)
 add_python_test(constants PLUGIN wholetale)
 add_python_test(utils PLUGIN wholetale)

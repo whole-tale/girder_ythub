@@ -10,7 +10,6 @@ from girder.models.folder import Folder
 from girder.models.token import Token
 from girder.constants import AccessType
 from girder.exceptions import AccessException
-from girder.plugins.jobs.constants import JobStatus
 
 from ..constants import WORKSPACE_NAME, DATADIRS_NAME, SCRIPTDIRS_NAME, TaleStatus
 from ..utils import getOrCreateRootFolder, init_progress
@@ -37,16 +36,15 @@ class Tale(AccessControlledModel):
         self.modifiableFields = {
             'title', 'description', 'public', 'config', 'updated', 'authors',
             'category', 'icon', 'iframe', 'illustration', 'dataSet', 'licenseSPDX',
-            'workspaceModified', 'publishInfo', 'imageId'
+            'workspaceModified', 'publishInfo', 'imageId', 'status'
         }
         self.exposeFields(
             level=AccessType.READ,
             fields=({'_id', 'folderId', 'imageId', 'creatorId', 'created',
                      'format', 'dataSet', 'narrative', 'narrativeId', 'licenseSPDX',
                      'imageInfo', 'publishInfo', 'workspaceId',
-                     'workspaceModified', 'dataSetCitation', 'copyOfTale',
-                     'status'} | self.modifiableFields))
-        events.bind('jobs.job.update.after', 'wholetale', self.updateTaleStatus)
+                     'workspaceModified', 'dataSetCitation',
+                     'copyOfTale'} | self.modifiableFields))
 
     def validate(self, tale):
         if 'status' not in tale:
@@ -118,7 +116,8 @@ class Tale(AccessControlledModel):
     def createTale(self, image, data, creator=None, save=True, title=None,
                    description=None, public=None, config=None, authors=None,
                    icon=None, category=None, illustration=None, narrative=None,
-                   licenseSPDX=WholeTaleLicense.default_spdx()):
+                   licenseSPDX=WholeTaleLicense.default_spdx(),
+                   status=TaleStatus.READY):
 
         if creator is None:
             creatorId = None
@@ -149,7 +148,8 @@ class Tale(AccessControlledModel):
             'title': title,
             'public': public,
             'updated': now,
-            'licenseSPDX': licenseSPDX
+            'licenseSPDX': licenseSPDX,
+            'status': status,
         }
         if public is not None and isinstance(public, bool):
             self.setPublic(tale, public, save=False)
@@ -305,16 +305,3 @@ class Tale(AccessControlledModel):
         ).apply_async()
 
         return buildTask.job
-
-    @staticmethod
-    def updateTaleStatus(event):
-        job = event.info['job']
-        if job['type'] == 'wholetale.copy_workspace' and job.get('status') is not None:
-            status = int(job['status'])
-            workspace = Folder().load(job['args'][1], force=True)
-            tale = Tale().load(workspace['meta']['taleId'], force=True)
-            if status == JobStatus.SUCCESS:
-                tale['status'] = TaleStatus.READY
-            elif status == JobStatus.ERROR:
-                tale['status'] = TaleStatus.ERROR
-            Tale().updateTale(tale)
