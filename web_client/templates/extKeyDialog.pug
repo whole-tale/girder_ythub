@@ -1,0 +1,27 @@
+.modal-dialog
+  .modal-content
+    form#g-api-key-form.modal-form(role="form")
+      .modal-header
+        button.close(data-dismiss="modal", aria-hidden="true", type="button") &times;
+        h4.modal-title Connect a #{provider} Account
+      .modal-body
+        .form-group
+        label.control-label(for="g-resource-server") Repository URL:
+        .dropdown
+          button.g-resource-server-button.btn.btn-default.dropdown-toggle(
+            data-toggle="dropdown", title="Server URL")
+            | Choose Server URL
+            i.icon-down-dir
+          ul.g-resources-menu.dropdown-menu(role="menu")
+            each target in values
+              li(role="presentation")
+                a.g-select-resource(role="menuitem")
+                  | #{target}
+
+        .form-group
+        label.control-label(for="g-api-key") API Key: 
+        input#g-api-key.input-sm.form-control(type="text", placeholder="Enter your API Key")
+      .modal-footer
+        a.btn.btn-default(data-dismiss="modal") Cancel
+        button#g-save-api-key-button.btn.btn-primary(type="submit")
+          | Connect

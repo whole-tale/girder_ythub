@@ -17,6 +17,17 @@ form#g-wholetale-config-form(role="form")
     textarea#wholetale_extra_hosts.form-control(
       placeholder=`Default: ${defaults['wholetale.dataverse_extra_hosts'] || '[]'}`,
       title="Additional supported Dataverse installations. (JSON array [\"data1\", \"data2\", ...])")
-        = JSON.stringify(settings['wholetale.dataverse_extra_hosts'] || defaults['wholetale.dataverse_extra_hosts'], 4)
+        = JSON.stringify(settings['wholetale.dataverse_extra_hosts'] || defaults['wholetale.dataverse_extra_hosts'], null, 4)
+    label.control-label(for="wholetale_external_auth_providers") Supported external integrations
+    textarea#wholetale_external_auth_providers.form-control(
+      placeholder=`Default: ${defaults['wholetale.external_auth_providers'] || '[]'}`,
+      title="Supported external auth providers. (JSON object {\"provider1\": , \"provider2\":, ...})")
+        = JSON.stringify(settings['wholetale.external_auth_providers'] || defaults['wholetale.external_auth_providers'], null, 4)
+    label.control-label(for="wholetale_external_apikey_groups") Custom targets for API key providers
+    textarea#wholetale_external_apikey_groups.form-control(
+      placeholder=`Default: ${defaults['wholetale.external_apikey_groups'] || '[]'}`,
+      title="Supported external auth providers. (JSON object {\"provider1\": [\"target1\", \"target2\"], ...})")
+        = JSON.stringify(settings['wholetale.external_apikey_groups'] || defaults['wholetale.external_apikey_groups'], null, 4)
+
   p#g-wholetale-error-message.g-validation-failed-message
   input.btn.btn-sm.btn-primary(type="submit", value="Save")
