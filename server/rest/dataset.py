@@ -117,7 +117,7 @@ class Dataset(Resource):
         datasets = []
 
         filters = {}
-        if myData:
+        if myData and user:
             filters = {'_id': {'$in': user.get('myData', [])}}
 
         if identifiers:
