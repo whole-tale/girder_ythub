@@ -29,6 +29,7 @@ docker run  \
   -e DOCKER_HOST=unix:///var/run/docker.sock \
   {repo2docker} \
   jupyter-repo2docker \
+    --config=/wholetale/repo2docker_config.py \
     --target-repo-dir=/WholeTale/workspace \
     --user-id=1000 --user-name={user} \
     --no-clean --no-run --debug \
@@ -37,7 +38,7 @@ docker run  \
 
 docker run --rm \
     -v "`pwd`:/bag" \
-    -ti {repo2docker} bdbag -- bdbag --resolve-fetch all /bag
+    -ti {repo2docker} bdbag --resolve-fetch all /bag
 
 echo "========================================================================"
 echo " Open your browser and go to: http://localhost:{port}/{urlPath} "
