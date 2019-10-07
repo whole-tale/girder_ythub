@@ -43,7 +43,7 @@ def _query_dataverse(search_url):
     doi = None
     doi_search = _DOI_REGEX.search(item['dataset_citation'])
     if doi_search is not None:
-        doi = doi_search.group()
+        doi = "doi:" + doi_search.group()  # TODO: get a proper protocol
     return title, files, doi
 
 
@@ -140,15 +140,19 @@ class DataverseImportProvider(ImportProvider):
         """Extract title, file, doi from Dataverse resource.
 
         Handles: {siteURL}/dataset.xhtml?persistentId={persistentId}
+        Handles: {siteURL}/api/datasets/{:id}
         """
-        url = urlunparse(
-            url._replace(path='/api/datasets/:persistentId')
-        )
-        resp = urlopen(url).read()
+        if "persistentId" in url.query:
+            dataset_url = urlunparse(
+                url._replace(path='/api/datasets/:persistentId')
+            )
+        else:
+            dataset_url = urlunparse(url)
+        resp = urlopen(dataset_url).read()
         data = json.loads(resp.decode('utf-8'))
         meta = data['data']['latestVersion']['metadataBlocks']['citation']['fields']
         title = next(_['value'] for _ in meta if _['typeName'] == 'title')
-        doi = '{authority}/{identifier}'.format(**data['data'])
+        doi = '{protocol}:{authority}/{identifier}'.format(**data['data'])
         files = []
         for obj in data['data']['latestVersion']['files']:
             files.append({
@@ -193,8 +197,6 @@ class DataverseImportProvider(ImportProvider):
 
         file_persistent_id = os.path.basename(full_doi)
         doi = os.path.dirname(full_doi)
-        if doi.startswith('doi:'):
-            doi = doi[4:]
 
         search_url = urlunparse(
             url._replace(path='/api/search', query='q=filePersistentId:' + file_persistent_id)
