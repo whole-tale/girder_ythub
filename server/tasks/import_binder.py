@@ -26,10 +26,11 @@ from girder.utility import config, JsonEncoder
 from girder.plugins.jobs.constants import JobStatus
 from girder.plugins.jobs.models.job import Job
 
-from ..constants import CATALOG_NAME, InstanceStatus
+from ..constants import CATALOG_NAME, InstanceStatus, TaleStatus
 from ..lib import pids_to_entities, register_dataMap
 from ..lib.dataone import DataONELocations  # TODO: get rid of it
 from ..models.instance import Instance
+from ..models.tale import Tale
 from ..utils import getOrCreateRootFolder
 
 
@@ -59,15 +60,15 @@ def run(job):
             progressCurrent=progressCurrent + 1,
             progressMessage="Registering external data",
         )
-        dataIds = lookup_kwargs.pop('dataId')
-        base_url = lookup_kwargs.get('base_url', DataONELocations.prod_cn)
+        dataIds = lookup_kwargs.pop("dataId")
+        base_url = lookup_kwargs.get("base_url", DataONELocations.prod_cn)
         dataMap = pids_to_entities(
             dataIds, user=user, base_url=base_url, lookup=True
         )  # DataONE shouldn't be here
         imported_data = register_dataMap(
             dataMap,
             getOrCreateRootFolder(CATALOG_NAME),
-            'folder',
+            "folder",
             user=user,
             base_url=base_url,
         )
@@ -79,13 +80,13 @@ def run(job):
         # Create a dataset with the content of root ds folder, so that it looks nicely and it's easy
         # to copy to workspace later on
         data_set = [
-            {'itemId': folder['_id'], 'mountPath': '/' + folder['name']}
+            {"itemId": folder["_id"], "mountPath": "/" + folder["name"]}
             for folder in Folder().childFolders(
-                parentType='folder', parent=data_folder, user=user
+                parentType="folder", parent=data_folder, user=user
             )
         ]
         data_set += [
-            {'itemId': item['_id'], 'mountPath': '/' + item['name']}
+            {"itemId": item["_id"], "mountPath": "/" + item["name"]}
             for item in Folder().childItems(data_folder)
         ]
 
@@ -108,7 +109,7 @@ def run(job):
             progressMessage="Copying files to workspace",
         )
         girder_root = "http://localhost:{}".format(
-            config.getConfig()['server.socket_port']
+            config.getConfig()["server.socket_port"]
         )
         with WebDAVFS(
             girder_root,
@@ -116,11 +117,16 @@ def run(job):
             password="token:{_id}".format(**token),
             root="/tales/{_id}".format(**tale),
         ) as destination_fs, DMSFS(
-            str(session['_id']), girder_root + '/api/v1', str(token['_id'])
+            str(session["_id"]), girder_root + "/api/v1", str(token["_id"])
         ) as source_fs:
             copy_fs(source_fs, destination_fs)
 
         Session().deleteSession(user, session)
+
+        # Tale is ready to be built
+        tale = Tale().load(tale["_id"], user=user)  # Refresh state
+        tale["status"] = TaleStatus.READY
+        tale = Tale().updateTale(tale)
 
         # 4. Wait for container to show up
         if spawn:
@@ -135,9 +141,9 @@ def run(job):
 
             sleep_step = 10
             timeout = 15 * 60
-            while instance['status'] == InstanceStatus.LAUNCHING and timeout > 0:
+            while instance["status"] == InstanceStatus.LAUNCHING and timeout > 0:
                 time.sleep(sleep_step)
-                instance = Instance().load(instance['_id'], user=user)
+                instance = Instance().load(instance["_id"], user=user)
                 timeout -= sleep_step
             if timeout <= 0:
                 raise RuntimeError(
@@ -147,6 +153,9 @@ def run(job):
             instance = None
 
     except Exception:
+        tale = Tale().load(tale["_id"], user=user)  # Refresh state
+        tale["status"] = TaleStatus.ERROR
+        tale = Tale().updateTale(tale)
         t, val, tb = sys.exc_info()
         log = "%s: %s\n%s" % (t.__name__, repr(val), traceback.extract_tb(tb))
         jobModel.updateJob(
@@ -212,7 +221,7 @@ class DMSFS(FS):
         _stat = self._fs.getinfo(_path)
 
         info = {
-            "basic": {"name": basename(_path), "is_dir": stat.S_ISDIR(_stat['st_mode'])}
+            "basic": {"name": basename(_path), "is_dir": stat.S_ISDIR(_stat["st_mode"])}
         }
 
         if "details" in namespaces:
@@ -253,8 +262,8 @@ class DMSFS(FS):
             # TODO: I'm not sure if it's not leaving descriptors open...
             fd = self._fs.open(_path, os.O_RDONLY)
             fdict = self._fs.openFiles[path]
-            self._fs._ensure_region_available(path, fdict, fd, 0, fdict['obj']['size'])
-            return open(fdict['path'], 'r+b')
+            self._fs._ensure_region_available(path, fdict, fd, 0, fdict["obj"]["size"])
+            return open(fdict["path"], "r+b")
 
     def makedir(self, path, permissions=None, recreate=False):
         pass

@@ -191,7 +191,8 @@ class Instance(AccessControlledModel):
             buildTask = build_tale_image.signature(
                 args=[str(tale['_id']), False],
                 girder_job_other_fields={
-                    'wt_notification_id': str(notification['_id'])
+                    'wt_notification_id': str(notification['_id']),
+                    'instance_id': str(instance['_id']),
                 },
                 girder_client_token=str(token['_id']),
                 immutable=True
@@ -199,14 +200,16 @@ class Instance(AccessControlledModel):
             volumeTask = create_volume.signature(
                 args=[str(instance['_id'])],
                 girder_job_other_fields={
-                    'wt_notification_id': str(notification['_id'])
+                    'wt_notification_id': str(notification['_id']),
+                    'instance_id': str(instance['_id']),
                 },
                 girder_client_token=str(token['_id']),
                 immutable=True
             )
             serviceTask = launch_container.signature(
                 girder_job_other_fields={
-                    'wt_notification_id': str(notification['_id'])
+                    'wt_notification_id': str(notification['_id']),
+                    'instance_id': str(instance['_id']),
                 },
                 girder_client_token=str(token['_id']),
                 queue='manager'
@@ -247,6 +250,17 @@ def _wait_for_server(url, timeout=30, wait_time=0.5):
 
 def finalizeInstance(event):
     job = event.info['job']
+
+    if job.get("instance_id"):
+        instance = Instance().load(job["instance_id"], force=True)
+
+        if (
+            instance["status"] == InstanceStatus.LAUNCHING
+            and job["status"] == JobStatus.ERROR  # noqa
+        ):
+            instance["status"] = InstanceStatus.ERROR
+            Instance().updateInstance(instance)
+
     if job['title'] == 'Spawn Instance' and job.get('status') is not None:
         status = int(job['status'])
         instance = Instance().load(
