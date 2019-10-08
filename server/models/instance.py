@@ -43,7 +43,7 @@ class Instance(AccessControlledModel):
 
         self.exposeFields(
             level=AccessType.READ,
-            fields={'_id', 'created', 'creatorId', 'iframe', 'name', 'taleId'})
+            fields={'_id', 'created', 'creatorId', 'iframe', 'name', 'taleId', 'transient'})
         self.exposeFields(
             level=AccessType.WRITE,
             fields={'containerInfo', 'lastActivity', 'status', 'url', 'sessionId'})
@@ -127,6 +127,9 @@ class Instance(AccessControlledModel):
         app = getCeleryApp()
         active_queues = list(app.control.inspect().active_queues().keys())
 
+        instance['transient'] = True
+        self.save(instance)
+
         instanceTask = shutdown_container.signature(
             args=[str(instance['_id'])], queue='manager', girder_client_token=str(token['_id']),
         ).apply_async()
@@ -159,6 +162,7 @@ class Instance(AccessControlledModel):
             'lastActivity': now,
             'name': name,
             'status': InstanceStatus.LAUNCHING,
+            'transient': False,
             'taleId': tale['_id']
         }
 
