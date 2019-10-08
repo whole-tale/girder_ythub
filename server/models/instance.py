@@ -123,6 +123,8 @@ class Instance(AccessControlledModel):
         return self.save(instance)
 
     def deleteInstance(self, instance, user):
+        instance["status"] = InstanceStatus.DELETING
+        instance = self.updateInstance(instance)
         token = Token().createToken(user=user, days=0.5)
         app = getCeleryApp()
         active_queues = list(app.control.inspect().active_queues().keys())
