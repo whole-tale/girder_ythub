@@ -265,14 +265,24 @@ def finalizeInstance(event):
 
     if job['title'] == 'Spawn Instance' and job.get('status') is not None:
         status = int(job['status'])
-        instance = Instance().load(
-            job['args'][0]['instanceId'], force=True)
-        if status == JobStatus.SUCCESS:
+        instance_id = job['args'][0]['instanceId']
+        instance = Instance().load(instance_id, force=True, exc=True)
+        update = True
+        if (
+            status == JobStatus.SUCCESS
+            and instance["status"] == InstanceStatus.LAUNCHING  # noqa
+        ):
             service = getCeleryApp().AsyncResult(job['celeryTaskId']).get()
             valid_keys = set(containerInfoSchema['properties'].keys())
             containerInfo = {key: service.get(key, '') for key in valid_keys}
             url = service.get('url', 'https://google.com')
             _wait_for_server(url)
+
+            # Since _wait_for_server can potentially take some time,
+            # we need to refresh the state of the instance
+            instance = Instance().load(instance_id, force=True, exc=True)
+            if instance["status"] != InstanceStatus.LAUNCHING:
+                return  # bail
 
             # Preserve the imageId / current digest in containerInfo
             tale = Tale().load(instance['taleId'], force=True)
@@ -285,8 +295,21 @@ def finalizeInstance(event):
                 'containerInfo': containerInfo,
                 'sessionId': service.get('sessionId')
             })
-        elif status == JobStatus.ERROR:
+        elif (
+            status == JobStatus.ERROR
+            and instance["status"] != InstanceStatus.ERROR  # noqa
+        ):
             instance['status'] = InstanceStatus.ERROR
-        elif status in (JobStatus.QUEUED, JobStatus.RUNNING):
+        elif (
+            status in (JobStatus.QUEUED, JobStatus.RUNNING)
+            and instance["status"] != InstanceStatus.LAUNCHING  # noqa
+        ):
             instance['status'] = InstanceStatus.LAUNCHING
-        Instance().updateInstance(instance)
+        else:
+            update = False
+
+        if update:
+            msg = "Updating instance ({_id}) in finalizeInstance".format(**instance)
+            msg += " for job(id={_id}, status={status})".format(**job)
+            logger.debug(msg)
+            Instance().updateInstance(instance)
