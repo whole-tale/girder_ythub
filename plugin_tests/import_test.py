@@ -135,6 +135,7 @@ class TaleTestCase(base.TestCase):
             self.assertEqual(str(job_call['args'][1]['_id']), tale['_id'])
             self.assertEqual(job_call['kwargs'], {'spawn': False})
             self.assertEqual(job_call['headers']['girder_job_title'], 'Import Tale')
+            self.assertEqual(tale['category'], 'science')
 
     def testTaleImportBinder(self):
         def before_record_cb(request):
