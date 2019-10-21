@@ -329,6 +329,7 @@ class Tale(Resource):
                 image,
                 [],
                 creator=user,
+                category="science",
                 save=True,
                 public=False,
                 status=TaleStatus.PREPARING,
