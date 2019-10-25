@@ -30,14 +30,14 @@ class Account(Resource):
     def supported_providers():
         """Converts list of providers into a providerName -> provider."""
         return {
-            _["id"]: _ for _ in Setting().get(PluginSettings.EXTERNAL_AUTH_PROVIDERS)
+            _["name"]: _ for _ in Setting().get(PluginSettings.EXTERNAL_AUTH_PROVIDERS)
         }
 
     @staticmethod
     def supported_apikey_flavors():
         """Converts list of apikey targets into a provider -> possible targets."""
         return {
-            _["id"]: _["targets"]
+            _["name"]: _["targets"]
             for _ in Setting().get(PluginSettings.EXTERNAL_APIKEY_GROUPS)
         }
 

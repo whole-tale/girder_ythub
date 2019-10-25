@@ -8,18 +8,18 @@ from girder.exceptions import ValidationException
 
 AUTH_PROVIDERS = [
     {
-        "id": "orcid",
+        "name": "orcid",
         "logo": "",
-        "name": "ORCID",
+        "fullName": "ORCID",
         "tags": ["publish"],
         "url": "",
         "type": "bearer",
         "state": "unauthorized",
     },
     {
-        "id": "zenodo",
+        "name": "zenodo",
         "logo": "",
-        "name": "Zenodo",
+        "fullName": "Zenodo",
         "tags": ["data", "publish"],
         "url": "",
         "type": "apikey",
@@ -29,16 +29,16 @@ AUTH_PROVIDERS = [
 ]
 
 DATAONE_PROVIDER = {
-    "id": "dataoneprod",
+    "name": "dataoneprod",
     "logo": "",
-    "name": "DataONE Production CN",
+    "fullName": "DataONE Production CN",
     "tags": ["publish"],
     "url": "",
     "type": "dataone",
     "state": "unauthorized",
 }
 
-APIKEY_GROUPS = [{"id": "zenodo", "targets": ["sandbox.zenodo.org", "zenodo.org"]}]
+APIKEY_GROUPS = [{"name": "zenodo", "targets": ["sandbox.zenodo.org", "zenodo.org"]}]
 
 
 @httmock.urlmatch(
@@ -132,10 +132,10 @@ class ExternalAccountsTestCase(base.TestCase):
         accounts = resp.json
 
         self.assertEqual(
-            sorted([_["id"] for _ in accounts]),
-            sorted([_["id"] for _ in AUTH_PROVIDERS]),
+            sorted([_["name"] for _ in accounts]),
+            sorted([_["name"] for _ in AUTH_PROVIDERS]),
         )
-        orcid_account = next((_ for _ in accounts if _["id"] == "orcid"))
+        orcid_account = next((_ for _ in accounts if _["name"] == "orcid"))
         self.assertTrue(
             "%2Fapi%2Fv1%2Faccount%2Forcid%2Fcallback" in orcid_account["url"]
         )
@@ -197,11 +197,11 @@ class ExternalAccountsTestCase(base.TestCase):
         self.assertStatusOk(resp)
         accounts = resp.json
 
-        orcid_account = next((_ for _ in accounts if _["id"] == "orcid"))
+        orcid_account = next((_ for _ in accounts if _["name"] == "orcid"))
         self.assertEqual(orcid_account["state"], "authorized")
         self.assertTrue(orcid_account["url"].endswith("/account/orcid/revoke"))
 
-        zenodo_account = next((_ for _ in accounts if _["id"] == "zenodo"))
+        zenodo_account = next((_ for _ in accounts if _["name"] == "zenodo"))
         self.assertEqual(
             zenodo_account["targets"][0]["resource_server"], "sandbox.zenodo.org"
         )
@@ -223,13 +223,13 @@ class ExternalAccountsTestCase(base.TestCase):
         self.assertStatus(resp, 400)
 
         # Try callback, without providing any params
-        resp = self.request(path="/account/%s/callback" % provider_info["id"])
+        resp = self.request(path="/account/%s/callback" % provider_info["name"])
         self.assertStatus(resp, 400)
 
         # Try callback, providing params as though the provider failed
         resp = self.request(
             method="GET",
-            path="/account/%s/callback" % provider_info["id"],
+            path="/account/%s/callback" % provider_info["name"],
             params={"code": None, "error": "some_custom_error"},
             exception=True,
         )
@@ -240,7 +240,7 @@ class ExternalAccountsTestCase(base.TestCase):
 
         resp = self.request(
             method="GET",
-            path="/account/%s/callback" % provider_info["id"],
+            path="/account/%s/callback" % provider_info["name"],
             params={"code": "orcid_code", "state": "some_state"},
         )
         self.assertStatus(resp, 403)
@@ -252,7 +252,7 @@ class ExternalAccountsTestCase(base.TestCase):
         state = "{_id}.blah".format(**invalid_token_no_user)
         resp = self.request(
             method="GET",
-            path="/account/%s/callback" % provider_info["id"],
+            path="/account/%s/callback" % provider_info["name"],
             params={"code": "orcid_code", "state": state},
         )
         self.assertStatus(resp, 400)
@@ -262,7 +262,7 @@ class ExternalAccountsTestCase(base.TestCase):
         state = "{_id}.blah".format(**invalid_token_expired)
         resp = self.request(
             method="GET",
-            path="/account/%s/callback" % provider_info["id"],
+            path="/account/%s/callback" % provider_info["name"],
             params={"code": "orcid_code", "state": state},
         )
         self.assertStatus(resp, 403)
@@ -272,7 +272,7 @@ class ExternalAccountsTestCase(base.TestCase):
         invalid_state = "{_id}".format(**valid_token)
         resp = self.request(
             method="GET",
-            path="/account/%s/callback" % provider_info["id"],
+            path="/account/%s/callback" % provider_info["name"],
             params={"code": "orcid_code", "state": invalid_state},
         )
         self.assertStatus(resp, 400)
@@ -283,7 +283,7 @@ class ExternalAccountsTestCase(base.TestCase):
         with httmock.HTTMock(mockGetOrcidToken, mockOtherRequests):
             resp = self.request(
                 method="GET",
-                path="/account/%s/callback" % provider_info["id"],
+                path="/account/%s/callback" % provider_info["name"],
                 params={"code": "orcid_code", "state": valid_state},
                 isJson=False,
             )
@@ -303,7 +303,7 @@ class ExternalAccountsTestCase(base.TestCase):
         with httmock.HTTMock(mockGetOrcidToken, mockOtherRequests):
             resp = self.request(
                 method="GET",
-                path="/account/%s/callback" % provider_info["id"],
+                path="/account/%s/callback" % provider_info["name"],
                 params={"code": "orcid_code", "state": valid_state},
                 isJson=False,
             )

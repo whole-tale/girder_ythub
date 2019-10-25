@@ -448,7 +448,7 @@ def load(info):
         "web_client/extra/img",
     )
     for ext_provider in SettingDefault.defaults[PluginSettings.EXTERNAL_AUTH_PROVIDERS]:
-        logo_path = os.path.join(path_to_assets, ext_provider["id"] + '_logo.jpg')
+        logo_path = os.path.join(path_to_assets, ext_provider["name"] + '_logo.jpg')
         print(logo_path)
         if os.path.isfile(logo_path):
             with open(logo_path, "rb") as image_file:

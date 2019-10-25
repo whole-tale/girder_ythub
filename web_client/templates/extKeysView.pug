@@ -23,12 +23,12 @@
   each provider in keyProviders
     .g-apikey-provider
       .h2
-        | #{provider.name}
-        button.btn.btn-sm.btn-primary.g-apikey-button.pull-right(class=`g-apikey-${provider.id}-button`, g-provider=provider.id)
+        | #{provider.fullName}
+        button.btn.btn-sm.btn-primary.g-apikey-button.pull-right(class=`g-apikey-${provider.name}-button`, g-provider=provider.name)
           i.icon-plus
       each target in provider.targets
         .g-apikey-entry
           .h3
             | #{target.resource_server}
-            button.btn.btn-sm.btn-danger.g-key-provider-delete-button.pull-right(title="Delete", g-provider=provider.id, g-resource=target.resource_server)
+            button.btn.btn-sm.btn-danger.g-key-provider-delete-button.pull-right(title="Delete", g-provider=provider.name, g-resource=target.resource_server)
               i.icon-trash

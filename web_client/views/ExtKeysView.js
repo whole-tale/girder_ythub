@@ -83,7 +83,7 @@ var ExtKeysView = View.extend({
             var revokeButtons = [];
             var keyProviders = [];
             _.each(this.providers, function (provider) {
-                var btn = this._buttons[provider.id];
+                var btn = this._buttons[provider.name];
 
                 // There's a special thing we need to do for DataONE, cause they're neither OAUTH provider,
                 // nor support apikeys...
@@ -102,10 +102,10 @@ var ExtKeysView = View.extend({
                     if (response !== '') {
                         provider.state = 'authorized';
                         restRequest({
-                            url: 'account/' + provider.id + '/key',
+                            url: 'account/' + provider.name + '/key',
                             method: 'POST',
                             data: {
-                                provider: provider.id,
+                                provider: provider.name,
                                 resource_server: 'willBeOverridden',
                                 key: response,
                                 key_type: 'dataone'
@@ -117,7 +117,7 @@ var ExtKeysView = View.extend({
                 }
 
                 if (btn) {
-                    btn.providerId = provider.id;
+                    btn.providerId = provider.name;
                     btn.text = provider.name;
                     if (provider.state === 'unauthorized') {
                         buttons.push(btn);

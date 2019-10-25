@@ -222,9 +222,9 @@ external_auth_providers_schema = {
         {
             "type": "object",
             "properties": {
-                "id": {"type": "string"},
-                "logo": {"type": "string"},
                 "name": {"type": "string"},
+                "logo": {"type": "string"},
+                "fullName": {"type": "string"},
                 "state": {"type": "string"},
                 "tags": {"type": "array", "items": [{"type": ["string", "null"]}]},
                 "type": {"type": "string"},
@@ -232,7 +232,7 @@ external_auth_providers_schema = {
                 "docs_href": {"type": "string"},
                 "targets": {"type": "array", "items": [{"type": ["string", "null"]}]},
             },
-            "required": ["id", "logo", "name", "tags", "type"],
+            "required": ["name", "logo", "fullName", "tags", "type"],
         },
     ],
 }
@@ -244,10 +244,10 @@ external_apikey_groups_schema = {
         {
             "type": "object",
             "properties": {
-                "id": {"type": "string"},
+                "name": {"type": "string"},
                 "targets": {"type": "array", "items": [{"type": ["string", "null"]}]},
             },
-            "required": ["id", "targets"],
+            "required": ["name", "targets"],
         }
     ],
 }

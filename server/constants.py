@@ -36,18 +36,18 @@ class SettingDefault:
         PluginSettings.DATAVERSE_EXTRA_HOSTS: [],
         PluginSettings.EXTERNAL_AUTH_PROVIDERS: [
             {
-                "id": "orcid",
+                "name": "orcid",
                 "logo": "",
-                "name": "ORCID",
+                "fullName": "ORCID",
                 "tags": ["publish"],
                 "url": "",
                 "type": "bearer",
                 "state": "unauthorized",
             },
             {
-                "id": "zenodo",
+                "name": "zenodo",
                 "logo": "",
-                "name": "Zenodo",
+                "fullName": "Zenodo",
                 "tags": ["data", "publish"],
                 "url": "",
                 "type": "apikey",
@@ -55,9 +55,9 @@ class SettingDefault:
                 "targets": [],
             },
             {
-                "id": "dataverse",
+                "name": "dataverse",
                 "logo": "",
-                "name": "Dataverse",
+                "fullName": "Dataverse",
                 "tags": ["data", "publish"],
                 "url": "",
                 "type": "apikey",
@@ -65,9 +65,9 @@ class SettingDefault:
                 "targets": [],
             },
             {
-                "id": "dataonestage2",
+                "name": "dataonestage2",
                 "logo": "",
-                "name": "DataONE Stage 2 CN",
+                "fullName": "DataONE Stage 2 CN",
                 "tags": ["publish"],
                 "url": "",
                 "type": "dataone",
@@ -75,9 +75,9 @@ class SettingDefault:
             },
         ],
         PluginSettings.EXTERNAL_APIKEY_GROUPS: [
-            {"id": "zenodo", "targets": ["sandbox.zenodo.org", "zenodo.org"]},
+            {"name": "zenodo", "targets": ["sandbox.zenodo.org", "zenodo.org"]},
             {
-                "id": "dataverse",
+                "name": "dataverse",
                 "targets": [
                     "dev2.dataverse.org",
                     "dataverse.harvard.org",
