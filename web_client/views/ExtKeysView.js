@@ -14,19 +14,22 @@ var ExtKeysView = View.extend({
     events: {
         'click .g-oauth-button': function (event) {
             var providerId = $(event.currentTarget).attr('g-provider');
-            var provider = _.findWhere(this.providers, {id: providerId});
+            var provider = _.findWhere(this.providers, {name: providerId});
             var redirect = '';
             if (provider.state === 'authorized') {
-                redirect = provider.url + '?token=' + this.token + '&redirect=' + encodeURIComponent(this.redirect);
+                restRequest({
+                    url: 'account/' + provider.name + '/revoke'
+                }).done((resp) => {
+                    this.render();
+                });
             } else {
+                redirect = provider.url;
                 if (provider.type === 'dataone') {
                     // It doesn't matter that rest of the world uses qarg 'redirect', DataONE had to be unique...
-                    redirect = provider.url + '&target=' + encodeURIComponent(this.redirect);
-                } else {
-                    redirect = provider.url;
+                    redirect += '&target=' + encodeURIComponent(this.redirect);
                 }
+                window.location = redirect;
             }
-            window.location = redirect;
         },
 
         'click .g-apikey-button': function (event) {
@@ -48,7 +51,6 @@ var ExtKeysView = View.extend({
             restRequest({
                 url: 'account/' + provider + '/revoke',
                 data: {
-                    redirect: this.redirect,
                     resource_server: resourceServer
                 }
             }).done((resp) => {

@@ -356,8 +356,7 @@ class ExternalAccountsTestCase(base.TestCase):
                 params={"redirect": "https://somewhere", "token": valid_token["_id"]},
                 isJson=False,
             )
-            self.assertStatus(resp, 303)
-            self.assertEqual(resp.headers["location"], "https://somewhere")
+            self.assertStatusOk(resp)
 
         self.user = User().load(self.user["_id"], force=True)
         self.assertEqual(len(self.user["otherTokens"]), 1)
@@ -382,7 +381,7 @@ class ExternalAccountsTestCase(base.TestCase):
             },
             isJson=False,
         )
-        self.assertStatus(resp, 303)
+        self.assertStatusOk(resp)
         self.user = User().load(self.user["_id"], force=True)
         self.assertEqual(current_other_tokens, self.user["otherTokens"])
 
@@ -396,7 +395,7 @@ class ExternalAccountsTestCase(base.TestCase):
             },
             isJson=False,
         )
-        self.assertStatus(resp, 303)
+        self.assertStatusOk(resp)
         self.user = User().load(self.user["_id"], force=True)
         self.assertEqual(self.user["otherTokens"], [])
 

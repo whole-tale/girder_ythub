@@ -184,13 +184,9 @@ class Account(Resource):
     @autoDescribeRoute(
         Description("Revoke authorization for a given provider.")
         .param("provider", "The provider name.", paramType="path")
-        .param(
-            "redirect",
-            "Where the user should be redirected upon completion of revocation,",
-        )
         .param("resource_server", "resource_server", required=False)
     )
-    def revokeAccount(self, provider, redirect, resource_server):
+    def revokeAccount(self, provider, resource_server):
         """Revoke account authorization.
 
         In case of OAuth use the proper flow (usually calling /revoke with refreshToken).
@@ -232,9 +228,7 @@ class Account(Resource):
             if provider_obj["type"] == "bearer":
                 oauth_provider = providers.idMap[provider]
                 # NOTE: only ORCID has that implemented
-                oauth_provider(redirect).revokeToken(token)
-
-        raise cherrypy.HTTPRedirect(redirect)
+                oauth_provider("").revokeToken(token)
 
     @access.public
     @autoDescribeRoute(
