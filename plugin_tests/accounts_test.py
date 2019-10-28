@@ -473,6 +473,7 @@ class ExternalAccountsTestCase(base.TestCase):
         from girder.plugins.wholetale.constants import SettingDefault, PluginSettings
 
         Setting().set(PluginSettings.EXTERNAL_AUTH_PROVIDERS, [DATAONE_PROVIDER])
+        provider_info = DATAONE_PROVIDER
 
         resp = self.request(
             path="/account",
@@ -482,8 +483,44 @@ class ExternalAccountsTestCase(base.TestCase):
         )
         self.assertStatusOk(resp)
         accounts = resp.json
+        self.assertTrue(
+            accounts[0]["url"].startswith(
+                "https://cn.dataone.org/portal/oauth?action=start"
+            )
+        )
+
+        valid_token = Token().createToken(user=self.user, days=0.25)
+        valid_state = "{_id}.blah".format(**valid_token)
+        with httmock.HTTMock(mockOtherRequests):
+            resp = self.request(
+                method="GET",
+                path="/account/%s/callback" % provider_info["name"],
+                params={"code": "dataone", "state": valid_state},
+                isJson=False,
+            )
+        self.assertStatus(resp, 303)
+        self.user = User().load(self.user["_id"], force=True)
         self.assertEqual(
-            accounts[0]["url"], "https://cn.dataone.org/portal/oauth?action=start"
+            self.user["otherTokens"][0],
+            {
+                "provider": provider_info["name"],
+                "resource_server": "cn.dataone.org",
+                "token_type": "dataone-pre",
+                "access_token": "",
+            },
+        )
+
+        # Url should change to /token after "pre-authorization"
+        resp = self.request(
+            path="/account",
+            method="GET",
+            user=self.user,
+            params={"redirect": "http://localhost"},
+        )
+        self.assertStatusOk(resp)
+        accounts = resp.json
+        self.assertTrue(
+            accounts[0]["url"].startswith("https://cn.dataone.org/portal/token")
         )
 
         resp = self.request(
@@ -500,10 +537,16 @@ class ExternalAccountsTestCase(base.TestCase):
 
         self.user = User().load(self.user["_id"], force=True)
         self.assertEqual(len(self.user["otherTokens"]), 1)
+        user_token = self.user["otherTokens"][0]
         self.assertEqual(
-            self.user["otherTokens"][0]["resource_server"], "cn.dataone.org"
+            user_token,
+            {
+                "access_token": "dataone_token",
+                "provider": "dataoneprod",
+                "resource_server": "cn.dataone.org",
+                "token_type": "dataone",
+            },
         )
-        self.assertEqual(self.user["otherTokens"][0]["access_token"], "dataone_token")
 
         # Return to defaults
         for key in (PluginSettings.EXTERNAL_AUTH_PROVIDERS,):

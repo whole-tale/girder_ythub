@@ -10,6 +10,14 @@ import ExtKeyView from './ExtKeyDialog';
 import ExtKeysViewTemplate from '../templates/extKeysView.pug';
 import '../stylesheets/extKeysView.styl';
 
+const parseJwt = (token) => {
+    try {
+        return JSON.parse(atob(token.split('.')[1]));
+    } catch (e) {
+        return null;
+    }
+};
+
 var ExtKeysView = View.extend({
     events: {
         'click .g-oauth-button': function (event) {
@@ -89,20 +97,18 @@ var ExtKeysView = View.extend({
 
                 // There's a special thing we need to do for DataONE, cause they're neither OAUTH provider,
                 // nor support apikeys...
-                if (provider.type === 'dataone' && provider.state === 'unauthorized') {
+                if (provider.type === 'dataone' && provider.state === 'preauthorized') {
                     // This doesn't necessarily have to be a blocking call, it could be implemented
                     // as an async call + a spinner, maybe?  But I'm lazy...
                     let xmlHttp = new XMLHttpRequest();
-                    let url = provider.url.replace('oauth?action=start', 'token');
-                    xmlHttp.open('GET', url, false);
+                    xmlHttp.open('GET', provider.url, false);
                     xmlHttp.setRequestHeader('Content-Type', 'text/xml');
                     xmlHttp.withCredentials = true;
                     xmlHttp.send(null);
                     let response = xmlHttp.responseText;
                     console.log('Response from DataONE:');
                     console.log(response);
-                    if (response !== '') {
-                        provider.state = 'authorized';
+                    if (parseJwt(response) !== null) {
                         restRequest({
                             url: 'account/' + provider.name + '/key',
                             method: 'POST',
@@ -112,9 +118,14 @@ var ExtKeysView = View.extend({
                                 key: response,
                                 key_type: 'dataone'
                             },
-                            done: null,
                             error: null
-                        });
+                        }).done((resp) => { this.render(); });
+                    } else {
+                        // Revoke pre-authorization token, cause something went wrong.
+                        restRequest({
+                            url: 'account/' + provider.name + '/revoke',
+                            method: 'GET'
+                        }).done((resp) => { this.render(); });
                     }
                 }
 

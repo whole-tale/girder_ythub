@@ -103,9 +103,19 @@ class Account(Resource):
         # External account providers ids that we support, can be defined in plugin settings
         supported_providers_ids = set(self.supported_providers().keys())
 
+        # Some special handling for DataONE, since we haven't done that for a while.
+        # DataONE OAuth providers are "fake" </SHOCK> They don't really use OAuth, we derive it
+        # from oauth.BaseProvider but only mock a limited set of methods that we need, e.g. to
+        # get the name or the url for a coordinating node.
+        dataone_providers_ids = {
+            provider_name
+            for provider_name, provider in self.supported_providers().items()
+            if provider["type"] == "dataone"
+        }
+
         # Supported providers that happen to be OAuth providers, need CSRF token for OAuth flow
         state = None
-        if enabled_providers_ids & supported_providers_ids:
+        if enabled_providers_ids & supported_providers_ids | dataone_providers_ids:
             state = self._createStateToken(redirect, user=user)
 
         # All supported *AND* enabled providers will be mapped by 'enabled_providers'
@@ -137,6 +147,10 @@ class Account(Resource):
                         (getApiUrl(), "account", user_token["provider"], "revoke")
                     )
                     enabled_provider["state"] = "authorized"
+                elif user_token["token_type"].lower() == "dataone-pre":
+                    provider = providers.idMap[user_token["provider"]]
+                    enabled_provider["state"] = "preauthorized"
+                    enabled_provider["url"] = provider.getTokenUrl()
                 else:
                     enabled_provider["targets"].append(
                         {
@@ -156,17 +170,6 @@ class Account(Resource):
                     )
             except KeyError:
                 pass
-
-        # Some special handling for DataONE, since we haven't done that for a while.
-        # DataONE OAuth providers are "fake" </SHOCK> They don't really use OAuth, we derive it
-        # from oauth.BaseProvider but only mock a limited set of methods that we need, e.g. to
-        # get the name or the url for a coordinating node. They're thankfully never instantiated
-        # cause /callback for DataONE is never called (not really an OAuth2 flow)
-        dataone_providers_ids = {
-            provider_name
-            for provider_name, provider in self.supported_providers().items()
-            if provider["type"] == "dataone"
-        }
 
         for provider_name in (
             enabled_providers_ids & supported_providers_ids | dataone_providers_ids
@@ -335,7 +338,9 @@ class Account(Resource):
         user_tokens = user.get("otherTokens", [])
         for i, user_token in enumerate(user_tokens):
             if user_token["resource_server"] == resource_server:
-                user_tokens[i]["access_token"] = key  # update token if found.
+                user_tokens[i].update(  # update token if found.
+                    {"access_token": key, "token_type": key_type}
+                )
                 break
         else:
             user_tokens.append(
