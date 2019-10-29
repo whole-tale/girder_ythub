@@ -31,12 +31,7 @@ var ExtKeysView = View.extend({
                     this.render();
                 });
             } else {
-                redirect = provider.url;
-                if (provider.type === 'dataone') {
-                    // It doesn't matter that rest of the world uses qarg 'redirect', DataONE had to be unique...
-                    redirect += '&target=' + encodeURIComponent(this.redirect);
-                }
-                window.location = redirect;
+                window.location = provider.url;
             }
         },
 
