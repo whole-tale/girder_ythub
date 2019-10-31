@@ -107,7 +107,7 @@ class ZenodoImportProvider(ImportProvider):
             temp["+files+"].append(
                 {
                     "size": file_obj["size"],
-                    "name": file_obj["key"].rsplit("/", maxsplit=1)[1],
+                    "name": file_obj["key"].rsplit("/", maxsplit=1)[-1],
                     "url": file_obj["links"]["self"],
                     "mimeType": "application/octet-stream",
                 }
@@ -134,7 +134,7 @@ class ZenodoImportProvider(ImportProvider):
                 yield from _recurse_hierarchy(hierarchy[folder])
                 yield ImportItem(ImportItem.END_FOLDER)
 
-        meta = {k: record[k] for k in ["conceptdoi", "conceptrecid"]}
+        meta = {k: record.get(k, "") for k in ["conceptdoi", "conceptrecid"]}
         meta["subProvider"] = urlparse(pid).netloc
 
         yield ImportItem(
