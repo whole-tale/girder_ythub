@@ -187,8 +187,10 @@ def find_initial_pid(path):
     if re.search(r'resolve', path):
         return path.split("resolve/", 1)[1]
     elif doi is not None:
+        logger.debug("Returning doi".format(doi.group()))
         return 'doi:{}'.format(doi.group())
     else:
+        logger.debug("REGEX not found. Returning {}".format(path))
         return path
 
 
@@ -203,6 +205,7 @@ def get_package_pid(path, base_url):
     """
 
     initial_pid = find_initial_pid(path)
+    logger.debug("Found initial PID {}".format(initial_pid))
     pid = find_resource_pid(initial_pid, base_url)
     return pid
 
@@ -228,7 +231,7 @@ def extract_resource_docs(docs):
 
 def D1_lookup(path, base_url):
     """
-    Lookup and return information about a package on the
+    Lookup and return debugrmation about a package on the
     DataONE network.
     :param path: The path to a DataONE object
     :param base_url: The patht to a node endpoint
@@ -238,6 +241,7 @@ def D1_lookup(path, base_url):
     """
 
     package_pid = get_package_pid(path, base_url)
+    logger.debug("Got Package Pid {}".format(package_pid))
     docs = get_documents(package_pid, base_url)
 
     if not docs:
@@ -249,7 +253,7 @@ def D1_lookup(path, base_url):
 
     # Compute package size (sum of 'size' values)
     total_size = sum([int(doc.get('size', 0)) for doc in docs])
-
+    logger.debug("Got Package Size {}".format(total_size))
     return DataMap(package_pid, total_size, name=metadata[0].get('title', 'no title'),
                    doi=metadata[0].get('identifier', 'no DOI').split('doi:')[-1],
                    repository='DataONE')
