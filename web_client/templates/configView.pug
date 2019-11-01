@@ -28,6 +28,11 @@ form#g-wholetale-config-form(role="form")
       placeholder=`Default: ${defaults['wholetale.external_apikey_groups'] || '[]'}`,
       title="Supported external auth providers. (JSON object {\"provider1\": [\"target1\", \"target2\"], ...})")
         = JSON.stringify(settings['wholetale.external_apikey_groups'] || defaults['wholetale.external_apikey_groups'], null, 4)
+    label.control-label(for="wholetale_publisher_repositories") Custom targets for API key providers
+    textarea#wholetale_publisher_repositories.form-control(
+      placeholder=`Default: ${defaults['wholetale.publisher_repositories'] || '[]'}`,
+      title="A mapping of publish repositories to auth providers. (JSON object {\"repository1\": \"authprovider1\", ...})")
+        = JSON.stringify(settings['wholetale.publisher_repositories'] || defaults['wholetale.publisher_repositories'], null, 4)
 
   p#g-wholetale-error-message.g-validation-failed-message
   input.btn.btn-sm.btn-primary(type="submit", value="Save")
