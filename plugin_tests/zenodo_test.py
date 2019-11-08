@@ -50,7 +50,7 @@ class ZenodoHarversterTestCase(base.TestCase):
         resolved_lookup = {
             "dataId": "https://zenodo.org/record/3459420",
             "doi": "doi:10.5281/zenodo.3459420",
-            "name": "A global network of biomedical relationships derived from text_rev2",
+            "name": "A global network of biomedical relationships derived from text_ver_7",
             "repository": "Zenodo",
             "size": 8037626747,
         }
@@ -73,7 +73,7 @@ class ZenodoHarversterTestCase(base.TestCase):
 
         resolved_listFiles = [
             {
-                "jbferet/biodivMapR: v1.0.1_rev2": {
+                "jbferet/biodivMapR: v1.0.1_ver_v1.0.1": {
                     "jbferet": {
                         "fileList": [{"biodivMapR-v1.0.1.zip": {"size": 24692383}}]
                     }
@@ -186,7 +186,7 @@ class ZenodoHarversterTestCase(base.TestCase):
         self.assertEqual(
             resp.json[0],
             {
-                "jbferet/biodivMapR: v1.0.1_rev2": {
+                "jbferet/biodivMapR: v1.0.1_ver_v1.0.1": {
                     "jbferet": {
                         "fileList": [{"biodivMapR-v1.0.1.zip": {"size": 24692383}}]
                     }

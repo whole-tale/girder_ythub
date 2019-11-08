@@ -65,7 +65,14 @@ class ZenodoImportProvider(ImportProvider):
 
     @staticmethod
     def _get_title_from_record(record):
-        return record["metadata"]["title"] + "_rev{}".format(record["revision"])
+        try:
+            version = record["metadata"]["version"]
+        except KeyError:
+            try:
+                version = record["metadata"]["relations"]["version"][0]["count"]
+            except (KeyError, IndexError):
+                version = record["id"]
+        return record["metadata"]["title"] + "_ver_{}".format(version)
 
     def lookup(self, entity: Entity) -> DataMap:
         record = self._get_record(entity.getValue())
