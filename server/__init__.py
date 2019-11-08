@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import base64
+import copy
+import jsonschema
+import os
 import six
 import validators
 
@@ -20,6 +24,7 @@ from girder.utility import assetstore_utilities, setting_utilities
 from girder.utility.model_importer import ModelImporter
 
 from .constants import PluginSettings, SettingDefault
+from .rest.account import Account
 from .rest.dataset import Dataset
 from .rest.image import Image
 from .rest.integration import Integration
@@ -32,6 +37,37 @@ from .rest.wholetale import wholeTale
 from .rest.workspace import Workspace
 from .rest.license import License
 from .models.instance import finalizeInstance
+from .schema.misc import external_auth_providers_schema, external_apikey_groups_schema
+
+
+@setting_utilities.validator(PluginSettings.EXTERNAL_APIKEY_GROUPS)
+def validateExternalApikeyGroups(doc):
+    try:
+        jsonschema.validate(doc['value'], external_apikey_groups_schema)
+    except jsonschema.ValidationError as e:
+        raise ValidationException('Invalid External Apikey Groups list: ' + e.message)
+
+
+@setting_utilities.validator(PluginSettings.EXTERNAL_AUTH_PROVIDERS)
+def validateOtherSettings(doc):
+    try:
+        jsonschema.validate(doc['value'], external_auth_providers_schema)
+    except jsonschema.ValidationError as e:
+        raise ValidationException('Invalid External Auth Providers list: ' + e.message)
+
+
+@setting_utilities.default(PluginSettings.EXTERNAL_AUTH_PROVIDERS)
+def defaultExternalAuthProviders():
+    return copy.deepcopy(
+        SettingDefault.defaults[PluginSettings.EXTERNAL_AUTH_PROVIDERS]
+    )
+
+
+@setting_utilities.default(PluginSettings.EXTERNAL_APIKEY_GROUPS)
+def defaultExternalApikeyGroups():
+    return copy.deepcopy(
+        SettingDefault.defaults[PluginSettings.EXTERNAL_APIKEY_GROUPS]
+    )
 
 
 @setting_utilities.validator(PluginSettings.DATAVERSE_EXTRA_HOSTS)
@@ -387,6 +423,7 @@ def load(info):
     events.bind('model.file.save', 'wholetale', tale.updateWorkspaceModTime)
     events.bind('model.file.save.created', 'wholetale', tale.updateWorkspaceModTime)
     events.bind('model.file.remove', 'wholetale', tale.updateWorkspaceModTime)
+    info['apiRoot'].account = Account()
     info['apiRoot'].repository = Repository()
     info['apiRoot'].publish = Publish()
     info['apiRoot'].license = License()
@@ -403,3 +440,16 @@ def load(info):
     info['apiRoot'].user.route('GET', ('settings',), getUserMetadata)
     ModelImporter.model('user').exposeFields(
         level=AccessType.WRITE, fields=('meta', 'myData'))
+    ModelImporter.model('user').exposeFields(
+        level=AccessType.ADMIN, fields=('otherTokens',))
+
+    path_to_assets = os.path.join(
+        os.path.dirname(os.path.dirname(__file__)),
+        "web_client/extra/img",
+    )
+    for ext_provider in SettingDefault.defaults[PluginSettings.EXTERNAL_AUTH_PROVIDERS]:
+        logo_path = os.path.join(path_to_assets, ext_provider["name"] + '_logo.jpg')
+        print(logo_path)
+        if os.path.isfile(logo_path):
+            with open(logo_path, "rb") as image_file:
+                ext_provider["logo"] = base64.b64encode(image_file.read()).decode()

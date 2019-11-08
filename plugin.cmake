@@ -1,4 +1,5 @@
 add_python_test(basic PLUGIN wholetale)
+add_python_test(accounts PLUGIN wholetale)
 add_python_test(harvester
   PLUGIN wholetale
   EXTERNAL_DATA

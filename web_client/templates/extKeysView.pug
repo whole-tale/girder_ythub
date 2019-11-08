@@ -1,0 +1,34 @@
+.g-oauth-container
+  .g-oauth-section-header
+    .g-oauth-section-header-text
+        | Enable account
+  each button in buttons
+    .g-oauth-button(class=button.class, g-provider=button.providerId)
+      .g-oauth-button-icon
+        i(class=`icon-${button.icon}`)
+      .g-oauth-button-text= button.text || button.providerId
+  .g-oauth-section-header
+    .g-oauth-section-header-text
+        | Disable account
+  each button in revokeButtons
+    .g-oauth-button(class=button.class, g-provider=button.providerId)
+      .g-oauth-button-icon
+        i(class=`icon-${button.icon}`)
+      .g-oauth-button-text= button.text || button.providerId
+
+.g-apikey-container
+  .g-apikey-section-header
+    .g-apikey-section-header-text
+        | Add API keys for the following providers
+  each provider in keyProviders
+    .g-apikey-provider
+      .h2
+        | #{provider.fullName}
+        button.btn.btn-sm.btn-primary.g-apikey-button.pull-right(class=`g-apikey-${provider.name}-button`, g-provider=provider.name)
+          i.icon-plus
+      each target in provider.targets
+        .g-apikey-entry
+          .h3
+            | #{target.resource_server}
+            button.btn.btn-sm.btn-danger.g-key-provider-delete-button.pull-right(title="Delete", g-provider=provider.name, g-resource=target.resource_server)
+              i.icon-trash

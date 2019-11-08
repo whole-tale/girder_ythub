@@ -24,3 +24,8 @@ router.route('launch', 'launchTale', (params) => {
         url: params.url
     });
 });
+
+import ExtKeysView from './views/ExtKeysView';
+router.route('ext_keys', 'extKeys', () => {
+    events.trigger('g:navigateTo', ExtKeysView);
+});
