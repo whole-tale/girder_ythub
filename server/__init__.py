@@ -81,6 +81,17 @@ def validateDataverseExtraHosts(doc):
             raise ValidationException('Invalid URL in Dataverse extra hosts', 'value')
 
 
+@setting_utilities.validator(PluginSettings.ZENODO_EXTRA_HOSTS)
+def validateZenodoExtraHosts(doc):
+    if not doc['value']:
+        doc['value'] = defaultZenodoExtraHosts()
+    if not isinstance(doc['value'], list):
+        raise ValidationException('Zenodo extra hosts setting must be a list.', 'value')
+    for url in doc['value']:
+        if not validators.url(url):
+            raise ValidationException('Invalid URL in Zenodo extra hosts', 'value')
+
+
 @setting_utilities.validator(PluginSettings.INSTANCE_CAP)
 def validateInstanceCap(doc):
     if not doc['value']:
@@ -113,6 +124,11 @@ def defaultDataverseURL():
 @setting_utilities.default(PluginSettings.DATAVERSE_EXTRA_HOSTS)
 def defaultDataverseExtraHosts():
     return SettingDefault.defaults[PluginSettings.DATAVERSE_EXTRA_HOSTS]
+
+
+@setting_utilities.default(PluginSettings.ZENODO_EXTRA_HOSTS)
+def defaultZenodoExtraHosts():
+    return SettingDefault.defaults[PluginSettings.ZENODO_EXTRA_HOSTS]
 
 
 @access.public(scope=TokenScope.DATA_READ)

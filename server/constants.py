@@ -25,6 +25,7 @@ class PluginSettings:
     DATAVERSE_EXTRA_HOSTS = "wholetale.dataverse_extra_hosts"
     EXTERNAL_AUTH_PROVIDERS = "wholetale.external_auth_providers"
     EXTERNAL_APIKEY_GROUPS = "wholetale.external_apikey_groups"
+    ZENODO_EXTRA_HOSTS = "wholetale.zenodo_extra_hosts"
 
 
 class SettingDefault:
@@ -85,6 +86,7 @@ class SettingDefault:
                 ],
             },
         ],
+        PluginSettings.ZENODO_EXTRA_HOSTS: [],
     }
 
 
