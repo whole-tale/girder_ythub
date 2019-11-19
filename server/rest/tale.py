@@ -640,7 +640,7 @@ class Tale(Resource):
     @access.user(scope=TokenScope.DATA_WRITE)
     @filtermodel(model=Job)
     @autoDescribeRoute(
-        Description("Publish a tale to a repository running Metacat")
+        Description("Publish a Tale to a data repository")
         .modelParam(
             "id",
             description="The ID of the tale that is going to be published.",
