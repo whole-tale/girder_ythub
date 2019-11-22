@@ -30,7 +30,6 @@ from .rest.dataset import Dataset
 from .rest.image import Image
 from .rest.integration import Integration
 from .rest.repository import Repository
-from .rest.publish import Publish
 from .rest.harvester import listImportedData
 from .rest.tale import Tale
 from .rest.instance import Instance
@@ -38,7 +37,26 @@ from .rest.wholetale import wholeTale
 from .rest.workspace import Workspace
 from .rest.license import License
 from .models.instance import finalizeInstance
-from .schema.misc import external_auth_providers_schema, external_apikey_groups_schema
+from .schema.misc import (
+    external_auth_providers_schema,
+    external_apikey_groups_schema,
+    repository_to_provider_schema,
+)
+
+
+@setting_utilities.validator(PluginSettings.PUBLISHER_REPOS)
+def validatePublisherRepos(doc):
+    try:
+        jsonschema.validate(doc['value'], repository_to_provider_schema)
+    except jsonschema.ValidationError as e:
+        raise ValidationException('Invalid Repository to Auth Provider map: ' + e.message)
+
+
+@setting_utilities.default(PluginSettings.PUBLISHER_REPOS)
+def defaultPublisherRepos():
+    return copy.deepcopy(
+        SettingDefault.defaults[PluginSettings.PUBLISHER_REPOS]
+    )
 
 
 @setting_utilities.validator(PluginSettings.EXTERNAL_APIKEY_GROUPS)
@@ -458,7 +476,6 @@ def load(info):
     events.bind('oauth.auth_callback.after', 'wholetale', store_other_globus_tokens)
     info['apiRoot'].account = Account()
     info['apiRoot'].repository = Repository()
-    info['apiRoot'].publish = Publish()
     info['apiRoot'].license = License()
     info['apiRoot'].integration = Integration()
     info['apiRoot'].workspace = Workspace()

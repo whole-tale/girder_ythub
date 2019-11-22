@@ -4,8 +4,10 @@ from girder.api import access
 from girder.api.describe import Description, autoDescribeRoute
 from girder.api.docs import addModel
 from girder.api.rest import Resource, RestException
+from girder.models.setting import Setting
 
-from girder.plugins.wholetale.lib.dataone import DataONELocations
+from ..constants import PluginSettings
+from ..lib.dataone import DataONELocations
 from ..lib.data_map import dataMapDoc
 from ..lib.file_map import fileMapDoc
 from ..lib import pids_to_entities
@@ -20,6 +22,7 @@ class Repository(Resource):
         super(Repository, self).__init__()
         self.resourceName = 'repository'
 
+        self.route('GET', (), self.getPublishRepositories)
         self.route('GET', ('lookup',), self.lookupData)
         self.route('GET', ('listFiles',), self.listFiles)
 
@@ -90,3 +93,36 @@ class Repository(Resource):
         except RuntimeError as exc:
             raise RestException(exc.args[0])
         return sorted(results, key=lambda k: list(k))
+
+    @access.public
+    @autoDescribeRoute(
+        Description(
+            "Retrieve a list of repositories where user can deposit their Tale"
+        )
+    )
+    def getPublishRepositories(self):
+        user = self.getCurrentUser()
+        if not user:
+            return []
+
+        publishers = {
+            entry["repository"]: entry["auth_provider"]
+            for entry in Setting().get(PluginSettings.PUBLISHER_REPOS)
+        }
+
+        targets = []
+        for repository, publisher in publishers.items():
+            if publisher.startswith("dataone"):
+                key = "provider"  # Dataone
+                value = publisher
+            else:
+                key = "resource_server"
+                value = repository
+
+            token = next(
+                (_ for _ in user.get("otherTokens", []) if _.get(key) == value), None
+            )
+            if token:
+                targets.append(repository)
+
+        return sorted(targets)

@@ -29,6 +29,9 @@ var ConfigView = View.extend({
             }, {
                 key: 'wholetale.external_apikey_groups',
                 value: this.$('#wholetale_external_apikey_groups').val().trim()
+            }, {
+                key: 'wholetale.publisher_repositories',
+                value: this.$('#wholetale_publisher_repositories').val().trim()
             }]);
         }
     },
@@ -43,7 +46,8 @@ var ConfigView = View.extend({
             'wholetale.dataverse_url',
             'wholetale.dataverse_extra_hosts',
             'wholetale.external_auth_providers',
-            'wholetale.external_apikey_groups'
+            'wholetale.external_apikey_groups',
+            'wholetale.publisher_repositories'
         ];
 
         restRequest({

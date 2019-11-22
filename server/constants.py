@@ -26,6 +26,7 @@ class PluginSettings:
     EXTERNAL_AUTH_PROVIDERS = "wholetale.external_auth_providers"
     EXTERNAL_APIKEY_GROUPS = "wholetale.external_apikey_groups"
     ZENODO_EXTRA_HOSTS = "wholetale.zenodo_extra_hosts"
+    PUBLISHER_REPOS = "wholetale.publisher_repositories"
 
 
 class SettingDefault:
@@ -87,6 +88,13 @@ class SettingDefault:
             },
         ],
         PluginSettings.ZENODO_EXTRA_HOSTS: [],
+        PluginSettings.PUBLISHER_REPOS: [
+            {"repository": "sandbox.zenodo.org", "auth_provider": "zenodo"},
+            {
+                "repository": "https://dev.nceas.ucsb.edu/knb/d1/mn",
+                "auth_provider": "dataonestage2",
+            },
+        ],
     }
 
 

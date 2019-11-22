@@ -241,7 +241,7 @@ external_auth_providers_schema = {
                 "targets": {"type": "array", "items": [{"type": ["string", "null"]}]},
             },
             "required": ["name", "logo", "fullName", "tags", "type"],
-        },
+        }
     ],
 }
 
@@ -258,4 +258,35 @@ external_apikey_groups_schema = {
             "required": ["name", "targets"],
         }
     ],
+}
+
+repository_to_provider_schema = {
+    "definitions": {},
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "array",
+    "title": "The Repositories to Auth Providers mapping schema",
+    "items": {
+        "$id": "#/items",
+        "type": "object",
+        "title": "The Repository to Auth Provider Schema",
+        "required": ["repository", "auth_provider"],
+        "properties": {
+            "repository": {
+                "$id": "#/items/properties/repository",
+                "type": "string",
+                "title": "The address of the repository",
+                "default": "",
+                "examples": ["sandbox.zenodo.org"],
+                "pattern": "^(.*)$",
+            },
+            "auth_provider": {
+                "$id": "#/items/properties/auth_provider",
+                "type": "string",
+                "title": "The name of the auth provider",
+                "default": "",
+                "examples": ["zenodo"],
+                "pattern": "^(.*)$",
+            },
+        },
+    },
 }

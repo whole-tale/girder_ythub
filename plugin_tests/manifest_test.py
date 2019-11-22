@@ -2,6 +2,7 @@ import json
 import os
 from tests import base
 from bson import ObjectId
+from girder.exceptions import AccessException
 from girder.utility.path import lookUpPath
 
 

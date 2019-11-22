@@ -23,7 +23,6 @@ var ExtKeysView = View.extend({
         'click .g-oauth-button': function (event) {
             var providerId = $(event.currentTarget).attr('g-provider');
             var provider = _.findWhere(this.providers, {name: providerId});
-            var redirect = '';
             if (provider.state === 'authorized') {
                 restRequest({
                     url: 'account/' + provider.name + '/revoke'

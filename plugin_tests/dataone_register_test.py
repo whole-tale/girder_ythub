@@ -228,7 +228,7 @@ class TestDataONERegister(base.TestCase):
                 'sortdir': -1
             })
         self.assertStatusOk(resp)
-        dataFolder = resp.json[0]
+        # dataFolder = resp.json[0]
 
         # Grab the default user Data folders
         resp = self.request(

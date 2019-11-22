@@ -20,11 +20,12 @@ from girder.utility import assetstore_utilities
 from girder.utility.path import getResourcePath
 from girder.utility.progress import ProgressContext
 from girder.models.assetstore import Assetstore
-from girder.models.token import Token
 from girder.models.folder import Folder
+from girder.models.token import Token
+from girder.models.setting import Setting
 from girder.plugins.jobs.models.job import Job
 from girder.plugins.jobs.constants import REST_CREATE_JOB_TOKEN_SCOPE
-from gwvolman.tasks import import_tale
+from gwvolman.tasks import import_tale, publish
 
 from girder.plugins.jobs.constants import JobStatus
 
@@ -40,7 +41,7 @@ from ..lib.exporters.native import NativeTaleExporter
 
 from girder.plugins.worker import getCeleryApp
 
-from ..constants import ImageStatus, TaleStatus
+from ..constants import ImageStatus, TaleStatus, PluginSettings
 
 
 addModel('tale', taleSchema, resources='tale')
@@ -65,6 +66,7 @@ class Tale(Resource):
         self.route('GET', (':id', 'export'), self.exportTale)
         self.route('GET', (':id', 'manifest'), self.generateManifest)
         self.route('PUT', (':id', 'build'), self.buildImage)
+        self.route('PUT', (':id', 'publish'), self.publishTale)
 
     @access.public
     @filtermodel(model='tale', plugin='wholetale')
@@ -634,3 +636,56 @@ class Tale(Resource):
                 # unzipping an untrusted content. What could possibly go wrong...?
                 z.extractall(path=temp_dir)
         return temp_dir, manifest_file, manifest, environment
+
+    @access.user(scope=TokenScope.DATA_WRITE)
+    @filtermodel(model=Job)
+    @autoDescribeRoute(
+        Description("Publish a Tale to a data repository")
+        .modelParam(
+            "id",
+            description="The ID of the tale that is going to be published.",
+            model="tale",
+            plugin="wholetale",
+            level=AccessType.ADMIN,
+        )
+        .param(
+            "repository",
+            description="The URL to a repository, where tale is going to be published.\n"
+            "Example: 'https://dev.nceas.ucsb.edu/knb/d1/mn', 'sandbox.zenodo.org'",
+            required=True,
+        )
+    )
+    def publishTale(self, tale, repository):
+        user = self.getCurrentUser()
+        publishers = {
+            entry["repository"]: entry["auth_provider"]
+            for entry in Setting().get(PluginSettings.PUBLISHER_REPOS)
+        }
+
+        try:
+            publisher = publishers[repository]
+        except KeyError:
+            raise RestException("Unknown publisher repository ({})".format(repository))
+
+        if publisher.startswith("dataone"):
+            key = "provider"  # Dataone
+            value = publisher
+        else:
+            key = "resource_server"
+            value = repository
+
+        token = next(
+            (_ for _ in user.get("otherTokens", []) if _.get(key) == value), None
+        )
+        if not token:
+            raise RestException("Missing a token for publisher ({}).".format(publisher))
+
+        girder_token = Token().createToken(user=user, days=0.5)
+
+        publishTask = publish.delay(
+            str(tale["_id"]),
+            token,
+            repository=repository,
+            girder_client_token=str(girder_token["_id"]),
+        )
+        return publishTask.job
