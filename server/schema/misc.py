@@ -15,12 +15,20 @@ publishInfoSchema = {
         },
         "uri": {
             "type": ["string", "null"],
-            "description": "A URI pointing to the location of the published " "Tale.",
+            "description": "A URI pointing to the location of the published Tale.",
         },
         "date": {
             "type": "string",
             "format": "date-time",
             "description": "Date Tale was published.",
+        },
+        "repository": {
+            "type": "string",
+            "description": "The repository where Tale was published.",
+        },
+        "repository_id": {
+            "type": "string",
+            "description": "The repository specific id assigned to the publication.",
         },
     },
     "required": ["pid", "uri", "date"],
