@@ -17,6 +17,7 @@ from girder.constants import AccessType, TokenScope, CoreEventHandler
 from girder.exceptions import GirderException
 from girder.models.model_base import ValidationException
 from girder.models.notification import Notification, ProgressState
+from girder.models.user import User
 from girder.plugins.jobs.constants import JobStatus
 from girder.plugins.jobs.models.job import Job as JobModel
 from girder.plugins.worker import getCeleryApp
@@ -409,6 +410,21 @@ def getJobResult(self, job):
     return result
 
 
+def store_other_globus_tokens(event):
+    globus_token = event.info["token"]
+    user = event.info["user"]
+    user_tokens = user.get("otherTokens", [])
+    for token in globus_token["other_tokens"]:
+        for i, user_token in enumerate(user_tokens):
+            if user_token["resource_server"] == token["resource_server"]:
+                user_tokens[i].update(token)
+                break
+        else:
+            user_tokens.append(token)
+    user["otherTokens"] = user_tokens
+    User().save(user)
+
+
 def load(info):
     info['apiRoot'].wholetale = wholeTale()
     info['apiRoot'].instance = Instance()
@@ -439,6 +455,7 @@ def load(info):
     events.bind('model.file.save', 'wholetale', tale.updateWorkspaceModTime)
     events.bind('model.file.save.created', 'wholetale', tale.updateWorkspaceModTime)
     events.bind('model.file.remove', 'wholetale', tale.updateWorkspaceModTime)
+    events.bind('oauth.auth_callback.after', 'wholetale', store_other_globus_tokens)
     info['apiRoot'].account = Account()
     info['apiRoot'].repository = Repository()
     info['apiRoot'].publish = Publish()
