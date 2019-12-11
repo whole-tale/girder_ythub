@@ -229,59 +229,7 @@ class Tale(Resource):
         )
 
         if cherrypy.request.headers.get('Content-Type') == 'application/zip':
-            temp_dir, manifest_file, manifest, environment = self._extractZipPayload()
-            image = imageModel().findOne({"name": environment["name"]})
-            image = imageModel().filter(image, user)
-            icon = image.get(
-                "icon",
-                (
-                    "https://raw.githubusercontent.com/"
-                    "whole-tale/dashboard/master/public/"
-                    "images/whole_tale_logo.png"
-                ),
-            )
-            licenseSPDX = next(
-                (
-                    _["schema:license"]
-                    for _ in manifest["aggregates"]
-                    if "schema:license" in _
-                ),
-                WholeTaleLicense.default_spdx(),
-            )
-            authors = [
-                {
-                    "firstName": author["schema:givenName"],
-                    "lastName": author["schema:familyName"],
-                    "orcid": author["@id"],
-                }
-                for author in manifest["schema:author"]
-            ]
-
-            tale = taleModel().createTale(
-                image,
-                [],
-                creator=user,
-                save=True,
-                title=manifest["schema:name"],
-                description=manifest["schema:description"],
-                public=False,
-                config={},
-                icon=icon,
-                illustration=manifest["schema:image"],
-                authors=authors,
-                category=manifest["schema:category"],
-                licenseSPDX=licenseSPDX,
-                status=TaleStatus.PREPARING,
-            )
-
-            job = Job().createLocalJob(
-                title='Import Tale from zip', user=user,
-                type='wholetale.import_tale', public=False, async=True,
-                module='girder.plugins.wholetale.tasks.import_tale',
-                args=(temp_dir, manifest_file),
-                kwargs={'user': user, 'token': token, 'tale': tale}
-            )
-            Job().scheduleJob(job)
+            tale = Tale().createTaleFromStream(iterBody, user=user, token=token)
         else:
             if not (imageId or url):
                 msg = (

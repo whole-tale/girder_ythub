@@ -3,6 +3,7 @@
 from girder.api.rest import Resource
 from ..lib.dataverse.integration import dataverseExternalTools
 from ..lib.dataone.integration import dataoneDataImport
+from ..lib.zenodo.integration import zenodoDataImport
 
 
 class Integration(Resource):
@@ -13,3 +14,4 @@ class Integration(Resource):
 
         self.route('GET', ('dataverse',), dataverseExternalTools)
         self.route('GET', ('dataone',), dataoneDataImport)
+        self.route('GET', ('zenodo',), zenodoDataImport)

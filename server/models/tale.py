@@ -2,15 +2,23 @@
 
 from bson.objectid import ObjectId
 import datetime
+import json
+import tempfile
+import zipfile
 
 from girder import events
-from girder.models.model_base import AccessControlledModel
-from girder.models.item import Item
+from girder.constants import AccessType, TokenScope
+from girder.exceptions import AccessException, GirderException
+from girder.models.assetstore import Assetstore
 from girder.models.folder import Folder
+from girder.models.item import Item
+from girder.models.model_base import AccessControlledModel
 from girder.models.token import Token
-from girder.constants import AccessType
-from girder.exceptions import AccessException
+from girder.plugins.jobs.models.job import Job
+from girder.plugins.jobs.constants import REST_CREATE_JOB_TOKEN_SCOPE
+from girder.utility import assetstore_utilities
 
+from .image import Image as imageModel
 from ..constants import WORKSPACE_NAME, DATADIRS_NAME, SCRIPTDIRS_NAME, TaleStatus
 from ..utils import getOrCreateRootFolder, init_progress
 from ..lib.license import WholeTaleLicense
@@ -117,7 +125,7 @@ class Tale(AccessControlledModel):
                    description=None, public=None, config=None, authors=None,
                    icon=None, category=None, illustration=None, narrative=None,
                    licenseSPDX=WholeTaleLicense.default_spdx(),
-                   status=TaleStatus.READY):
+                   status=TaleStatus.READY, publishInfo=None):
 
         if creator is None:
             creatorId = None
@@ -147,6 +155,7 @@ class Tale(AccessControlledModel):
             'narrative': narrative or [],
             'title': title,
             'public': public,
+            'publishInfo': publishInfo or [],
             'updated': now,
             'licenseSPDX': licenseSPDX,
             'status': status,
@@ -305,3 +314,121 @@ class Tale(AccessControlledModel):
         ).apply_async()
 
         return buildTask.job
+
+    @staticmethod
+    def _extractZipPayload(stream):
+        # TODO: Move assetstore type to wholetale.
+        assetstore = next((_ for _ in Assetstore().list() if _['type'] == 101), None)
+        if assetstore:
+            adapter = assetstore_utilities.getAssetstoreAdapter(assetstore)
+            tempDir = adapter.tempDir
+        else:
+            tempDir = None
+
+        with tempfile.NamedTemporaryFile(dir=tempDir) as fp:
+            for chunk in stream(2 * 1024 ** 3):
+                fp.write(chunk)
+            fp.seek(0)
+            if not zipfile.is_zipfile(fp):
+                raise GirderException("Provided file is not a zipfile")
+
+            with zipfile.ZipFile(fp) as z:
+                manifest_file = next(
+                    (_ for _ in z.namelist() if _.endswith('manifest.json')),
+                    None
+                )
+                if not manifest_file:
+                    raise GirderException("Provided file doesn't contain a Tale manifest")
+
+                try:
+                    manifest = json.loads(z.read(manifest_file).decode())
+                    # TODO: is there a better check?
+                    manifest['@id'].startswith('https://data.wholetale.org')
+                except Exception as e:
+                    raise GirderException(
+                        "Couldn't read manifest.json or not a Tale: {}".format(str(e))
+                    )
+
+                env_file = next(
+                    (_ for _ in z.namelist() if _.endswith("environment.json")),
+                    None
+                )
+                try:
+                    environment = json.loads(z.read(env_file).decode())
+                except Exception as e:
+                    raise GirderException(
+                        "Couldn't read environment.json or not a Tale: {}".format(str(e))
+                    )
+
+                # Extract files to tmp on workspace assetstore
+                temp_dir = tempfile.mkdtemp(dir=tempDir)
+                # In theory malicious content like: abs path for a member, or relative path with
+                # ../.. etc., is taken care of by zipfile.extractall, but in the end we're still
+                # unzipping an untrusted content. What could possibly go wrong...?
+                z.extractall(path=temp_dir)
+        return temp_dir, manifest_file, manifest, environment
+
+    def createTaleFromStream(self, stream, user=None, token=None, publishInfo=None):
+        if token is None:
+            token = Token().createToken(
+                user=user,
+                days=0.5,
+                scope=(TokenScope.USER_AUTH, REST_CREATE_JOB_TOKEN_SCOPE)
+            )
+        temp_dir, manifest_file, manifest, environment = self._extractZipPayload(
+            stream
+        )
+        image = imageModel().findOne({"name": environment["name"]})
+        image = imageModel().filter(image, user)
+        icon = image.get(
+            "icon",
+            (
+                "https://raw.githubusercontent.com/"
+                "whole-tale/dashboard/master/public/"
+                "images/whole_tale_logo.png"
+            ),
+        )
+        licenseSPDX = next(
+            (
+                _["schema:license"]
+                for _ in manifest["aggregates"]
+                if "schema:license" in _
+            ),
+            WholeTaleLicense.default_spdx(),
+        )
+        authors = [
+            {
+                "firstName": author["schema:givenName"],
+                "lastName": author["schema:familyName"],
+                "orcid": author["@id"],
+            }
+            for author in manifest["schema:author"]
+        ]
+
+        tale = self.createTale(
+            image,
+            [],
+            creator=user,
+            save=True,
+            title=manifest["schema:name"],
+            description=manifest["schema:description"],
+            public=False,
+            config={},
+            icon=icon,
+            illustration=manifest["schema:image"],
+            authors=authors,
+            category=manifest["schema:category"],
+            licenseSPDX=licenseSPDX,
+            status=TaleStatus.PREPARING,
+            publishInfo=publishInfo,
+        )
+
+        job = Job().createLocalJob(
+            title='Import Tale from zip', user=user,
+            type='wholetale.import_tale', public=False, async=True,
+            module='girder.plugins.wholetale.tasks.import_tale',
+            args=(temp_dir, manifest_file),
+            kwargs={'user': user, 'token': token, 'tale': tale}
+        )
+        Job().scheduleJob(job)
+        return tale
