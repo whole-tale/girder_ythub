@@ -89,10 +89,15 @@ class SettingDefault:
         ],
         PluginSettings.ZENODO_EXTRA_HOSTS: [],
         PluginSettings.PUBLISHER_REPOS: [
-            {"repository": "sandbox.zenodo.org", "auth_provider": "zenodo"},
+            {
+                "repository": "sandbox.zenodo.org",
+                "auth_provider": "zenodo",
+                "name": "Zenodo Sandbox",
+            },
             {
                 "repository": "https://dev.nceas.ucsb.edu/knb/d1/mn",
                 "auth_provider": "dataonestage2",
+                "name": "DataONE Dev",
             },
         ],
     }
