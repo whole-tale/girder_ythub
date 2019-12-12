@@ -269,7 +269,7 @@ repository_to_provider_schema = {
         "$id": "#/items",
         "type": "object",
         "title": "The Repository to Auth Provider Schema",
-        "required": ["repository", "auth_provider"],
+        "required": ["repository", "auth_provider", "name"],
         "properties": {
             "repository": {
                 "$id": "#/items/properties/repository",
@@ -285,6 +285,14 @@ repository_to_provider_schema = {
                 "title": "The name of the auth provider",
                 "default": "",
                 "examples": ["zenodo"],
+                "pattern": "^(.*)$",
+            },
+            "name": {
+                "$id": "#/items/properties/name",
+                "type": "string",
+                "title": "A human-readible name of the repository",
+                "default": "",
+                "examples": ["Zenodo Sandbox"],
                 "pattern": "^(.*)$",
             },
         },
