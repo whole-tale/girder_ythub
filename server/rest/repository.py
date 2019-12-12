@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from operator import itemgetter
+
 from girder.api import access
 from girder.api.describe import Description, autoDescribeRoute
 from girder.api.docs import addModel
@@ -105,13 +107,10 @@ class Repository(Resource):
         if not user:
             return []
 
-        publishers = {
-            entry["repository"]: entry["auth_provider"]
-            for entry in Setting().get(PluginSettings.PUBLISHER_REPOS)
-        }
-
         targets = []
-        for repository, publisher in publishers.items():
+        for entry in Setting().get(PluginSettings.PUBLISHER_REPOS):
+            repository = entry["repository"]
+            publisher = entry["auth_provider"]
             if publisher.startswith("dataone"):
                 key = "provider"  # Dataone
                 value = publisher
@@ -123,6 +122,6 @@ class Repository(Resource):
                 (_ for _ in user.get("otherTokens", []) if _.get(key) == value), None
             )
             if token:
-                targets.append(repository)
+                targets.append({"repository": repository, "name": entry["name"]})
 
-        return sorted(targets)
+        return sorted(targets, key=itemgetter("name"))
