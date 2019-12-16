@@ -64,7 +64,7 @@ D1_MAP = {
             'formatType': 'METADATA',
             'identifier': 'urn:uuid:c878ae53-06cf-40c9-a830-7f6f564133f9',
             'size': 21702,
-            'title': 'Thaw depth in the ITEX plots at Barrow and Atqasuk, Alaska'
+            'title': 'Thaw depth in the ITEX plots at Barrow and Atqasuk, Alaska',
         }, {
             'fileName': '2015 Barrow Atqasuk ITEX Thaw v1.csv',
             'formatId': 'text/csv',
@@ -219,13 +219,15 @@ class DataONEHarversterTestCase(base.TestCase):
                     'doi': 'urn:uuid:c878ae53-06cf-40c9-a830-7f6f564133f9',
                     'name': 'Thaw depth in the ITEX plots at Barrow and Atqasuk, Alaska',
                     'repository': 'DataONE',
-                    'size': 40882
+                    'size': 40882,
+                    'tale': False,
                 }, {
                     'dataId': 'http://use.yt/upload/944d8537',
                     'doi': None,
                     'name': 'nginx.tmpl',
                     'repository': 'HTTP',
-                    'size': 8792
+                    'size': 8792,
+                    'tale': False,
                 }]
         )
 

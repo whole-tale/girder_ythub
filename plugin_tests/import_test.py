@@ -121,7 +121,7 @@ class TaleTestCase(base.TestCase):
                 method='POST',
                 user=self.user,
                 params={
-                    'url': 'http://blah.com/',
+                    'url': 'http://use.yt/upload/ef4cd901',
                     'spawn': False,
                     'imageId': self.image['_id'],
                     'asTale': False,
@@ -131,7 +131,10 @@ class TaleTestCase(base.TestCase):
             self.assertStatusOk(resp)
             tale = resp.json
             job_call = mock_apply_async.call_args_list[-1][-1]
-            self.assertEqual(job_call['args'][0], {'dataId': ['http://blah.com/']})
+            self.assertEqual(
+                job_call['args'][0],
+                {'dataId': ['http://use.yt/upload/ef4cd901']}
+            )
             self.assertEqual(str(job_call['args'][1]['_id']), tale['_id'])
             self.assertEqual(job_call['kwargs'], {'spawn': False})
             self.assertEqual(job_call['headers']['girder_job_title'], 'Import Tale')

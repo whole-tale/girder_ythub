@@ -1,8 +1,8 @@
-import json
-import re
 import pathlib
+import re
+import requests
 from urllib.parse import urlparse, urlunparse
-from urllib.request import urlopen, Request
+from urllib.request import urlopen
 
 from girder.models.folder import Folder
 from girder.models.item import Item
@@ -53,15 +53,14 @@ class ZenodoImportProvider(ImportProvider):
     def _get_record(self, raw_url):
         url = urlparse(raw_url)
         record_id = url.path.rsplit("/", maxsplit=1)[1]
-        req = Request(
+        req = requests.get(
             urlunparse(url._replace(path="/api/records/" + record_id)),
             headers={
                 "accept": "application/vnd.zenodo.v1+json",
                 "User-Agent": "Whole Tale",
             },
         )
-        resp = urlopen(req)
-        return json.loads(resp.read().decode("utf-8"))
+        return req.json()
 
     @staticmethod
     def _is_tale(record):
@@ -99,10 +98,6 @@ class ZenodoImportProvider(ImportProvider):
                     if not data:
                         break
                     yield data
-
-        temp_dir, manifest_file, manifest, environment = Tale()._extractZipPayload(
-            stream_zipfile
-        )
 
         publishInfo = [
             {

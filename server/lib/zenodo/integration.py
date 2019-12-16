@@ -7,6 +7,7 @@ from urllib.parse import urlencode, urlparse, urlunparse
 from girder.api import access
 from girder.api.describe import Description, autoDescribeRoute
 from girder.api.rest import boundHandler, RestException
+from girder.plugins.oauth.rest import OAuth as OAuthResource
 
 from .. import IMPORT_PROVIDERS
 
@@ -26,7 +27,10 @@ def zenodoDataImport(self, doi, record_id, resource_server, environment):
         raise RestException("You need to provide either 'doi' or 'record_id'")
 
     if not resource_server:
-        resource_server = urlparse(cherrypy.request.headers["Referer"]).netloc
+        try:
+            resource_server = urlparse(cherrypy.request.headers["Referer"]).netloc
+        except KeyError:
+            raise RestException("resource_server not set")
 
     # NOTE: DOI takes precedence over 'record_id' in case both were specified
     if doi:
@@ -42,9 +46,8 @@ def zenodoDataImport(self, doi, record_id, resource_server, environment):
             {"record_id": record_id, "resource_server": resource_server}
         )
         redirect += "&token={girderToken}"
-        oauth_providers = cherrypy.request.app.root.v1.oauth.listProviders(
-            params={"redirect": redirect}
-        )
+
+        oauth_providers = OAuthResource().listProviders(params={"redirect": redirect})
         raise cherrypy.HTTPRedirect(oauth_providers["Globus"])  # TODO: hardcoded var
 
     url = "https://{}/record/{}".format(resource_server, record_id)

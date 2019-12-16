@@ -228,7 +228,7 @@ class Tale(Resource):
         )
 
         if cherrypy.request.headers.get('Content-Type') == 'application/zip':
-            tale = Tale().createTaleFromStream(iterBody, user=user, token=token)
+            tale = taleModel().createTaleFromStream(iterBody, user=user, token=token)
         else:
             if not url:
                 msg = (
