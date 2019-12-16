@@ -32,9 +32,8 @@ from girder.plugins.jobs.constants import JobStatus
 from ..schema.tale import taleModel as taleSchema
 from ..models.tale import Tale as taleModel
 from ..models.image import Image as imageModel
-from ..lib import pids_to_entities
+from ..lib import pids_to_entities, IMPORT_PROVIDERS
 from ..lib.dataone import DataONELocations  # TODO: get rid of it
-from ..lib.license import WholeTaleLicense
 from ..lib.manifest import Manifest
 from ..lib.exporters.bag import BagTaleExporter
 from ..lib.exporters.native import NativeTaleExporter
@@ -231,6 +230,37 @@ class Tale(Resource):
         if cherrypy.request.headers.get('Content-Type') == 'application/zip':
             tale = Tale().createTaleFromStream(iterBody, user=user, token=token)
         else:
+            if not url:
+                msg = (
+                    "You need to provide either : "
+                    " 1) a zipfile with an exported Tale or "
+                    " 2) a url to a Tale or "
+                    " 3) both 'imageId' and 'url' parameters."
+                )
+                raise RestException(msg)
+
+            try:
+                lookupKwargs['dataId'] = [url]
+            except TypeError:
+                lookupKwargs = dict(dataId=[url])
+
+            dataMap = pids_to_entities(
+                lookupKwargs["dataId"],
+                user=user,
+                base_url=lookupKwargs.get("base_url", DataONELocations.prod_cn),
+                lookup=True
+            )[0]
+            if dataMap["tale"]:
+                provider = IMPORT_PROVIDERS.providerMap[dataMap["repository"]]
+                tale = provider.import_tale(dataMap["dataId"], user)
+                return tale
+
+            if "title" not in taleKwargs:
+                long_name = dataMap["name"]
+                long_name = long_name.replace('-', ' ').replace('_', ' ')
+                shortened_name = textwrap.shorten(text=long_name, width=30)
+                taleKwargs["title"] = "A Tale for \"{}\"".format(shortened_name)
+
             if not (imageId or url):
                 msg = (
                     "You need to provide either a zipfile with an exported Tale or "
@@ -240,23 +270,6 @@ class Tale(Resource):
 
             image = imageModel().load(imageId, user=user, level=AccessType.READ,
                                       exc=True)
-
-            try:
-                lookupKwargs['dataId'] = [url]
-            except TypeError:
-                lookupKwargs = dict(dataId=[url])
-
-            if "title" not in taleKwargs:
-                dataMap = pids_to_entities(
-                    lookupKwargs["dataId"],
-                    user=user,
-                    base_url=lookupKwargs.get("base_url", DataONELocations.prod_cn),
-                    lookup=True
-                )
-                long_name = dataMap[0]["name"]
-                long_name = long_name.replace('-', ' ').replace('_', ' ')
-                shortened_name = textwrap.shorten(text=long_name, width=30)
-                taleKwargs["title"] = "A Tale for \"{}\"".format(shortened_name)
 
             if "icon" not in taleKwargs:
                 taleKwargs["icon"] = image.get(

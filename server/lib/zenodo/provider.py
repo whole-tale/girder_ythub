@@ -14,6 +14,7 @@ from ..file_map import FileMap
 from ..import_item import ImportItem
 from ..entity import Entity
 from ... import constants
+from ...models.tale import Tale
 
 
 class ZenodoImportProvider(ImportProvider):
@@ -54,14 +55,67 @@ class ZenodoImportProvider(ImportProvider):
         record_id = url.path.rsplit("/", maxsplit=1)[1]
         req = Request(
             urlunparse(url._replace(path="/api/records/" + record_id)),
-            headers={"accept": "application/vnd.zenodo.v1+json"},
+            headers={
+                "accept": "application/vnd.zenodo.v1+json",
+                "User-Agent": "Whole Tale",
+            },
         )
         resp = urlopen(req)
         return json.loads(resp.read().decode("utf-8"))
 
     @staticmethod
+    def _is_tale(record):
+        has_tale_keyword = "Tale" in record["metadata"].get("keywords", [])
+        files = record["files"]
+        only_one_file = len(files) == 1
+        return has_tale_keyword and only_one_file
+
+    @staticmethod
     def _get_doi_from_record(record):
         return "doi:" + record["doi"]
+
+    def import_tale(self, dataId, user):
+        # dataId in this case == record["links"]["record_html"]
+        record = self._get_record(dataId)
+        has_tale_keyword = "Tale" in record["metadata"].get("keywords", [])
+        files = record["files"]
+        only_one_file = len(files) == 1
+
+        if not (has_tale_keyword and only_one_file):
+            raise ValueError(
+                "{} doesn't look like a Tale.".format(record["links"]["record_html"])
+            )
+
+        file_ref = files[0]
+        if file_ref["type"] != "zip":
+            raise ValueError("Not a zipfile")
+
+        file_url = file_ref["links"]["self"]
+
+        def stream_zipfile(chunk_size):
+            with urlopen(file_url) as src:
+                while True:
+                    data = src.read(chunk_size)
+                    if not data:
+                        break
+                    yield data
+
+        temp_dir, manifest_file, manifest, environment = Tale()._extractZipPayload(
+            stream_zipfile
+        )
+
+        publishInfo = [
+            {
+                "pid": record["doi"],
+                "uri": record["links"]["doi"],
+                "date": record["created"],
+                "repository_id": str(record["id"]),
+                "repository": urlparse(dataId).netloc,
+            }
+        ]
+        return Tale().createTaleFromStream(
+            stream_zipfile, user=user, publishInfo=publishInfo
+        )
 
     @staticmethod
     def _get_title_from_record(record):
@@ -83,6 +137,7 @@ class ZenodoImportProvider(ImportProvider):
             doi=self._get_doi_from_record(record),
             name=self._get_title_from_record(record),
             repository=self.getName(),
+            tale=self._is_tale(record),
         )
 
     def listFiles(self, entity: Entity) -> FileMap:
