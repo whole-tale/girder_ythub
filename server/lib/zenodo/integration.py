@@ -7,6 +7,7 @@ from urllib.parse import urlencode, urlparse, urlunparse
 from girder.api import access
 from girder.api.describe import Description, autoDescribeRoute
 from girder.api.rest import boundHandler, RestException
+from girder.exceptions import GirderException
 from girder.plugins.oauth.rest import OAuth as OAuthResource
 
 from .. import IMPORT_PROVIDERS
@@ -52,7 +53,12 @@ def zenodoDataImport(self, doi, record_id, resource_server, environment):
 
     url = "https://{}/record/{}".format(resource_server, record_id)
     provider = IMPORT_PROVIDERS.providerMap["Zenodo"]
-    tale = provider.import_tale(url, user)
+    try:
+        tale = provider.import_tale(url, user)
+    except GirderException as exc:
+        raise RestException(
+            "Failed to import Tale. Server returned: '{}'".format(exc.message)
+        )
 
     # TODO: Make base url a plugin setting, defaulting to dashboard.<domain>
     dashboard_url = os.environ.get("DASHBOARD_URL", "https://dashboard.wholetale.org")
