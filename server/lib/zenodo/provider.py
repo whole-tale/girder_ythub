@@ -76,16 +76,12 @@ class ZenodoImportProvider(ImportProvider):
     def import_tale(self, dataId, user):
         # dataId in this case == record["links"]["record_html"]
         record = self._get_record(dataId)
-        has_tale_keyword = "Tale" in record["metadata"].get("keywords", [])
-        files = record["files"]
-        only_one_file = len(files) == 1
-
-        if not (has_tale_keyword and only_one_file):
+        if not self._is_tale(record):
             raise ValueError(
                 "{} doesn't look like a Tale.".format(record["links"]["record_html"])
             )
 
-        file_ref = files[0]
+        file_ref = record["files"][0]
         if file_ref["type"] != "zip":
             raise ValueError("Not a zipfile")
 
