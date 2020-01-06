@@ -26,7 +26,11 @@ dataMapDoc = {
         'size': {
             'type': 'integer',
             'description': 'Size of the dataset in bytes.'
-        }
+        },
+        'tale': {
+            'type': 'boolean',
+            'description': 'If True, external data resource is a Tale',
+        },
     },
     'required': ['dataId', 'repository', 'doi', 'name', 'size'],
     'example': {
@@ -36,19 +40,21 @@ dataMapDoc = {
                  'future microclimates covering North America from 1980-1999 '
                  'and 2080-2099'),
         'repository': 'DataONE',
-        'size': 178679
+        'size': 178679,
+        'tale': False,
     },
 }
 
 
 class DataMap:
     def __init__(self, dataId: str, size: int, doi: str = None, name: str = None,
-                 repository: str = None):
+                 repository: str = None, tale: bool = False):
         self.dataId = dataId
         self.size = size
         self.repository = repository
         self.doi = doi
         self.name = name
+        self.tale = tale
 
     def getName(self) -> str:
         return self.name
@@ -73,13 +79,13 @@ class DataMap:
 
     def toDict(self) -> Dict:
         return {'dataId': self.dataId, 'size': self.size, 'repository': self.repository,
-                'doi': self.doi, 'name': self.name}
+                'doi': self.doi, 'name': self.name, 'tale': self.tale}
 
     @staticmethod
     def fromDict(d: Dict):
         return DataMap(
             d['dataId'], d.get('size', 0), repository=d['repository'], doi=d.get('doi'),
-            name=d.get('name', 'Unknown Dataset'))
+            name=d.get('name', 'Unknown Dataset'), tale=d.get("tale", False))
 
     @staticmethod
     def fromList(d: List[Dict]):

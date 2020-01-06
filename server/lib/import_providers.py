@@ -47,6 +47,10 @@ class ImportProvider:
         """Given a registered object, return a URI for it"""
         raise NotImplementedError()
 
+    def import_tale(self, dataId):
+        """Given a dataId import dataset as Tale"""
+        raise NotImplementedError()
+
     def register(self, parent: object, parentType: str, progress, user, dataMap: DataMap,
                  base_url: str = None):
         stack = [(parent, parentType)]

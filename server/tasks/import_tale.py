@@ -37,7 +37,12 @@ def run(job):
             manifest = json.load(manifest_fp)
 
         # 1. Register data
-        dataIds = [_['identifier'] for _ in manifest["Datasets"]]
+        dataIds = [obj['identifier'] for obj in manifest["Datasets"]]
+        dataIds += [
+            obj["uri"]
+            for obj in manifest["aggregates"]
+            if obj["uri"].startswith("http")
+        ]
         if dataIds:
             jobModel.updateJob(
                 job, status=JobStatus.RUNNING, log="Registering external data"
