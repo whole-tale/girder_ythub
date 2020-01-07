@@ -1,10 +1,18 @@
 import mock
 import os
 import json
+import shutil
+import tarfile
+import tempfile
 import time
 import vcr
+import zipfile
+from webdavfs.webdavfs import WebDAVFS
+from fs.osfs import OSFS
+from fs.copy import copy_fs
 from tests import base
 from girder import config
+from girder.models.token import Token
 
 
 SCRIPTDIRS_NAME = None
@@ -56,9 +64,9 @@ def tearDownModule():
     base.stopServer()
 
 
-class TaleTestCase(base.TestCase):
+class ImportTaleTestCase(base.TestCase):
     def setUp(self):
-        super(TaleTestCase, self).setUp()
+        super(ImportTaleTestCase, self).setUp()
         users = (
             {
                 'email': 'root@dev.null',
@@ -108,6 +116,19 @@ class TaleTestCase(base.TestCase):
                 urlPath='',
             ),
         )
+
+        from girder.plugins.wt_home_dir import HOME_DIRS_APPS
+        self.homeDirsApps = HOME_DIRS_APPS  # nopep8
+        for e in self.homeDirsApps.entries():
+            provider = e.app.providerMap['/']['provider']
+            provider.updateAssetstore()
+        self.clearDAVAuthCache()
+
+    def clearDAVAuthCache(self):
+        # need to do this because the DB is wiped on every test, but the dav domain
+        # controller keeps a cache with users/tokens
+        for e in self.homeDirsApps.entries():
+            e.app.config['domaincontroller'].clearCache()
 
     @mock.patch('gwvolman.tasks.import_tale')
     def testTaleImport(self, it):
@@ -280,8 +301,43 @@ class TaleTestCase(base.TestCase):
         )
         self.model('image', 'wholetale').remove(image)
 
+    def test_binder_heuristics(self):
+        from girder.plugins.wholetale.tasks.import_binder import sanitize_binder
+        tale = Tale().createTale(self.image, [], creator=self.user, title="Binder")
+        token = Token().createToken(user=self.user, days=0.25)
+        tmpdir = tempfile.mkdtemp()
+
+        with open(tmpdir + "/i_am_a_binder", "w") as fobj:
+            fobj.write("but well hidden!")
+
+        with tarfile.open(tmpdir + "/tale.tar.gz", "w:gz") as tar:
+            tar.add(tmpdir + "/i_am_a_binder", arcname="dir_in_tar/i_am_a_binder")
+        os.remove(tmpdir + "/i_am_a_binder")
+
+        with zipfile.ZipFile(tmpdir + "/tale.zip", "w") as myzip:
+            myzip.write(tmpdir + "/tale.tar.gz", arcname="dir_in_zip/tale.tar.gz")
+        os.remove(tmpdir + "/tale.tar.gz")
+        os.makedirs(tmpdir + "/hidden_binder")
+        os.rename(tmpdir + "/tale.zip", tmpdir + "/hidden_binder" + "/tale.zip")
+
+        girder_root = "http://localhost:{}".format(
+            config.getConfig()["server.socket_port"]
+        )
+        with WebDAVFS(
+            girder_root,
+            login=self.user["login"],
+            password="token:{_id}".format(**token),
+            root="/tales/{_id}".format(**tale),
+        ) as destination_fs, OSFS(tmpdir) as source_fs:
+            copy_fs(source_fs, destination_fs)
+            sanitize_binder(destination_fs)
+            self.assertEqual(destination_fs.listdir("/"), ["i_am_a_binder"])
+
+        shutil.rmtree(tmpdir)
+        Tale().remove(tale)
+
     def tearDown(self):
         self.model('user').remove(self.user)
         self.model('user').remove(self.admin)
         self.model('image', 'wholetale').remove(self.image)
-        super(TaleTestCase, self).tearDown()
+        super(ImportTaleTestCase, self).tearDown()
