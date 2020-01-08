@@ -3,15 +3,17 @@
 from bson.objectid import ObjectId
 import datetime
 import json
+import jsonschema
 import tempfile
 import zipfile
 
 from girder import events
 from girder.constants import AccessType, TokenScope
-from girder.exceptions import AccessException, GirderException
+from girder.exceptions import AccessException, GirderException, ValidationException
 from girder.models.assetstore import Assetstore
 from girder.models.folder import Folder
 from girder.models.item import Item
+from girder.models.user import User
 from girder.models.model_base import AccessControlledModel
 from girder.models.token import Token
 from girder.plugins.jobs.models.job import Job
@@ -19,6 +21,7 @@ from girder.plugins.jobs.constants import REST_CREATE_JOB_TOKEN_SCOPE
 from girder.utility import assetstore_utilities
 
 from .image import Image as imageModel
+from ..schema.misc import dataSetSchema
 from ..constants import WORKSPACE_NAME, DATADIRS_NAME, SCRIPTDIRS_NAME, TaleStatus
 from ..utils import getOrCreateRootFolder, init_progress
 from ..lib.license import WholeTaleLicense
@@ -54,6 +57,27 @@ class Tale(AccessControlledModel):
                      'workspaceModified', 'dataSetCitation',
                      'copyOfTale'} | self.modifiableFields))
 
+    @staticmethod
+    def _validate_dataset(tale):
+        try:
+            jsonschema.validate(tale["dataSet"], dataSetSchema)
+        except jsonschema.exceptions.ValidationError as exc:
+            raise ValidationException(str(exc))
+
+        creator = User().load(tale["creatorId"], force=True)
+        for obj in tale["dataSet"]:
+            if obj["_modelType"] == "folder":
+                model = Folder()
+            else:
+                model = Item()
+            model.load(
+                obj["itemId"],
+                level=AccessType.READ,
+                user=creator,
+                fields={},
+                exc=True
+            )
+
     def validate(self, tale):
         if 'status' not in tale:
             tale['status'] = TaleStatus.READY
@@ -69,6 +93,7 @@ class Tale(AccessControlledModel):
 
         if 'dataSet' not in tale:
             tale['dataSet'] = []
+        self._validate_dataset(tale)
 
         if 'licenseSPDX' not in tale:
             tale['licenseSPDX'] = WholeTaleLicense.default_spdx()
