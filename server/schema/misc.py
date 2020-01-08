@@ -115,7 +115,7 @@ dataSetItemSchema = {
             "description": "An absolute path where the item/folder are mounted in the EFS",
         },
     },
-    "required": ["itemId", "mountPath"],
+    "required": ["itemId", "mountPath", "_modelType"],
 }
 
 dataSetSchema = {
