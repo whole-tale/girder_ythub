@@ -69,7 +69,7 @@ class SettingDefault:
             {
                 "name": "dataonestage2",
                 "logo": "",
-                "fullName": "DataONE Stage 2 CN",
+                "fullName": "DataONE Sandbox",
                 "tags": ["publish"],
                 "url": "",
                 "type": "dataone",
