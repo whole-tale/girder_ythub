@@ -170,6 +170,7 @@ class DataONEHarversterTestCase(base.TestCase):
         self.patcher.start()
 
     def testLookup(self):
+        from girder.plugins.wholetale.lib.import_item import ImportItem
         # TODO: mock this if it's necessary
         # resp = self.request(
         #     path='/repository/lookup', method='GET',
@@ -253,7 +254,7 @@ class DataONEHarversterTestCase(base.TestCase):
         ds_folder = next((_ for _ in datasets if _['_modelType'] == 'folder'), None)
         self.assertNotEqual(ds_folder, None)
         folder = self.model('folder').load(ds_folder['_id'], user=self.user)
-        self.assertEqual(folder['name'], dataMap[0]['name'])
+        self.assertEqual(folder['name'], ImportItem(0, name=dataMap[0]['name']).name)
         self.assertEqual(folder['meta']['provider'], dataMap[0]['repository'])
         self.assertEqual(folder['meta']['identifier'], dataMap[0]['doi'])
 

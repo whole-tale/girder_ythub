@@ -244,7 +244,7 @@ class TestDataONERegister(base.TestCase):
             path='/folder', method='GET', user=self.user, params={
                 'parentType': 'folder',
                 'parentId': folder['_id'],
-                'name': 'Water Table Depth (WTD) NIMS grid Atqasuk, Alaska 2012'
+                'name': 'Water Table Depth (WTD) NIMS grid Atqasuk Alaska 2012'
             })
         self.assertStatusOk(resp)
         self.assertEqual(len(resp.json), 1)

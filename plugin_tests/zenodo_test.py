@@ -144,7 +144,7 @@ class ZenodoHarversterTestCase(base.TestCase):
 
         resolved_listFiles = [
             {
-                "jbferet/biodivMapR: v1.0.1_ver_v1.0.1": {
+                "jbferet_biodivMapR v1.0.1_ver_v1.0.1": {
                     "jbferet": {
                         "fileList": [{"biodivMapR-v1.0.1.zip": {"size": 24692383}}]
                     }
@@ -257,7 +257,7 @@ class ZenodoHarversterTestCase(base.TestCase):
         self.assertEqual(
             resp.json[0],
             {
-                "jbferet/biodivMapR: v1.0.1_ver_v1.0.1": {
+                "jbferet_biodivMapR v1.0.1_ver_v1.0.1": {
                     "jbferet": {
                         "fileList": [{"biodivMapR-v1.0.1.zip": {"size": 24692383}}]
                     }
