@@ -94,9 +94,9 @@ class DataverseHarversterTestCase(base.TestCase):
                 "Karnataka Diet Diversity and Food Security for "
                 "Agricultural Biodiversity Assessment": {
                     "fileList": [
-                        {"Karnataka_DD&FS_Data-1.tab": {"size": 2408}},
-                        {"Karnataka_DD&FS_Data-1.xlsx": {"size": 700840}},
-                        {"Karnataka_DD&FS_Questionnaire.pdf": {"size": 493564}}
+                        {"Karnataka_DDFS_Data-1.tab": {"size": 2408}},
+                        {"Karnataka_DDFS_Data-1.xlsx": {"size": 700840}},
+                        {"Karnataka_DDFS_Questionnaire.pdf": {"size": 493564}}
                     ]
                 }
             },
@@ -104,8 +104,8 @@ class DataverseHarversterTestCase(base.TestCase):
                 "Karnataka Diet Diversity and Food Security for "
                 "Agricultural Biodiversity Assessment": {
                     "fileList": [
-                        {"Karnataka_DD&FS_Data-1.tab": {"size": 2408}},
-                        {"Karnataka_DD&FS_Data-1.xlsx": {"size": 700840}}
+                        {"Karnataka_DDFS_Data-1.tab": {"size": 2408}},
+                        {"Karnataka_DDFS_Data-1.xlsx": {"size": 700840}}
                     ]
                 }
             },
