@@ -19,7 +19,7 @@ class LicenseTestCase(base.TestCase):
         resp = self.request(
             path='/license', method='GET',
             type='application/json')
-        
+
         # Make sure that we support CC0
         is_supported = all(x for x in resp.json if (x['spdx'] == 'CC0-1.0'))
         self.assertTrue(is_supported)

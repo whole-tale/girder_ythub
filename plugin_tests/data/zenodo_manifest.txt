@@ -1,0 +1,80 @@
+interactions:
+- request:
+    body: null
+    headers:
+      Accept: [application/vnd.zenodo.v1+json]
+      Connection: [close]
+      Host: [zenodo.org]
+      User-Agent: [Python-urllib/3.6]
+    method: GET
+    uri: https://zenodo.org/api/records/3463499
+  response:
+    body: {string: '{"conceptdoi":"10.5281/zenodo.3462714","conceptrecid":"3462714","created":"2019-09-27T15:17:47.295427+00:00","doi":"10.5281/zenodo.3463499","files":[{"bucket":"fbcb465c-c250-41da-9d9a-f28d8587c0e3","checksum":"md5:131225ba8fd81a5a2f4f50a191a1504e","key":"jbferet/biodivMapR-v1.0.1.zip","links":{"self":"https://zenodo.org/api/files/fbcb465c-c250-41da-9d9a-f28d8587c0e3/jbferet/biodivMapR-v1.0.1.zip"},"size":24692383,"type":"zip"}],"id":3463499,"links":{"badge":"https://zenodo.org/badge/doi/10.5281/zenodo.3463499.svg","bucket":"https://zenodo.org/api/files/fbcb465c-c250-41da-9d9a-f28d8587c0e3","conceptbadge":"https://zenodo.org/badge/doi/10.5281/zenodo.3462714.svg","conceptdoi":"https://doi.org/10.5281/zenodo.3462714","doi":"https://doi.org/10.5281/zenodo.3463499","html":"https://zenodo.org/record/3463499","latest":"https://zenodo.org/api/records/3463499","latest_html":"https://zenodo.org/record/3463499","self":"https://zenodo.org/api/records/3463499"},"metadata":{"access_right":"open","access_right_category":"success","creators":[{"name":"floriandeboissieu"}],"description":"biodivMapR
+        v1.0.1 (Release date: 2019-09-27)\n<p>Added NEWS.md\nUpdated README.md: transfered
+        from gitlab.irstea to github\nchanged return() into return(invisible())\nupdated
+        vignettes &amp; tutorial with latest outputs and figures from code</p>","doi":"10.5281/zenodo.3463499","license":{"id":"other-open"},"publication_date":"2019-09-27","related_identifiers":[{"identifier":"https://github.com/jbferet/biodivMapR/tree/v1.0.1","relation":"isSupplementTo","scheme":"url"},{"identifier":"10.5281/zenodo.3462714","relation":"isVersionOf","scheme":"doi"}],"relations":{"version":[{"count":2,"index":1,"is_last":true,"last_child":{"pid_type":"recid","pid_value":"3463499"},"parent":{"pid_type":"recid","pid_value":"3462714"}}]},"resource_type":{"title":"Software","type":"software"},"title":"jbferet/biodivMapR:
+        v1.0.1","version":"v1.0.1"},"owners":[77934],"revision":2,"stats":{"downloads":0.0,"unique_downloads":0.0,"unique_views":0.0,"version_downloads":0.0,"version_unique_downloads":0.0,"version_unique_views":1.0,"version_views":1.0,"version_volume":0.0,"views":0.0,"volume":0.0},"updated":"2019-09-27T15:17:52.038019+00:00"}'}
+    headers:
+      Access-Control-Allow-Origin: ['*']
+      Access-Control-Expose-Headers: ['Content-Type, ETag, Link, X-RateLimit-Limit,
+          X-RateLimit-Remaining, X-RateLimit-Reset']
+      Connection: [close]
+      Content-Length: ['2216']
+      Content-Type: [application/json]
+      Date: ['Fri, 27 Sep 2019 17:33:48 GMT']
+      ETag: ['"2"']
+      Last-Modified: ['Fri, 27 Sep 2019 15:17:52 GMT']
+      Link: ['<https://zenodo.org/api/records/3463499>; rel="self"']
+      Referrer-Policy: [strict-origin-when-cross-origin]
+      Retry-After: ['59']
+      Server: [nginx/1.12.2]
+      Strict-Transport-Security: [max-age=0]
+      Vary: [Accept-Encoding]
+      X-Content-Type-Options: [nosniff]
+      X-Frame-Options: [sameorigin]
+      X-RateLimit-Limit: ['60']
+      X-RateLimit-Remaining: ['57']
+      X-RateLimit-Reset: ['1569605688']
+      X-Request-ID: [49476388454579cffe96ae857d165899]
+      X-XSS-Protection: [1; mode=block]
+    status: {code: 200, message: OK}
+- request:
+    body: null
+    headers:
+      Accept: [application/vnd.zenodo.v1+json]
+      Connection: [close]
+      Host: [zenodo.org]
+      User-Agent: [Python-urllib/3.6]
+    method: GET
+    uri: https://zenodo.org/api/records/3463499
+  response:
+    body: {string: '{"conceptdoi":"10.5281/zenodo.3462714","conceptrecid":"3462714","created":"2019-09-27T15:17:47.295427+00:00","doi":"10.5281/zenodo.3463499","files":[{"bucket":"fbcb465c-c250-41da-9d9a-f28d8587c0e3","checksum":"md5:131225ba8fd81a5a2f4f50a191a1504e","key":"jbferet/biodivMapR-v1.0.1.zip","links":{"self":"https://zenodo.org/api/files/fbcb465c-c250-41da-9d9a-f28d8587c0e3/jbferet/biodivMapR-v1.0.1.zip"},"size":24692383,"type":"zip"}],"id":3463499,"links":{"badge":"https://zenodo.org/badge/doi/10.5281/zenodo.3463499.svg","bucket":"https://zenodo.org/api/files/fbcb465c-c250-41da-9d9a-f28d8587c0e3","conceptbadge":"https://zenodo.org/badge/doi/10.5281/zenodo.3462714.svg","conceptdoi":"https://doi.org/10.5281/zenodo.3462714","doi":"https://doi.org/10.5281/zenodo.3463499","html":"https://zenodo.org/record/3463499","latest":"https://zenodo.org/api/records/3463499","latest_html":"https://zenodo.org/record/3463499","self":"https://zenodo.org/api/records/3463499"},"metadata":{"access_right":"open","access_right_category":"success","creators":[{"name":"floriandeboissieu"}],"description":"biodivMapR
+        v1.0.1 (Release date: 2019-09-27)\n<p>Added NEWS.md\nUpdated README.md: transfered
+        from gitlab.irstea to github\nchanged return() into return(invisible())\nupdated
+        vignettes &amp; tutorial with latest outputs and figures from code</p>","doi":"10.5281/zenodo.3463499","license":{"id":"other-open"},"publication_date":"2019-09-27","related_identifiers":[{"identifier":"https://github.com/jbferet/biodivMapR/tree/v1.0.1","relation":"isSupplementTo","scheme":"url"},{"identifier":"10.5281/zenodo.3462714","relation":"isVersionOf","scheme":"doi"}],"relations":{"version":[{"count":2,"index":1,"is_last":true,"last_child":{"pid_type":"recid","pid_value":"3463499"},"parent":{"pid_type":"recid","pid_value":"3462714"}}]},"resource_type":{"title":"Software","type":"software"},"title":"jbferet/biodivMapR:
+        v1.0.1","version":"v1.0.1"},"owners":[77934],"revision":2,"stats":{"downloads":0.0,"unique_downloads":0.0,"unique_views":0.0,"version_downloads":0.0,"version_unique_downloads":0.0,"version_unique_views":1.0,"version_views":1.0,"version_volume":0.0,"views":0.0,"volume":0.0},"updated":"2019-09-27T15:17:52.038019+00:00"}'}
+    headers:
+      Access-Control-Allow-Origin: ['*']
+      Access-Control-Expose-Headers: ['Content-Type, ETag, Link, X-RateLimit-Limit,
+          X-RateLimit-Remaining, X-RateLimit-Reset']
+      Connection: [close]
+      Content-Length: ['2216']
+      Content-Type: [application/json]
+      Date: ['Fri, 27 Sep 2019 17:33:49 GMT']
+      ETag: ['"2"']
+      Last-Modified: ['Fri, 27 Sep 2019 15:17:52 GMT']
+      Link: ['<https://zenodo.org/api/records/3463499>; rel="self"']
+      Referrer-Policy: [strict-origin-when-cross-origin]
+      Retry-After: ['59']
+      Server: [nginx/1.12.2]
+      Strict-Transport-Security: [max-age=0]
+      Vary: [Accept-Encoding]
+      X-Content-Type-Options: [nosniff]
+      X-Frame-Options: [sameorigin]
+      X-RateLimit-Limit: ['60']
+      X-RateLimit-Remaining: ['56']
+      X-RateLimit-Reset: ['1569605689']
+      X-Request-ID: [235c9030e58421c1e5009a77ea98e007]
+      X-XSS-Protection: [1; mode=block]
+    status: {code: 200, message: OK}
+version: 1

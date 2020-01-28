@@ -57,7 +57,8 @@ class DataverseHarversterTestCase(base.TestCase):
                 "name": "Karnataka Diet Diversity and Food Security for "
                         "Agricultural Biodiversity Assessment",
                 "repository": "Dataverse",
-                "size": 495885
+                "size": 495885,
+                "tale": False,
             },
             {
                 "dataId": "https://dataverse.harvard.edu/file.xhtml"
@@ -66,14 +67,16 @@ class DataverseHarversterTestCase(base.TestCase):
                 "name": "Karnataka Diet Diversity and Food Security for "
                         "Agricultural Biodiversity Assessment",
                 "repository": "Dataverse",
-                "size": 2321
+                "size": 2321,
+                "tale": False,
             },
             {
                 "dataId": "https://dataverse.harvard.edu/api/access/datafile/3040230",
                 "doi": "doi:10.7910/DVN/TJCLKP",
                 "name": "Open Source at Harvard",
                 "repository": "Dataverse",
-                "size": 12025
+                "size": 12025,
+                "tale": False,
             }
         ])
 
@@ -91,9 +94,9 @@ class DataverseHarversterTestCase(base.TestCase):
                 "Karnataka Diet Diversity and Food Security for "
                 "Agricultural Biodiversity Assessment": {
                     "fileList": [
-                        {"Karnataka_DD&FS_Data-1.tab": {"size": 2408}},
-                        {"Karnataka_DD&FS_Data-1.xlsx": {"size": 700840}},
-                        {"Karnataka_DD&FS_Questionnaire.pdf": {"size": 493564}}
+                        {"Karnataka_DDFS_Data-1.tab": {"size": 2408}},
+                        {"Karnataka_DDFS_Data-1.xlsx": {"size": 700840}},
+                        {"Karnataka_DDFS_Questionnaire.pdf": {"size": 493564}}
                     ]
                 }
             },
@@ -101,8 +104,8 @@ class DataverseHarversterTestCase(base.TestCase):
                 "Karnataka Diet Diversity and Food Security for "
                 "Agricultural Biodiversity Assessment": {
                     "fileList": [
-                        {"Karnataka_DD&FS_Data-1.tab": {"size": 2408}},
-                        {"Karnataka_DD&FS_Data-1.xlsx": {"size": 700840}}
+                        {"Karnataka_DDFS_Data-1.tab": {"size": 2408}},
+                        {"Karnataka_DDFS_Data-1.xlsx": {"size": 700840}}
                     ]
                 }
             },
@@ -168,7 +171,8 @@ class DataverseHarversterTestCase(base.TestCase):
                 "doi": "doi:10.5072/FK2/N7YHEY",
                 "name": "Variable-level metadata always accessible",
                 "repository": "Dataverse",
-                "size": 36843
+                "size": 36843,
+                "tale": False,
             }
         ])
 
@@ -249,7 +253,7 @@ class DataverseHarversterTestCase(base.TestCase):
         from girder.plugins.wholetale.lib.dataverse.provider import DataverseImportProvider
         self.assertEqual(
             '^https://demo.dataverse.org|https://random.d.org|https://random2.d.org.*$',
-            DataverseImportProvider().dataverse_regex.pattern
+            DataverseImportProvider().regex.pattern
         )
         resp = self.request(
             '/system/setting', user=self.admin, method='PUT',

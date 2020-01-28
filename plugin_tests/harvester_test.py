@@ -64,7 +64,7 @@ D1_MAP = {
             'formatType': 'METADATA',
             'identifier': 'urn:uuid:c878ae53-06cf-40c9-a830-7f6f564133f9',
             'size': 21702,
-            'title': 'Thaw depth in the ITEX plots at Barrow and Atqasuk, Alaska'
+            'title': 'Thaw depth in the ITEX plots at Barrow and Atqasuk, Alaska',
         }, {
             'fileName': '2015 Barrow Atqasuk ITEX Thaw v1.csv',
             'formatId': 'text/csv',
@@ -170,6 +170,7 @@ class DataONEHarversterTestCase(base.TestCase):
         self.patcher.start()
 
     def testLookup(self):
+        from girder.plugins.wholetale.lib.import_item import ImportItem
         # TODO: mock this if it's necessary
         # resp = self.request(
         #     path='/repository/lookup', method='GET',
@@ -219,13 +220,15 @@ class DataONEHarversterTestCase(base.TestCase):
                     'doi': 'urn:uuid:c878ae53-06cf-40c9-a830-7f6f564133f9',
                     'name': 'Thaw depth in the ITEX plots at Barrow and Atqasuk, Alaska',
                     'repository': 'DataONE',
-                    'size': 40882
+                    'size': 40882,
+                    'tale': False,
                 }, {
                     'dataId': 'http://use.yt/upload/944d8537',
                     'doi': None,
                     'name': 'nginx.tmpl',
                     'repository': 'HTTP',
-                    'size': 8792
+                    'size': 8792,
+                    'tale': False,
                 }]
         )
 
@@ -251,7 +254,7 @@ class DataONEHarversterTestCase(base.TestCase):
         ds_folder = next((_ for _ in datasets if _['_modelType'] == 'folder'), None)
         self.assertNotEqual(ds_folder, None)
         folder = self.model('folder').load(ds_folder['_id'], user=self.user)
-        self.assertEqual(folder['name'], dataMap[0]['name'])
+        self.assertEqual(folder['name'], ImportItem(0, name=dataMap[0]['name']).name)
         self.assertEqual(folder['meta']['provider'], dataMap[0]['repository'])
         self.assertEqual(folder['meta']['identifier'], dataMap[0]['doi'])
 

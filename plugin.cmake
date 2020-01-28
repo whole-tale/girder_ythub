@@ -1,4 +1,6 @@
 add_python_test(basic PLUGIN wholetale)
+add_python_test(accounts PLUGIN wholetale)
+add_python_test(oauth PLUGIN wholetale)
 add_python_test(harvester
   PLUGIN wholetale
   EXTERNAL_DATA
@@ -35,6 +37,13 @@ add_python_test(dataone_register
   plugins/wholetale/test_cn_switch.txt
   plugins/wholetale/dataone_register_test01.json
   plugins/wholetale/DataONE_register_nested.txt
+)
+add_python_test(zenodo
+  PLUGIN wholetale
+  EXTERNAL_DATA
+  plugins/wholetale/zenodo_hierarchy.txt
+  plugins/wholetale/zenodo_manifest.txt
+  plugins/wholetale/zenodo_lookup.txt
 )
 add_python_test(dataverse
   PLUGIN wholetale

@@ -20,27 +20,27 @@ from girder.utility import assetstore_utilities
 from girder.utility.path import getResourcePath
 from girder.utility.progress import ProgressContext
 from girder.models.assetstore import Assetstore
-from girder.models.token import Token
 from girder.models.folder import Folder
+from girder.models.token import Token
+from girder.models.setting import Setting
 from girder.plugins.jobs.models.job import Job
 from girder.plugins.jobs.constants import REST_CREATE_JOB_TOKEN_SCOPE
-from gwvolman.tasks import import_tale
+from gwvolman.tasks import import_tale, publish
 
 from girder.plugins.jobs.constants import JobStatus
 
 from ..schema.tale import taleModel as taleSchema
 from ..models.tale import Tale as taleModel
 from ..models.image import Image as imageModel
-from ..lib import pids_to_entities
+from ..lib import pids_to_entities, IMPORT_PROVIDERS
 from ..lib.dataone import DataONELocations  # TODO: get rid of it
-from ..lib.license import WholeTaleLicense
 from ..lib.manifest import Manifest
 from ..lib.exporters.bag import BagTaleExporter
 from ..lib.exporters.native import NativeTaleExporter
 
 from girder.plugins.worker import getCeleryApp
 
-from ..constants import ImageStatus, TaleStatus
+from ..constants import ImageStatus, TaleStatus, PluginSettings
 
 
 addModel('tale', taleSchema, resources='tale')
@@ -65,6 +65,7 @@ class Tale(Resource):
         self.route('GET', (':id', 'export'), self.exportTale)
         self.route('GET', (':id', 'manifest'), self.generateManifest)
         self.route('PUT', (':id', 'build'), self.buildImage)
+        self.route('PUT', (':id', 'publish'), self.publishTale)
 
     @access.public
     @filtermodel(model='tale', plugin='wholetale')
@@ -227,60 +228,39 @@ class Tale(Resource):
         )
 
         if cherrypy.request.headers.get('Content-Type') == 'application/zip':
-            temp_dir, manifest_file, manifest, environment = self._extractZipPayload()
-            image = imageModel().findOne({"name": environment["name"]})
-            image = imageModel().filter(image, user)
-            icon = image.get(
-                "icon",
-                (
-                    "https://raw.githubusercontent.com/"
-                    "whole-tale/dashboard/master/public/"
-                    "images/whole_tale_logo.png"
-                ),
-            )
-            licenseSPDX = next(
-                (
-                    _["schema:license"]
-                    for _ in manifest["aggregates"]
-                    if "schema:license" in _
-                ),
-                WholeTaleLicense.default_spdx(),
-            )
-            authors = [
-                {
-                    "firstName": author["schema:givenName"],
-                    "lastName": author["schema:familyName"],
-                    "orcid": author["@id"],
-                }
-                for author in manifest["schema:author"]
-            ]
-
-            tale = taleModel().createTale(
-                image,
-                [],
-                creator=user,
-                save=True,
-                title=manifest["schema:name"],
-                description=manifest["schema:description"],
-                public=False,
-                config={},
-                icon=icon,
-                illustration=manifest["schema:image"],
-                authors=authors,
-                category=manifest["schema:category"],
-                licenseSPDX=licenseSPDX,
-                status=TaleStatus.PREPARING,
-            )
-
-            job = Job().createLocalJob(
-                title='Import Tale from zip', user=user,
-                type='wholetale.import_tale', public=False, async=True,
-                module='girder.plugins.wholetale.tasks.import_tale',
-                args=(temp_dir, manifest_file),
-                kwargs={'user': user, 'token': token, 'tale': tale}
-            )
-            Job().scheduleJob(job)
+            tale = taleModel().createTaleFromStream(iterBody, user=user, token=token)
         else:
+            if not url:
+                msg = (
+                    "You need to provide either : "
+                    " 1) a zipfile with an exported Tale or "
+                    " 2) a url to a Tale or "
+                    " 3) both 'imageId' and 'url' parameters."
+                )
+                raise RestException(msg)
+
+            try:
+                lookupKwargs['dataId'] = [url]
+            except TypeError:
+                lookupKwargs = dict(dataId=[url])
+
+            dataMap = pids_to_entities(
+                lookupKwargs["dataId"],
+                user=user,
+                base_url=lookupKwargs.get("base_url", DataONELocations.prod_cn),
+                lookup=True
+            )[0]
+            if dataMap["tale"]:
+                provider = IMPORT_PROVIDERS.providerMap[dataMap["repository"]]
+                tale = provider.import_tale(dataMap["dataId"], user)
+                return tale
+
+            if "title" not in taleKwargs:
+                long_name = dataMap["name"]
+                long_name = long_name.replace('-', ' ').replace('_', ' ')
+                shortened_name = textwrap.shorten(text=long_name, width=30)
+                taleKwargs["title"] = "A Tale for \"{}\"".format(shortened_name)
+
             if not (imageId or url):
                 msg = (
                     "You need to provide either a zipfile with an exported Tale or "
@@ -290,23 +270,6 @@ class Tale(Resource):
 
             image = imageModel().load(imageId, user=user, level=AccessType.READ,
                                       exc=True)
-
-            try:
-                lookupKwargs['dataId'] = [url]
-            except TypeError:
-                lookupKwargs = dict(dataId=[url])
-
-            if "title" not in taleKwargs:
-                dataMap = pids_to_entities(
-                    lookupKwargs["dataId"],
-                    user=user,
-                    base_url=lookupKwargs.get("base_url", DataONELocations.prod_cn),
-                    lookup=True
-                )
-                long_name = dataMap[0]["name"]
-                long_name = long_name.replace('-', ' ').replace('_', ' ')
-                shortened_name = textwrap.shorten(text=long_name, width=30)
-                taleKwargs["title"] = "A Tale for \"{}\"".format(shortened_name)
 
             if "icon" not in taleKwargs:
                 taleKwargs["icon"] = image.get(
@@ -329,6 +292,7 @@ class Tale(Resource):
                 image,
                 [],
                 creator=user,
+                category="science",
                 save=True,
                 public=False,
                 status=TaleStatus.PREPARING,
@@ -633,3 +597,56 @@ class Tale(Resource):
                 # unzipping an untrusted content. What could possibly go wrong...?
                 z.extractall(path=temp_dir)
         return temp_dir, manifest_file, manifest, environment
+
+    @access.user(scope=TokenScope.DATA_WRITE)
+    @filtermodel(model=Job)
+    @autoDescribeRoute(
+        Description("Publish a Tale to a data repository")
+        .modelParam(
+            "id",
+            description="The ID of the tale that is going to be published.",
+            model="tale",
+            plugin="wholetale",
+            level=AccessType.ADMIN,
+        )
+        .param(
+            "repository",
+            description="The URL to a repository, where tale is going to be published.\n"
+            "Example: 'https://dev.nceas.ucsb.edu/knb/d1/mn', 'sandbox.zenodo.org'",
+            required=True,
+        )
+    )
+    def publishTale(self, tale, repository):
+        user = self.getCurrentUser()
+        publishers = {
+            entry["repository"]: entry["auth_provider"]
+            for entry in Setting().get(PluginSettings.PUBLISHER_REPOS)
+        }
+
+        try:
+            publisher = publishers[repository]
+        except KeyError:
+            raise RestException("Unknown publisher repository ({})".format(repository))
+
+        if publisher.startswith("dataone"):
+            key = "provider"  # Dataone
+            value = publisher
+        else:
+            key = "resource_server"
+            value = repository
+
+        token = next(
+            (_ for _ in user.get("otherTokens", []) if _.get(key) == value), None
+        )
+        if not token:
+            raise RestException("Missing a token for publisher ({}).".format(publisher))
+
+        girder_token = Token().createToken(user=user, days=0.5)
+
+        publishTask = publish.delay(
+            str(tale["_id"]),
+            token,
+            repository=repository,
+            girder_client_token=str(girder_token["_id"]),
+        )
+        return publishTask.job

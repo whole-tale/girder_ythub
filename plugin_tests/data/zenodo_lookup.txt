@@ -1,0 +1,319 @@
+interactions:
+- request:
+    body: null
+    headers:
+      Connection: [close]
+      Host: [doi.org]
+      User-Agent: [Python-urllib/3.6]
+    method: HEAD
+    uri: https://doi.org/10.5281/zenodo.3459420
+  response:
+    body: {string: ''}
+    headers:
+      CF-RAY: [51ced3d1f83cc504-ORD]
+      Connection: [close]
+      Content-Length: ['151']
+      Content-Type: [text/html;charset=utf-8]
+      Date: ['Fri, 27 Sep 2019 16:24:22 GMT']
+      Expect-CT: ['max-age=604800, report-uri="https://report-uri.cloudflare.com/cdn-cgi/beacon/expect-ct"']
+      Expires: ['Fri, 27 Sep 2019 16:58:30 GMT']
+      Location: ['https://zenodo.org/record/3459420']
+      Server: [cloudflare]
+      Set-Cookie: ['__cfduid=d273ce4905f3667b4b29f37f8c7d0bf8b1569601462; expires=Sat,
+          26-Sep-20 16:24:22 GMT; path=/; domain=.doi.org; HttpOnly']
+      Strict-Transport-Security: [max-age=2592000; includeSubDomains]
+      Vary: [Accept]
+    status: {code: 302, message: ''}
+- request:
+    body: null
+    headers:
+      Connection: [close]
+      Host: [zenodo.org]
+      User-Agent: [Python-urllib/3.6]
+    method: HEAD
+    uri: https://zenodo.org/record/3459420
+  response:
+    body: {string: ''}
+    headers:
+      Connection: [close]
+      Content-Length: ['72211']
+      Content-Type: [text/html; charset=utf-8]
+      Date: ['Fri, 27 Sep 2019 16:24:23 GMT']
+      Referrer-Policy: [strict-origin-when-cross-origin]
+      Retry-After: ['59']
+      Server: [nginx/1.12.2]
+      Set-Cookie: ['session=d35bd7003e4dfeaf_5d8e37b7.7GK7a4LBBy6jD_hxiGacnE7OINM;
+          Expires=Mon, 28-Oct-2019 16:24:23 GMT; Secure; HttpOnly; Path=/']
+      Strict-Transport-Security: [max-age=0]
+      Vary: [Accept-Encoding]
+      X-Content-Type-Options: [nosniff]
+      X-Frame-Options: [sameorigin]
+      X-RateLimit-Limit: ['60']
+      X-RateLimit-Remaining: ['59']
+      X-RateLimit-Reset: ['1569601523']
+      X-Request-ID: [7e4902cbf614b22c2d142661557b1849]
+      X-Session-ID: [d35bd7003e4dfeaf_5d8e37b7]
+      X-XSS-Protection: [1; mode=block]
+    status: {code: 200, message: OK}
+- request:
+    body: null
+    headers:
+      Accept: [application/vnd.zenodo.v1+json]
+      Connection: [close]
+      Host: [zenodo.org]
+      User-Agent: [Python-urllib/3.6]
+    method: GET
+    uri: https://zenodo.org/api/records/3459420
+  response:
+    body: {string: '{"conceptdoi":"10.5281/zenodo.1035252","conceptrecid":"1035252","created":"2019-09-24T23:01:29.515343+00:00","doi":"10.5281/zenodo.3459420","files":[{"bucket":"a3684bb7-35d8-45a5-aa1b-1bf4e51944c9","checksum":"md5:9e3800d4122de9233cf7884fbe57ec5e","key":"part-i-chemical-disease-path-theme-distributions.txt.gz","links":{"self":"https://zenodo.org/api/files/a3684bb7-35d8-45a5-aa1b-1bf4e51944c9/part-i-chemical-disease-path-theme-distributions.txt.gz"},"size":76685159,"type":"gz"},{"bucket":"a3684bb7-35d8-45a5-aa1b-1bf4e51944c9","checksum":"md5:d367301c2c682ae211b117f239a2d778","key":"part-i-chemical-gene-path-theme-distributions.txt.gz","links":{"self":"https://zenodo.org/api/files/a3684bb7-35d8-45a5-aa1b-1bf4e51944c9/part-i-chemical-gene-path-theme-distributions.txt.gz"},"size":26797602,"type":"gz"},{"bucket":"a3684bb7-35d8-45a5-aa1b-1bf4e51944c9","checksum":"md5:9609214deb310b9c77824319d0b23282","key":"part-i-gene-disease-path-theme-distributions.txt.gz","links":{"self":"https://zenodo.org/api/files/a3684bb7-35d8-45a5-aa1b-1bf4e51944c9/part-i-gene-disease-path-theme-distributions.txt.gz"},"size":71291352,"type":"gz"},{"bucket":"a3684bb7-35d8-45a5-aa1b-1bf4e51944c9","checksum":"md5:6ac8550b601d194cde73df02fbb026c8","key":"part-i-gene-gene-path-theme-distributions.txt.gz","links":{"self":"https://zenodo.org/api/files/a3684bb7-35d8-45a5-aa1b-1bf4e51944c9/part-i-gene-gene-path-theme-distributions.txt.gz"},"size":57814698,"type":"gz"},{"bucket":"a3684bb7-35d8-45a5-aa1b-1bf4e51944c9","checksum":"md5:ade2bbbb9624f7afdad254a66c653177","key":"part-ii-dependency-paths-chemical-disease-sorted.txt.gz","links":{"self":"https://zenodo.org/api/files/a3684bb7-35d8-45a5-aa1b-1bf4e51944c9/part-ii-dependency-paths-chemical-disease-sorted.txt.gz"},"size":1552310509,"type":"gz"},{"bucket":"a3684bb7-35d8-45a5-aa1b-1bf4e51944c9","checksum":"md5:2e40dabec8e95575580d279a6cf75ccd","key":"part-ii-dependency-paths-chemical-disease-sorted-with-themes.txt.gz","links":{"self":"https://zenodo.org/api/files/a3684bb7-35d8-45a5-aa1b-1bf4e51944c9/part-ii-dependency-paths-chemical-disease-sorted-with-themes.txt.gz"},"size":433425857,"type":"gz"},{"bucket":"a3684bb7-35d8-45a5-aa1b-1bf4e51944c9","checksum":"md5:84268a23cbcf0139673824dc6df06c5e","key":"part-ii-dependency-paths-chemical-gene-sorted.txt.gz","links":{"self":"https://zenodo.org/api/files/a3684bb7-35d8-45a5-aa1b-1bf4e51944c9/part-ii-dependency-paths-chemical-gene-sorted.txt.gz"},"size":920838205,"type":"gz"},{"bucket":"a3684bb7-35d8-45a5-aa1b-1bf4e51944c9","checksum":"md5:94c3fb120d11a0bd87e3b6e3e7439ccb","key":"part-ii-dependency-paths-chemical-gene-sorted-with-themes.txt.gz","links":{"self":"https://zenodo.org/api/files/a3684bb7-35d8-45a5-aa1b-1bf4e51944c9/part-ii-dependency-paths-chemical-gene-sorted-with-themes.txt.gz"},"size":163072348,"type":"gz"},{"bucket":"a3684bb7-35d8-45a5-aa1b-1bf4e51944c9","checksum":"md5:5109d1172531e843a0dbab3ce9dd5f00","key":"part-ii-dependency-paths-gene-disease-sorted.txt.gz","links":{"self":"https://zenodo.org/api/files/a3684bb7-35d8-45a5-aa1b-1bf4e51944c9/part-ii-dependency-paths-gene-disease-sorted.txt.gz"},"size":1203846235,"type":"gz"},{"bucket":"a3684bb7-35d8-45a5-aa1b-1bf4e51944c9","checksum":"md5:e4d3bbbfb30204e69b1edacf2ffe97ca","key":"part-ii-dependency-paths-gene-disease-sorted-with-themes.txt.gz","links":{"self":"https://zenodo.org/api/files/a3684bb7-35d8-45a5-aa1b-1bf4e51944c9/part-ii-dependency-paths-gene-disease-sorted-with-themes.txt.gz"},"size":351234432,"type":"gz"},{"bucket":"a3684bb7-35d8-45a5-aa1b-1bf4e51944c9","checksum":"md5:d77896d3ceabf1111a82e9d966d70a5e","key":"part-ii-dependency-paths-gene-gene-sorted.txt.gz","links":{"self":"https://zenodo.org/api/files/a3684bb7-35d8-45a5-aa1b-1bf4e51944c9/part-ii-dependency-paths-gene-gene-sorted.txt.gz"},"size":2756212307,"type":"gz"},{"bucket":"a3684bb7-35d8-45a5-aa1b-1bf4e51944c9","checksum":"md5:3ebee254dedf271c657c9481b1d8ac49","key":"part-ii-dependency-paths-gene-gene-sorted-with-themes.txt.gz","links":{"self":"https://zenodo.org/api/files/a3684bb7-35d8-45a5-aa1b-1bf4e51944c9/part-ii-dependency-paths-gene-gene-sorted-with-themes.txt.gz"},"size":424098043,"type":"gz"}],"id":3459420,"links":{"badge":"https://zenodo.org/badge/doi/10.5281/zenodo.3459420.svg","bucket":"https://zenodo.org/api/files/a3684bb7-35d8-45a5-aa1b-1bf4e51944c9","conceptbadge":"https://zenodo.org/badge/doi/10.5281/zenodo.1035252.svg","conceptdoi":"https://doi.org/10.5281/zenodo.1035252","doi":"https://doi.org/10.5281/zenodo.3459420","html":"https://zenodo.org/record/3459420","latest":"https://zenodo.org/api/records/3459420","latest_html":"https://zenodo.org/record/3459420","self":"https://zenodo.org/api/records/3459420"},"metadata":{"access_right":"open","access_right_category":"success","communities":[{"id":"zenodo"}],"creators":[{"affiliation":"Icahn
+        School of Medicine at Mount Sinai","name":"Percha, Bethany"},{"affiliation":"Stanford
+        University","name":"Altman, Russ B."}],"description":"<p>This repository contains
+        labeled, weighted networks of chemical-gene, gene-gene, gene-disease, and
+        chemical-disease relationships based on single sentences in PubMed abstracts.
+        All raw dependency paths are provided in addition to the labeled relationships.</p>\n\n<p>PART
+        I: Connects dependency paths to labels, or &quot;themes&quot;. Each record
+        contains a dependency path followed by its score for each theme, and indicators
+        of whether or not the path is part of the flagship path set for each theme
+        (meaning that it was manually reviewed and determined to reflect that theme).
+        The themes themselves are listed below and are in our paper (reference below).</p>\n\n<p>PART
+        II: Connects sentences to dependency paths. It consists of sentences and associated
+        metadata, entity pairs found in the sentences, and dependency paths connecting
+        those entity pairs. Each record contains the following information:</p>\n\n<ul>\n\t<li>PubMed
+        ID</li>\n\t<li>Sentence number (0 = title)</li>\n\t<li>First entity name,
+        formatted</li>\n\t<li>First entity name, location (characters from start of
+        abstract)</li>\n\t<li>Second entity name, formatted</li>\n\t<li>Second entity
+        name, location</li>\n\t<li>First entity name, raw string</li>\n\t<li>Second
+        entity name, raw string</li>\n\t<li>First entity name, database ID(s)</li>\n\t<li>Second
+        entity name, database ID(s)</li>\n\t<li>First entity type (Chemical, Gene,
+        Disease)</li>\n\t<li>Second entity type (Chemical, Gene, Disease)</li>\n\t<li>Dependency
+        path</li>\n\t<li>Sentence, tokenized</li>\n</ul>\n\n<p>The &quot;with-themes.txt&quot;
+        files only contain dependency paths with corresponding theme assignments from
+        Part I. The plain &quot;.txt&quot; files contain all dependency paths.</p>\n\n<p>This
+        release contains the annotated network for the&nbsp;<strong>September 15,
+        2019&nbsp;version of PubTator</strong>. The version discussed in our paper,
+        below, is an older one - from April 30, 2016. If you&#39;re interested in
+        that network, it can be found in Version 1 of this repository.&nbsp;We will
+        be releasing updated networks periodically, as the PubTator community continues
+        to release new versions of named entity annotations for Medline each month
+        or so.</p>\n\n<p>------------------------------------------------------------------------------------<br>\nREFERENCES</p>\n\n<p>Percha
+        B, Altman RBA (2017) A global network of biomedical relationships derived
+        from text. <em>Bioinformatics,&nbsp;</em>34(15): 2614-2624.<br>\nPercha B,
+        Altman RBA (2015) Learning the structure of biomedical relationships from
+        unstructured text. <em>PLoS Computational Biology,</em> 11(7): e1004216.</p>\n\n<p>This
+        project depends on named entity annotations from the PubTator project:<br>\nhttps://www.ncbi.nlm.nih.gov/CBBresearch/Lu/Demo/PubTator/</p>\n\n<p>Reference:<br>\nWei
+        CH et. al., PubTator: a Web-based text mining tool for assisting Biocuration,
+        Nucleic acids research, 2013, 41 (W1): W518-W522.</p>\n\n<p>Dependency parsing
+        was provided by the Stanford CoreNLP toolkit (<strong>version 3.9.1</strong>):<br>\nhttps://stanfordnlp.github.io/CoreNLP/index.html</p>\n\n<p>Reference:<br>\nManning,
+        Christopher D., Mihai Surdeanu, John Bauer, Jenny Finkel, Steven J. Bethard,
+        and David McClosky. 2014. The Stanford CoreNLP Natural Language Processing
+        Toolkit In Proceedings of the 52nd Annual Meeting of the Association for Computational
+        Linguistics: System Demonstrations, pp. 55-60.</p>\n\n<p>------------------------------------------------------------------------------------<br>\nTHEMES</p>\n\n<p><strong>chemical-gene</strong><br>\n(A+)
+        agonism, activation<br>\n(A-) antagonism, blocking<br>\n(B) binding, ligand
+        (esp. receptors)<br>\n(E+) increases expression/production<br>\n(E-) decreases
+        expression/production<br>\n(E) affects expression/production (neutral)<br>\n(N)
+        inhibits</p>\n\n<p><strong>gene-chemical</strong><br>\n(O) transport, channels<br>\n(K)
+        metabolism, pharmacokinetics<br>\n(Z) enzyme activity</p>\n\n<p><strong>chemical-disease</strong><br>\n(T)
+        treatment/therapy (including investigatory)<br>\n(C) inhibits cell growth
+        (esp. cancers)<br>\n(Sa) side effect/adverse event<br>\n(Pr) prevents, suppresses<br>\n(Pa)
+        alleviates, reduces<br>\n(J) role in disease pathogenesis</p>\n\n<p><strong>disease-chemical</strong><br>\n(Mp)
+        biomarkers (of disease progression)</p>\n\n<p><strong>gene-disease</strong><br>\n(U)
+        causal mutations<br>\n(Ud) mutations affecting disease course<br>\n(D) drug
+        targets<br>\n(J) role in pathogenesis<br>\n(Te) possible therapeutic effect<br>\n(Y)
+        polymorphisms alter risk<br>\n(G) promotes progression</p>\n\n<p><strong>disease-gene</strong><br>\n(Md)
+        biomarkers (diagnostic)<br>\n(X) overexpression in disease<br>\n(L) improper
+        regulation linked to disease</p>\n\n<p><strong>gene-gene</strong><br>\n(B)
+        binding, ligand (esp. receptors)<br>\n(W) enhances response<br>\n(V+) activates,
+        stimulates<br>\n(E+) increases expression/production<br>\n(E) affects expression/production
+        (neutral)<br>\n(I) signaling pathway<br>\n(H) same protein or complex<br>\n(Rg)
+        regulation<br>\n(Q) production by cell population</p>\n\n<p>------------------------------------------------------------------------------------<br>\nFORMATTING
+        NOTE</p>\n\n<p>A few users have mentioned that the dependency paths in the
+        &quot;part-i&quot; files are all lowercase text, whereas those in the &quot;part-ii&quot;
+        files maintain the case of the original sentence. This complicates mapping
+        between the two sets of files.</p>\n\n<p>We kept the part-ii files in the
+        same case as the original sentence to facilitate downstream debugging - it&#39;s
+        easier to tell which words in a particular sentence are contributing to the
+        dependency path if their original case is maintained. When working with the
+        part-ii &quot;with-themes&quot; files, if you simply convert the dependency
+        path to lowercase, it is guaranteed to match to one of the paths in the corresponding
+        part-i file and you&#39;ll be able to get the theme scores.</p>\n\n<p>Apologies
+        for the additional complexity, and please reach out to us if you have any
+        questions (see correspondence information in the&nbsp;<em>Bioinformatics</em>
+        manuscript, above).</p>","doi":"10.5281/zenodo.3459420","keywords":["natural
+        language processing","Medline","text mining","relation extraction","unsupervised
+        learning"],"license":{"id":"CC-BY-4.0"},"publication_date":"2019-09-24","related_identifiers":[{"identifier":"10.5281/zenodo.1035252","relation":"isVersionOf","scheme":"doi"}],"relations":{"version":[{"count":7,"index":6,"is_last":true,"last_child":{"pid_type":"recid","pid_value":"3459420"},"parent":{"pid_type":"recid","pid_value":"1035252"}}]},"resource_type":{"title":"Dataset","type":"dataset"},"title":"A
+        global network of biomedical relationships derived from text"},"owners":[12511],"revision":2,"stats":{"downloads":45.0,"unique_downloads":18.0,"unique_views":191.0,"version_downloads":9528.0,"version_unique_downloads":1762.0,"version_unique_views":8681.0,"version_views":10706.0,"version_volume":10466130143498.0,"views":235.0,"volume":21727037561.0},"updated":"2019-09-25T07:06:04.731448+00:00"}'}
+    headers:
+      Access-Control-Allow-Origin: ['*']
+      Access-Control-Expose-Headers: ['Content-Type, ETag, Link, X-RateLimit-Limit,
+          X-RateLimit-Remaining, X-RateLimit-Reset']
+      Connection: [close]
+      Content-Length: ['12082']
+      Content-Type: [application/json]
+      Date: ['Fri, 27 Sep 2019 16:24:25 GMT']
+      ETag: ['"2"']
+      Last-Modified: ['Wed, 25 Sep 2019 07:06:04 GMT']
+      Link: ['<https://zenodo.org/api/records/3459420>; rel="self"']
+      Referrer-Policy: [strict-origin-when-cross-origin]
+      Retry-After: ['60']
+      Server: [nginx/1.12.2]
+      Strict-Transport-Security: [max-age=0]
+      Vary: [Accept-Encoding]
+      X-Content-Type-Options: [nosniff]
+      X-Frame-Options: [sameorigin]
+      X-RateLimit-Limit: ['60']
+      X-RateLimit-Remaining: ['58']
+      X-RateLimit-Reset: ['1569601526']
+      X-Request-ID: [2182c19b539c5fa436993ca804dbd099]
+      X-XSS-Protection: [1; mode=block]
+    status: {code: 200, message: OK}
+- request:
+    body: null
+    headers:
+      Accept: [application/vnd.zenodo.v1+json]
+      Connection: [close]
+      Host: [zenodo.org]
+      User-Agent: [Python-urllib/3.6]
+    method: GET
+    uri: https://zenodo.org/api/records/3459420
+  response:
+    body: {string: '{"conceptdoi":"10.5281/zenodo.1035252","conceptrecid":"1035252","created":"2019-09-24T23:01:29.515343+00:00","doi":"10.5281/zenodo.3459420","files":[{"bucket":"a3684bb7-35d8-45a5-aa1b-1bf4e51944c9","checksum":"md5:9e3800d4122de9233cf7884fbe57ec5e","key":"part-i-chemical-disease-path-theme-distributions.txt.gz","links":{"self":"https://zenodo.org/api/files/a3684bb7-35d8-45a5-aa1b-1bf4e51944c9/part-i-chemical-disease-path-theme-distributions.txt.gz"},"size":76685159,"type":"gz"},{"bucket":"a3684bb7-35d8-45a5-aa1b-1bf4e51944c9","checksum":"md5:d367301c2c682ae211b117f239a2d778","key":"part-i-chemical-gene-path-theme-distributions.txt.gz","links":{"self":"https://zenodo.org/api/files/a3684bb7-35d8-45a5-aa1b-1bf4e51944c9/part-i-chemical-gene-path-theme-distributions.txt.gz"},"size":26797602,"type":"gz"},{"bucket":"a3684bb7-35d8-45a5-aa1b-1bf4e51944c9","checksum":"md5:9609214deb310b9c77824319d0b23282","key":"part-i-gene-disease-path-theme-distributions.txt.gz","links":{"self":"https://zenodo.org/api/files/a3684bb7-35d8-45a5-aa1b-1bf4e51944c9/part-i-gene-disease-path-theme-distributions.txt.gz"},"size":71291352,"type":"gz"},{"bucket":"a3684bb7-35d8-45a5-aa1b-1bf4e51944c9","checksum":"md5:6ac8550b601d194cde73df02fbb026c8","key":"part-i-gene-gene-path-theme-distributions.txt.gz","links":{"self":"https://zenodo.org/api/files/a3684bb7-35d8-45a5-aa1b-1bf4e51944c9/part-i-gene-gene-path-theme-distributions.txt.gz"},"size":57814698,"type":"gz"},{"bucket":"a3684bb7-35d8-45a5-aa1b-1bf4e51944c9","checksum":"md5:ade2bbbb9624f7afdad254a66c653177","key":"part-ii-dependency-paths-chemical-disease-sorted.txt.gz","links":{"self":"https://zenodo.org/api/files/a3684bb7-35d8-45a5-aa1b-1bf4e51944c9/part-ii-dependency-paths-chemical-disease-sorted.txt.gz"},"size":1552310509,"type":"gz"},{"bucket":"a3684bb7-35d8-45a5-aa1b-1bf4e51944c9","checksum":"md5:2e40dabec8e95575580d279a6cf75ccd","key":"part-ii-dependency-paths-chemical-disease-sorted-with-themes.txt.gz","links":{"self":"https://zenodo.org/api/files/a3684bb7-35d8-45a5-aa1b-1bf4e51944c9/part-ii-dependency-paths-chemical-disease-sorted-with-themes.txt.gz"},"size":433425857,"type":"gz"},{"bucket":"a3684bb7-35d8-45a5-aa1b-1bf4e51944c9","checksum":"md5:84268a23cbcf0139673824dc6df06c5e","key":"part-ii-dependency-paths-chemical-gene-sorted.txt.gz","links":{"self":"https://zenodo.org/api/files/a3684bb7-35d8-45a5-aa1b-1bf4e51944c9/part-ii-dependency-paths-chemical-gene-sorted.txt.gz"},"size":920838205,"type":"gz"},{"bucket":"a3684bb7-35d8-45a5-aa1b-1bf4e51944c9","checksum":"md5:94c3fb120d11a0bd87e3b6e3e7439ccb","key":"part-ii-dependency-paths-chemical-gene-sorted-with-themes.txt.gz","links":{"self":"https://zenodo.org/api/files/a3684bb7-35d8-45a5-aa1b-1bf4e51944c9/part-ii-dependency-paths-chemical-gene-sorted-with-themes.txt.gz"},"size":163072348,"type":"gz"},{"bucket":"a3684bb7-35d8-45a5-aa1b-1bf4e51944c9","checksum":"md5:5109d1172531e843a0dbab3ce9dd5f00","key":"part-ii-dependency-paths-gene-disease-sorted.txt.gz","links":{"self":"https://zenodo.org/api/files/a3684bb7-35d8-45a5-aa1b-1bf4e51944c9/part-ii-dependency-paths-gene-disease-sorted.txt.gz"},"size":1203846235,"type":"gz"},{"bucket":"a3684bb7-35d8-45a5-aa1b-1bf4e51944c9","checksum":"md5:e4d3bbbfb30204e69b1edacf2ffe97ca","key":"part-ii-dependency-paths-gene-disease-sorted-with-themes.txt.gz","links":{"self":"https://zenodo.org/api/files/a3684bb7-35d8-45a5-aa1b-1bf4e51944c9/part-ii-dependency-paths-gene-disease-sorted-with-themes.txt.gz"},"size":351234432,"type":"gz"},{"bucket":"a3684bb7-35d8-45a5-aa1b-1bf4e51944c9","checksum":"md5:d77896d3ceabf1111a82e9d966d70a5e","key":"part-ii-dependency-paths-gene-gene-sorted.txt.gz","links":{"self":"https://zenodo.org/api/files/a3684bb7-35d8-45a5-aa1b-1bf4e51944c9/part-ii-dependency-paths-gene-gene-sorted.txt.gz"},"size":2756212307,"type":"gz"},{"bucket":"a3684bb7-35d8-45a5-aa1b-1bf4e51944c9","checksum":"md5:3ebee254dedf271c657c9481b1d8ac49","key":"part-ii-dependency-paths-gene-gene-sorted-with-themes.txt.gz","links":{"self":"https://zenodo.org/api/files/a3684bb7-35d8-45a5-aa1b-1bf4e51944c9/part-ii-dependency-paths-gene-gene-sorted-with-themes.txt.gz"},"size":424098043,"type":"gz"}],"id":3459420,"links":{"badge":"https://zenodo.org/badge/doi/10.5281/zenodo.3459420.svg","bucket":"https://zenodo.org/api/files/a3684bb7-35d8-45a5-aa1b-1bf4e51944c9","conceptbadge":"https://zenodo.org/badge/doi/10.5281/zenodo.1035252.svg","conceptdoi":"https://doi.org/10.5281/zenodo.1035252","doi":"https://doi.org/10.5281/zenodo.3459420","html":"https://zenodo.org/record/3459420","latest":"https://zenodo.org/api/records/3459420","latest_html":"https://zenodo.org/record/3459420","self":"https://zenodo.org/api/records/3459420"},"metadata":{"access_right":"open","access_right_category":"success","communities":[{"id":"zenodo"}],"creators":[{"affiliation":"Icahn
+        School of Medicine at Mount Sinai","name":"Percha, Bethany"},{"affiliation":"Stanford
+        University","name":"Altman, Russ B."}],"description":"<p>This repository contains
+        labeled, weighted networks of chemical-gene, gene-gene, gene-disease, and
+        chemical-disease relationships based on single sentences in PubMed abstracts.
+        All raw dependency paths are provided in addition to the labeled relationships.</p>\n\n<p>PART
+        I: Connects dependency paths to labels, or &quot;themes&quot;. Each record
+        contains a dependency path followed by its score for each theme, and indicators
+        of whether or not the path is part of the flagship path set for each theme
+        (meaning that it was manually reviewed and determined to reflect that theme).
+        The themes themselves are listed below and are in our paper (reference below).</p>\n\n<p>PART
+        II: Connects sentences to dependency paths. It consists of sentences and associated
+        metadata, entity pairs found in the sentences, and dependency paths connecting
+        those entity pairs. Each record contains the following information:</p>\n\n<ul>\n\t<li>PubMed
+        ID</li>\n\t<li>Sentence number (0 = title)</li>\n\t<li>First entity name,
+        formatted</li>\n\t<li>First entity name, location (characters from start of
+        abstract)</li>\n\t<li>Second entity name, formatted</li>\n\t<li>Second entity
+        name, location</li>\n\t<li>First entity name, raw string</li>\n\t<li>Second
+        entity name, raw string</li>\n\t<li>First entity name, database ID(s)</li>\n\t<li>Second
+        entity name, database ID(s)</li>\n\t<li>First entity type (Chemical, Gene,
+        Disease)</li>\n\t<li>Second entity type (Chemical, Gene, Disease)</li>\n\t<li>Dependency
+        path</li>\n\t<li>Sentence, tokenized</li>\n</ul>\n\n<p>The &quot;with-themes.txt&quot;
+        files only contain dependency paths with corresponding theme assignments from
+        Part I. The plain &quot;.txt&quot; files contain all dependency paths.</p>\n\n<p>This
+        release contains the annotated network for the&nbsp;<strong>September 15,
+        2019&nbsp;version of PubTator</strong>. The version discussed in our paper,
+        below, is an older one - from April 30, 2016. If you&#39;re interested in
+        that network, it can be found in Version 1 of this repository.&nbsp;We will
+        be releasing updated networks periodically, as the PubTator community continues
+        to release new versions of named entity annotations for Medline each month
+        or so.</p>\n\n<p>------------------------------------------------------------------------------------<br>\nREFERENCES</p>\n\n<p>Percha
+        B, Altman RBA (2017) A global network of biomedical relationships derived
+        from text. <em>Bioinformatics,&nbsp;</em>34(15): 2614-2624.<br>\nPercha B,
+        Altman RBA (2015) Learning the structure of biomedical relationships from
+        unstructured text. <em>PLoS Computational Biology,</em> 11(7): e1004216.</p>\n\n<p>This
+        project depends on named entity annotations from the PubTator project:<br>\nhttps://www.ncbi.nlm.nih.gov/CBBresearch/Lu/Demo/PubTator/</p>\n\n<p>Reference:<br>\nWei
+        CH et. al., PubTator: a Web-based text mining tool for assisting Biocuration,
+        Nucleic acids research, 2013, 41 (W1): W518-W522.</p>\n\n<p>Dependency parsing
+        was provided by the Stanford CoreNLP toolkit (<strong>version 3.9.1</strong>):<br>\nhttps://stanfordnlp.github.io/CoreNLP/index.html</p>\n\n<p>Reference:<br>\nManning,
+        Christopher D., Mihai Surdeanu, John Bauer, Jenny Finkel, Steven J. Bethard,
+        and David McClosky. 2014. The Stanford CoreNLP Natural Language Processing
+        Toolkit In Proceedings of the 52nd Annual Meeting of the Association for Computational
+        Linguistics: System Demonstrations, pp. 55-60.</p>\n\n<p>------------------------------------------------------------------------------------<br>\nTHEMES</p>\n\n<p><strong>chemical-gene</strong><br>\n(A+)
+        agonism, activation<br>\n(A-) antagonism, blocking<br>\n(B) binding, ligand
+        (esp. receptors)<br>\n(E+) increases expression/production<br>\n(E-) decreases
+        expression/production<br>\n(E) affects expression/production (neutral)<br>\n(N)
+        inhibits</p>\n\n<p><strong>gene-chemical</strong><br>\n(O) transport, channels<br>\n(K)
+        metabolism, pharmacokinetics<br>\n(Z) enzyme activity</p>\n\n<p><strong>chemical-disease</strong><br>\n(T)
+        treatment/therapy (including investigatory)<br>\n(C) inhibits cell growth
+        (esp. cancers)<br>\n(Sa) side effect/adverse event<br>\n(Pr) prevents, suppresses<br>\n(Pa)
+        alleviates, reduces<br>\n(J) role in disease pathogenesis</p>\n\n<p><strong>disease-chemical</strong><br>\n(Mp)
+        biomarkers (of disease progression)</p>\n\n<p><strong>gene-disease</strong><br>\n(U)
+        causal mutations<br>\n(Ud) mutations affecting disease course<br>\n(D) drug
+        targets<br>\n(J) role in pathogenesis<br>\n(Te) possible therapeutic effect<br>\n(Y)
+        polymorphisms alter risk<br>\n(G) promotes progression</p>\n\n<p><strong>disease-gene</strong><br>\n(Md)
+        biomarkers (diagnostic)<br>\n(X) overexpression in disease<br>\n(L) improper
+        regulation linked to disease</p>\n\n<p><strong>gene-gene</strong><br>\n(B)
+        binding, ligand (esp. receptors)<br>\n(W) enhances response<br>\n(V+) activates,
+        stimulates<br>\n(E+) increases expression/production<br>\n(E) affects expression/production
+        (neutral)<br>\n(I) signaling pathway<br>\n(H) same protein or complex<br>\n(Rg)
+        regulation<br>\n(Q) production by cell population</p>\n\n<p>------------------------------------------------------------------------------------<br>\nFORMATTING
+        NOTE</p>\n\n<p>A few users have mentioned that the dependency paths in the
+        &quot;part-i&quot; files are all lowercase text, whereas those in the &quot;part-ii&quot;
+        files maintain the case of the original sentence. This complicates mapping
+        between the two sets of files.</p>\n\n<p>We kept the part-ii files in the
+        same case as the original sentence to facilitate downstream debugging - it&#39;s
+        easier to tell which words in a particular sentence are contributing to the
+        dependency path if their original case is maintained. When working with the
+        part-ii &quot;with-themes&quot; files, if you simply convert the dependency
+        path to lowercase, it is guaranteed to match to one of the paths in the corresponding
+        part-i file and you&#39;ll be able to get the theme scores.</p>\n\n<p>Apologies
+        for the additional complexity, and please reach out to us if you have any
+        questions (see correspondence information in the&nbsp;<em>Bioinformatics</em>
+        manuscript, above).</p>","doi":"10.5281/zenodo.3459420","keywords":["natural
+        language processing","Medline","text mining","relation extraction","unsupervised
+        learning"],"license":{"id":"CC-BY-4.0"},"publication_date":"2019-09-24","related_identifiers":[{"identifier":"10.5281/zenodo.1035252","relation":"isVersionOf","scheme":"doi"}],"relations":{"version":[{"count":7,"index":6,"is_last":true,"last_child":{"pid_type":"recid","pid_value":"3459420"},"parent":{"pid_type":"recid","pid_value":"1035252"}}]},"resource_type":{"title":"Dataset","type":"dataset"},"title":"A
+        global network of biomedical relationships derived from text"},"owners":[12511],"revision":2,"stats":{"downloads":45.0,"unique_downloads":18.0,"unique_views":191.0,"version_downloads":9528.0,"version_unique_downloads":1762.0,"version_unique_views":8681.0,"version_views":10706.0,"version_volume":10466130143498.0,"views":235.0,"volume":21727037561.0},"updated":"2019-09-25T07:06:04.731448+00:00"}'}
+    headers:
+      Access-Control-Allow-Origin: ['*']
+      Access-Control-Expose-Headers: ['Content-Type, ETag, Link, X-RateLimit-Limit,
+          X-RateLimit-Remaining, X-RateLimit-Reset']
+      Connection: [close]
+      Content-Length: ['12082']
+      Content-Type: [application/json]
+      Date: ['Fri, 27 Sep 2019 16:24:26 GMT']
+      ETag: ['"2"']
+      Last-Modified: ['Wed, 25 Sep 2019 07:06:04 GMT']
+      Link: ['<https://zenodo.org/api/records/3459420>; rel="self"']
+      Referrer-Policy: [strict-origin-when-cross-origin]
+      Retry-After: ['60']
+      Server: [nginx/1.12.2]
+      Strict-Transport-Security: [max-age=0]
+      Vary: [Accept-Encoding]
+      X-Content-Type-Options: [nosniff]
+      X-Frame-Options: [sameorigin]
+      X-RateLimit-Limit: ['60']
+      X-RateLimit-Remaining: ['57']
+      X-RateLimit-Reset: ['1569601527']
+      X-Request-ID: [6ea39f1a9091019166ed28e782bb2677]
+      X-XSS-Protection: [1; mode=block]
+    status: {code: 200, message: OK}
+- request:
+    body: null
+    headers:
+      Accept: [application/vnd.zenodo.v1+json]
+      Connection: [close]
+      Host: [zenodo.org]
+      User-Agent: [Python-urllib/3.6]
+    method: GET
+    uri: https://zenodo.org/api/records/3463499
+  response:
+    body: {string: '{"conceptdoi":"10.5281/zenodo.3462714","conceptrecid":"3462714","created":"2019-09-27T15:17:47.295427+00:00","doi":"10.5281/zenodo.3463499","files":[{"bucket":"fbcb465c-c250-41da-9d9a-f28d8587c0e3","checksum":"md5:131225ba8fd81a5a2f4f50a191a1504e","key":"jbferet/biodivMapR-v1.0.1.zip","links":{"self":"https://zenodo.org/api/files/fbcb465c-c250-41da-9d9a-f28d8587c0e3/jbferet/biodivMapR-v1.0.1.zip"},"size":24692383,"type":"zip"}],"id":3463499,"links":{"badge":"https://zenodo.org/badge/doi/10.5281/zenodo.3463499.svg","bucket":"https://zenodo.org/api/files/fbcb465c-c250-41da-9d9a-f28d8587c0e3","conceptbadge":"https://zenodo.org/badge/doi/10.5281/zenodo.3462714.svg","conceptdoi":"https://doi.org/10.5281/zenodo.3462714","doi":"https://doi.org/10.5281/zenodo.3463499","html":"https://zenodo.org/record/3463499","latest":"https://zenodo.org/api/records/3463499","latest_html":"https://zenodo.org/record/3463499","self":"https://zenodo.org/api/records/3463499"},"metadata":{"access_right":"open","access_right_category":"success","creators":[{"name":"floriandeboissieu"}],"description":"biodivMapR
+        v1.0.1 (Release date: 2019-09-27)\n<p>Added NEWS.md\nUpdated README.md: transfered
+        from gitlab.irstea to github\nchanged return() into return(invisible())\nupdated
+        vignettes &amp; tutorial with latest outputs and figures from code</p>","doi":"10.5281/zenodo.3463499","license":{"id":"other-open"},"publication_date":"2019-09-27","related_identifiers":[{"identifier":"https://github.com/jbferet/biodivMapR/tree/v1.0.1","relation":"isSupplementTo","scheme":"url"},{"identifier":"10.5281/zenodo.3462714","relation":"isVersionOf","scheme":"doi"}],"relations":{"version":[{"count":2,"index":1,"is_last":true,"last_child":{"pid_type":"recid","pid_value":"3463499"},"parent":{"pid_type":"recid","pid_value":"3462714"}}]},"resource_type":{"title":"Software","type":"software"},"title":"jbferet/biodivMapR:
+        v1.0.1","version":"v1.0.1"},"owners":[77934],"revision":2,"stats":{"downloads":0.0,"unique_downloads":0.0,"unique_views":0.0,"version_downloads":0.0,"version_unique_downloads":0.0,"version_unique_views":1.0,"version_views":1.0,"version_volume":0.0,"views":0.0,"volume":0.0},"updated":"2019-09-27T15:17:52.038019+00:00"}'}
+    headers:
+      Access-Control-Allow-Origin: ['*']
+      Access-Control-Expose-Headers: ['Content-Type, ETag, Link, X-RateLimit-Limit,
+          X-RateLimit-Remaining, X-RateLimit-Reset']
+      Connection: [close]
+      Content-Length: ['2216']
+      Content-Type: [application/json]
+      Date: ['Fri, 27 Sep 2019 16:24:27 GMT']
+      ETag: ['"2"']
+      Last-Modified: ['Fri, 27 Sep 2019 15:17:52 GMT']
+      Link: ['<https://zenodo.org/api/records/3463499>; rel="self"']
+      Referrer-Policy: [strict-origin-when-cross-origin]
+      Retry-After: ['60']
+      Server: [nginx/1.12.2]
+      Strict-Transport-Security: [max-age=0]
+      Vary: [Accept-Encoding]
+      X-Content-Type-Options: [nosniff]
+      X-Frame-Options: [sameorigin]
+      X-RateLimit-Limit: ['60']
+      X-RateLimit-Remaining: ['56']
+      X-RateLimit-Reset: ['1569601528']
+      X-Request-ID: [de59d444d00ea57fdcb5b71d45c46ae2]
+      X-XSS-Protection: [1; mode=block]
+    status: {code: 200, message: OK}
+version: 1

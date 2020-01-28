@@ -22,8 +22,7 @@ class ImportProvider:
             self._regex = self.create_regex()
         return self._regex
 
-    @staticmethod
-    def create_regex():
+    def create_regex(self):
         """Create and initialize regular expression used for matching"""
         raise NotImplementedError()
 
@@ -46,6 +45,10 @@ class ImportProvider:
 
     def getURI(self, doc: object, user: object) -> str:
         """Given a registered object, return a URI for it"""
+        raise NotImplementedError()
+
+    def import_tale(self, dataId):
+        """Given a dataId import dataset as Tale"""
         raise NotImplementedError()
 
     def register(self, parent: object, parentType: str, progress, user, dataMap: DataMap,
@@ -76,8 +79,13 @@ class ImportProvider:
         folder = self.folderModel.createFolder(parent, item.name, description='',
                                                parentType=parentType, creator=user,
                                                reuseExisting=True)
-        folder = self.folderModel.setMetadata(folder, {'identifier': item.identifier,
-                                                       'provider': self.getName()})
+        meta = {
+            "identifier": item.identifier,
+            "provider": self.getName(),
+        }
+        if item.meta:
+            meta.update(item.meta)
+        folder = self.folderModel.setMetadata(folder, meta)
         stack.append((folder, 'folder'))
         return (folder, 'folder')
 
@@ -87,6 +95,8 @@ class ImportProvider:
         meta = {'provider': self.getName()}
         if item.identifier:
             meta['identifier'] = item.identifier
+        if item.meta:
+            meta.update(item.meta)
         gitem = self.itemModel.setMetadata(gitem, meta)
 
         # girder does not allow anything else than http and https. So we need a better

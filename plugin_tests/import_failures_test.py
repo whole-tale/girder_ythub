@@ -92,7 +92,7 @@ class TaskFailTestCase(base.TestCase):
                 method="POST",
                 user=self.user,
                 params={
-                    "url": "http://blah.com",
+                    "url": "http://use.yt/upload/ef4cd901",
                     "spawn": False,
                     "imageId": self.image["_id"],
                     "asTale": True,

@@ -17,6 +17,8 @@ from fs.info import Info
 from fs.mode import Mode
 from fs.path import basename
 from fs.permissions import Permissions
+from fs.tarfs import ReadTarFS
+from fs.zipfs import ReadZipFS
 from girderfs.core import WtDmsGirderFS
 from girder_client import GirderClient
 from girder.constants import AccessType
@@ -32,6 +34,35 @@ from ..lib.dataone import DataONELocations  # TODO: get rid of it
 from ..models.instance import Instance
 from ..models.tale import Tale
 from ..utils import getOrCreateRootFolder
+
+
+def sanitize_binder(root):
+    root_listdir = root.listdir("/")
+
+    if len(root_listdir) != 1:
+        return
+
+    single_file_or_dir = root_listdir[0]
+
+    if root.isdir(single_file_or_dir):
+        with root.opendir(single_file_or_dir) as subdir:
+            copy_fs(subdir, root)
+        root.removetree("/" + single_file_or_dir)
+        sanitize_binder(root)
+
+    if root.isfile(single_file_or_dir):
+        if single_file_or_dir.endswith(".zip"):
+            archive_fs = ReadZipFS
+        elif ".tar" in single_file_or_dir:
+            archive_fs = ReadTarFS
+        else:
+            archive_fs = None
+
+        if archive_fs is not None:
+            with archive_fs(root.openbin(single_file_or_dir)) as archive:
+                copy_fs(archive, root)
+            root.remove("/" + single_file_or_dir)
+            sanitize_binder(root)
 
 
 def run(job):
@@ -120,6 +151,7 @@ def run(job):
             str(session["_id"]), girder_root + "/api/v1", str(token["_id"])
         ) as source_fs:
             copy_fs(source_fs, destination_fs)
+            sanitize_binder(destination_fs)
 
         Session().deleteSession(user, session)
 

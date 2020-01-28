@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import base64
+import copy
+import jsonschema
+import os
 import six
 import validators
 
@@ -13,6 +17,7 @@ from girder.constants import AccessType, TokenScope, CoreEventHandler
 from girder.exceptions import GirderException
 from girder.models.model_base import ValidationException
 from girder.models.notification import Notification, ProgressState
+from girder.models.user import User
 from girder.plugins.jobs.constants import JobStatus
 from girder.plugins.jobs.models.job import Job as JobModel
 from girder.plugins.worker import getCeleryApp
@@ -20,11 +25,11 @@ from girder.utility import assetstore_utilities, setting_utilities
 from girder.utility.model_importer import ModelImporter
 
 from .constants import PluginSettings, SettingDefault
+from .rest.account import Account
 from .rest.dataset import Dataset
 from .rest.image import Image
 from .rest.integration import Integration
 from .rest.repository import Repository
-from .rest.publish import Publish
 from .rest.harvester import listImportedData
 from .rest.tale import Tale
 from .rest.instance import Instance
@@ -32,6 +37,56 @@ from .rest.wholetale import wholeTale
 from .rest.workspace import Workspace
 from .rest.license import License
 from .models.instance import finalizeInstance
+from .schema.misc import (
+    external_auth_providers_schema,
+    external_apikey_groups_schema,
+    repository_to_provider_schema,
+)
+
+
+@setting_utilities.validator(PluginSettings.PUBLISHER_REPOS)
+def validatePublisherRepos(doc):
+    try:
+        jsonschema.validate(doc['value'], repository_to_provider_schema)
+    except jsonschema.ValidationError as e:
+        raise ValidationException('Invalid Repository to Auth Provider map: ' + e.message)
+
+
+@setting_utilities.default(PluginSettings.PUBLISHER_REPOS)
+def defaultPublisherRepos():
+    return copy.deepcopy(
+        SettingDefault.defaults[PluginSettings.PUBLISHER_REPOS]
+    )
+
+
+@setting_utilities.validator(PluginSettings.EXTERNAL_APIKEY_GROUPS)
+def validateExternalApikeyGroups(doc):
+    try:
+        jsonschema.validate(doc['value'], external_apikey_groups_schema)
+    except jsonschema.ValidationError as e:
+        raise ValidationException('Invalid External Apikey Groups list: ' + e.message)
+
+
+@setting_utilities.validator(PluginSettings.EXTERNAL_AUTH_PROVIDERS)
+def validateOtherSettings(doc):
+    try:
+        jsonschema.validate(doc['value'], external_auth_providers_schema)
+    except jsonschema.ValidationError as e:
+        raise ValidationException('Invalid External Auth Providers list: ' + e.message)
+
+
+@setting_utilities.default(PluginSettings.EXTERNAL_AUTH_PROVIDERS)
+def defaultExternalAuthProviders():
+    return copy.deepcopy(
+        SettingDefault.defaults[PluginSettings.EXTERNAL_AUTH_PROVIDERS]
+    )
+
+
+@setting_utilities.default(PluginSettings.EXTERNAL_APIKEY_GROUPS)
+def defaultExternalApikeyGroups():
+    return copy.deepcopy(
+        SettingDefault.defaults[PluginSettings.EXTERNAL_APIKEY_GROUPS]
+    )
 
 
 @setting_utilities.validator(PluginSettings.DATAVERSE_EXTRA_HOSTS)
@@ -43,6 +98,17 @@ def validateDataverseExtraHosts(doc):
     for url in doc['value']:
         if not validators.url(url):
             raise ValidationException('Invalid URL in Dataverse extra hosts', 'value')
+
+
+@setting_utilities.validator(PluginSettings.ZENODO_EXTRA_HOSTS)
+def validateZenodoExtraHosts(doc):
+    if not doc['value']:
+        doc['value'] = defaultZenodoExtraHosts()
+    if not isinstance(doc['value'], list):
+        raise ValidationException('Zenodo extra hosts setting must be a list.', 'value')
+    for url in doc['value']:
+        if not validators.url(url):
+            raise ValidationException('Invalid URL in Zenodo extra hosts', 'value')
 
 
 @setting_utilities.validator(PluginSettings.INSTANCE_CAP)
@@ -79,21 +145,9 @@ def defaultDataverseExtraHosts():
     return SettingDefault.defaults[PluginSettings.DATAVERSE_EXTRA_HOSTS]
 
 
-@setting_utilities.validator(PluginSettings.INSTANCE_CAP)
-def validateInstanceCap(doc):
-    if not doc['value']:
-        raise ValidationException(
-            'Instance Cap needs to be set.', 'value')
-    try:
-        int(doc['value'])
-    except ValueError:
-        raise ValidationException(
-            'Instance Cap needs to be an integer.', 'value')
-
-
-@setting_utilities.default(PluginSettings.INSTANCE_CAP)
-def defaultInstanceCap():
-    return SettingDefault.defaults[PluginSettings.INSTANCE_CAP]
+@setting_utilities.default(PluginSettings.ZENODO_EXTRA_HOSTS)
+def defaultZenodoExtraHosts():
+    return SettingDefault.defaults[PluginSettings.ZENODO_EXTRA_HOSTS]
 
 
 @access.public(scope=TokenScope.DATA_READ)
@@ -374,6 +428,21 @@ def getJobResult(self, job):
     return result
 
 
+def store_other_globus_tokens(event):
+    globus_token = event.info["token"]
+    user = event.info["user"]
+    user_tokens = user.get("otherTokens", [])
+    for token in globus_token["other_tokens"]:
+        for i, user_token in enumerate(user_tokens):
+            if user_token["resource_server"] == token["resource_server"]:
+                user_tokens[i].update(token)
+                break
+        else:
+            user_tokens.append(token)
+    user["otherTokens"] = user_tokens
+    User().save(user)
+
+
 def load(info):
     info['apiRoot'].wholetale = wholeTale()
     info['apiRoot'].instance = Instance()
@@ -404,8 +473,9 @@ def load(info):
     events.bind('model.file.save', 'wholetale', tale.updateWorkspaceModTime)
     events.bind('model.file.save.created', 'wholetale', tale.updateWorkspaceModTime)
     events.bind('model.file.remove', 'wholetale', tale.updateWorkspaceModTime)
+    events.bind('oauth.auth_callback.after', 'wholetale', store_other_globus_tokens)
+    info['apiRoot'].account = Account()
     info['apiRoot'].repository = Repository()
-    info['apiRoot'].publish = Publish()
     info['apiRoot'].license = License()
     info['apiRoot'].integration = Integration()
     info['apiRoot'].workspace = Workspace()
@@ -420,3 +490,16 @@ def load(info):
     info['apiRoot'].user.route('GET', ('settings',), getUserMetadata)
     ModelImporter.model('user').exposeFields(
         level=AccessType.WRITE, fields=('meta', 'myData'))
+    ModelImporter.model('user').exposeFields(
+        level=AccessType.ADMIN, fields=('otherTokens',))
+
+    path_to_assets = os.path.join(
+        os.path.dirname(os.path.dirname(__file__)),
+        "web_client/extra/img",
+    )
+    for ext_provider in SettingDefault.defaults[PluginSettings.EXTERNAL_AUTH_PROVIDERS]:
+        logo_path = os.path.join(path_to_assets, ext_provider["name"] + '_logo.jpg')
+        print(logo_path)
+        if os.path.isfile(logo_path):
+            with open(logo_path, "rb") as image_file:
+                ext_provider["logo"] = base64.b64encode(image_file.read()).decode()
