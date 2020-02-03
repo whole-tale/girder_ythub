@@ -114,7 +114,7 @@ class ZenodoImportProvider(ImportProvider):
             version = record["metadata"]["version"]
         except KeyError:
             try:
-                version = record["metadata"]["relations"]["version"][0]["count"]
+                version = record["metadata"]["relations"]["version"][0]["index"] + 1
             except (KeyError, IndexError):
                 version = record["id"]
         return record["metadata"]["title"] + "_ver_{}".format(version)
