@@ -115,12 +115,7 @@ class DataOneImportProvider(ImportProvider):
 
     def _addResolutionUrls(self, list, base_url):
         """
-        The download url is different between DataONE production and DataONE dev.
-        Check which place we're registering from and set the url section.
+        Construct the resolution URL (the URL that will return the bytes) for the data object.
         """
-        if base_url == DataONELocations.prod_cn:
-            url_insert = 'resolve'
-        else:
-            url_insert = 'object'
         for d in list:
-            d['url'] = "{}/{}/{}".format(base_url, url_insert, d['identifier'])
+            d['url'] = "{}/{}/{}".format(base_url, "resolve", d['identifier'])
