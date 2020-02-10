@@ -18,37 +18,37 @@ from girder.models.token import Token
 SCRIPTDIRS_NAME = None
 DATADIRS_NAME = None
 DATA_PATH = os.path.join(
-    os.path.dirname(os.environ['GIRDER_TEST_DATA_PREFIX']),
-    'data_src',
-    'plugins',
-    'wholetale',
+    os.path.dirname(os.environ["GIRDER_TEST_DATA_PREFIX"]),
+    "data_src",
+    "plugins",
+    "wholetale",
 )
 
 
 JobStatus = None
 ImageStatus = None
 Tale = None
-os.environ['GIRDER_PORT'] = os.environ.get('GIRDER_TEST_PORT', '20200')
+os.environ["GIRDER_PORT"] = os.environ.get("GIRDER_TEST_PORT", "20200")
 config.loadConfig()  # Must reload config to pickup correct port
 
 
 class FakeAsyncResult(object):
     def __init__(self, tale_id=None):
-        self.task_id = 'fake_id'
+        self.task_id = "fake_id"
         self.tale_id = tale_id
 
     def get(self, timeout=None):
         return {
-            'image_digest': 'digest123',
-            'repo2docker_version': 1,
-            'last_build': 123,
+            "image_digest": "digest123",
+            "repo2docker_version": 1,
+            "last_build": 123,
         }
 
 
 def setUpModule():
-    base.enabledPlugins.append('wholetale')
-    base.enabledPlugins.append('wt_data_manager')
-    base.enabledPlugins.append('wt_home_dir')
+    base.enabledPlugins.append("wholetale")
+    base.enabledPlugins.append("wt_data_manager")
+    base.enabledPlugins.append("wt_home_dir")
     base.startServer(mock=False)
 
     global JobStatus, Tale, ImageStatus
@@ -69,58 +69,59 @@ class ImportTaleTestCase(base.TestCase):
         super(ImportTaleTestCase, self).setUp()
         users = (
             {
-                'email': 'root@dev.null',
-                'login': 'admin',
-                'firstName': 'Root',
-                'lastName': 'van Klompf',
-                'password': 'secret',
+                "email": "root@dev.null",
+                "login": "admin",
+                "firstName": "Root",
+                "lastName": "van Klompf",
+                "password": "secret",
             },
             {
-                'email': 'joe@dev.null',
-                'login': 'joeregular',
-                'firstName': 'Joe',
-                'lastName': 'Regular',
-                'password': 'secret',
+                "email": "joe@dev.null",
+                "login": "joeregular",
+                "firstName": "Joe",
+                "lastName": "Regular",
+                "password": "secret",
             },
         )
 
         self.authors = [
             {
-                'firstName': 'Charles',
-                'lastName': 'Darwmin',
-                'orcid': 'https://orcid.org/000-000',
+                "firstName": "Charles",
+                "lastName": "Darwmin",
+                "orcid": "https://orcid.org/000-000",
             },
             {
-                'firstName': 'Thomas',
-                'lastName': 'Edison',
-                'orcid': 'https://orcid.org/111-111',
+                "firstName": "Thomas",
+                "lastName": "Edison",
+                "orcid": "https://orcid.org/111-111",
             },
         ]
         self.admin, self.user = [
-            self.model('user').createUser(**user) for user in users
+            self.model("user").createUser(**user) for user in users
         ]
 
-        self.image_admin = self.model('image', 'wholetale').createImage(
+        self.image_admin = self.model("image", "wholetale").createImage(
             name="test admin image", creator=self.admin, public=True
         )
 
-        self.image = self.model('image', 'wholetale').createImage(
+        self.image = self.model("image", "wholetale").createImage(
             name="test my name",
             creator=self.user,
             public=True,
             config=dict(
-                template='base.tpl',
-                buildpack='SomeBuildPack',
-                user='someUser',
+                template="base.tpl",
+                buildpack="SomeBuildPack",
+                user="someUser",
                 port=8888,
-                urlPath='',
+                urlPath="",
             ),
         )
 
         from girder.plugins.wt_home_dir import HOME_DIRS_APPS
+
         self.homeDirsApps = HOME_DIRS_APPS  # nopep8
         for e in self.homeDirsApps.entries():
-            provider = e.app.providerMap['/']['provider']
+            provider = e.app.providerMap["/"]["provider"]
             provider.updateAssetstore()
         self.clearDAVAuthCache()
 
@@ -128,38 +129,82 @@ class ImportTaleTestCase(base.TestCase):
         # need to do this because the DB is wiped on every test, but the dav domain
         # controller keeps a cache with users/tokens
         for e in self.homeDirsApps.entries():
-            e.app.config['domaincontroller'].clearCache()
+            e.app.config["domaincontroller"].clearCache()
 
-    @mock.patch('gwvolman.tasks.import_tale')
-    def testTaleImport(self, it):
+    @vcr.use_cassette(os.path.join(DATA_PATH, "tale_import_data.txt"))
+    def testTaleImport(self):
+        image = self.model("image", "wholetale").createImage(
+            name="Jupyter Classic",
+            creator=self.user,
+            public=True,
+            config=dict(
+                template="base.tpl",
+                buildpack="PythonBuildPack",
+                user="someUser",
+                port=8888,
+                urlPath="",
+            ),
+        )
+
+        from girder.plugins.wholetale.constants import InstanceStatus
+
+        class fakeInstance(object):
+            _id = "123456789"
+
+            def createInstance(self, tale, user, token, spawn=False):
+                return {"_id": self._id, "status": InstanceStatus.LAUNCHING}
+
+            def load(self, instance_id, user=None):
+                assert instance_id == self._id
+                return {"_id": self._id, "status": InstanceStatus.RUNNING}
+
         with mock.patch(
-            'girder_worker.task.celery.Task.apply_async', spec=True
-        ) as mock_apply_async:
-            # mock_apply_async.return_value = 1
-            mock_apply_async().job.return_value = json.dumps({'job': 1, 'blah': 2})
+            "girder.plugins.wholetale.models.instance.Instance", fakeInstance
+        ):
             resp = self.request(
-                path='/tale/import',
-                method='POST',
+                path="/tale/import",
+                method="POST",
                 user=self.user,
                 params={
-                    'url': 'http://use.yt/upload/ef4cd901',
-                    'spawn': False,
-                    'imageId': self.image['_id'],
-                    'asTale': False,
-                    'taleKwargs': json.dumps({'title': 'blah'}),
+                    "url": (
+                        "https://dataverse.harvard.edu/dataset.xhtml?"
+                        "persistentId=doi:10.7910/DVN/3MJ7IR"
+                    ),
+                    "spawn": True,
+                    "imageId": self.image["_id"],
+                    "asTale": False,
                 },
             )
+
             self.assertStatusOk(resp)
             tale = resp.json
-            job_call = mock_apply_async.call_args_list[-1][-1]
+
+            from girder.plugins.jobs.models.job import Job
+
+            job = Job().findOne({"type": "wholetale.import_binder"})
             self.assertEqual(
-                job_call['args'][0],
-                {'dataId': ['http://use.yt/upload/ef4cd901']}
+                json.loads(job["kwargs"])["tale"]["_id"]["$oid"], tale["_id"]
             )
-            self.assertEqual(str(job_call['args'][1]['_id']), tale['_id'])
-            self.assertEqual(job_call['kwargs'], {'spawn': False})
-            self.assertEqual(job_call['headers']['girder_job_title'], 'Import Tale')
-            self.assertEqual(tale['category'], 'science')
+
+            for i in range(300):
+                if job["status"] in {JobStatus.SUCCESS, JobStatus.ERROR}:
+                    break
+                time.sleep(0.1)
+                job = Job().load(job["_id"], force=True)
+            self.assertEqual(job["status"], JobStatus.SUCCESS)
+
+        tale = Tale().load(tale["_id"], force=True)
+        self.assertEqual(
+            tale["dataSetCitation"],
+            [
+                (
+                    "Rangel, M. A. and Vogl, T. (2018) “Replication Data for: ‘Agricultural "
+                    "Fires and Health at Birth.’” Harvard Dataverse. doi: 10.7910/DVN/3MJ7IR."
+                )
+            ],
+        )
+        self.assertEqual(len(tale["dataSet"]), 1)
+        self.model("image", "wholetale").remove(image)
 
     def testTaleImportBinder(self):
         def before_record_cb(request):
@@ -168,17 +213,17 @@ class ImportTaleTestCase(base.TestCase):
             return request
 
         my_vcr = vcr.VCR(before_record_request=before_record_cb)
-        with my_vcr.use_cassette(os.path.join(DATA_PATH, 'tale_import_binder.txt')):
-            image = self.model('image', 'wholetale').createImage(
+        with my_vcr.use_cassette(os.path.join(DATA_PATH, "tale_import_binder.txt")):
+            image = self.model("image", "wholetale").createImage(
                 name="Jupyter Classic",
                 creator=self.user,
                 public=True,
                 config=dict(
-                    template='base.tpl',
-                    buildpack='PythonBuildPack',
-                    user='someUser',
+                    template="base.tpl",
+                    buildpack="PythonBuildPack",
+                    user="someUser",
                     port=8888,
-                    urlPath='',
+                    urlPath="",
                 ),
             )
 
@@ -188,15 +233,15 @@ class ImportTaleTestCase(base.TestCase):
             )
 
             resp = self.request(
-                '/system/setting',
+                "/system/setting",
                 user=self.admin,
-                method='PUT',
+                method="PUT",
                 params={
-                    'list': json.dumps(
+                    "list": json.dumps(
                         [
                             {
-                                'key': PluginSettings.DATAVERSE_URL,
-                                'value': 'https://dev2.dataverse.org',
+                                "key": PluginSettings.DATAVERSE_URL,
+                                "value": "https://dev2.dataverse.org",
                             }
                         ]
                     )
@@ -205,30 +250,30 @@ class ImportTaleTestCase(base.TestCase):
             self.assertStatusOk(resp)
 
             class fakeInstance(object):
-                _id = '123456789'
+                _id = "123456789"
 
                 def createInstance(self, tale, user, token, spawn=False):
-                    return {'_id': self._id, 'status': InstanceStatus.LAUNCHING}
+                    return {"_id": self._id, "status": InstanceStatus.LAUNCHING}
 
                 def load(self, instance_id, user=None):
                     assert instance_id == self._id
-                    return {'_id': self._id, 'status': InstanceStatus.RUNNING}
+                    return {"_id": self._id, "status": InstanceStatus.RUNNING}
 
             with mock.patch(
-                'girder.plugins.wholetale.models.instance.Instance', fakeInstance
+                "girder.plugins.wholetale.models.instance.Instance", fakeInstance
             ):
                 resp = self.request(
-                    path='/tale/import',
-                    method='POST',
+                    path="/tale/import",
+                    method="POST",
                     user=self.user,
                     params={
-                        'url': (
-                            'https://dev2.dataverse.org/dataset.xhtml?'
-                            'persistentId=doi:10.5072/FK2/NYNHAM'
+                        "url": (
+                            "https://dev2.dataverse.org/dataset.xhtml?"
+                            "persistentId=doi:10.5072/FK2/NYNHAM"
                         ),
-                        'spawn': True,
-                        'imageId': self.image['_id'],
-                        'asTale': True,
+                        "spawn": True,
+                        "imageId": self.image["_id"],
+                        "asTale": True,
                     },
                 )
 
@@ -237,47 +282,62 @@ class ImportTaleTestCase(base.TestCase):
 
                 from girder.plugins.jobs.models.job import Job
 
-                job = Job().findOne({'type': 'wholetale.import_binder'})
-                self.assertEqual(json.loads(job['kwargs'])['tale']['_id']['$oid'], tale['_id'])
+                job = Job().findOne({"type": "wholetale.import_binder"})
+                self.assertEqual(
+                    json.loads(job["kwargs"])["tale"]["_id"]["$oid"], tale["_id"]
+                )
 
                 for i in range(300):
-                    if job['status'] in {JobStatus.SUCCESS, JobStatus.ERROR}:
+                    if job["status"] in {JobStatus.SUCCESS, JobStatus.ERROR}:
                         break
                     time.sleep(0.1)
-                    job = Job().load(job['_id'], force=True)
-                self.assertEqual(job['status'], JobStatus.SUCCESS)
+                    job = Job().load(job["_id"], force=True)
+                self.assertEqual(job["status"], JobStatus.SUCCESS)
 
-            self.assertTrue(
-                self.model('tale', 'wholetale').findOne(
-                    {'title': 'A Tale for "Dataverse IRC Metrics"'}
-                )
-                is not None
-            )
-            self.model('image', 'wholetale').remove(image)
+        resp = self.request(
+            path="/item",
+            method="GET",
+            user=self.user,
+            params={"folderId": tale["workspaceId"]},
+        )
+        self.assertStatusOk(resp)
+        self.assertEqual(
+            sorted([_["name"] for _ in resp.json]),
+            [
+                "README.md",
+                "apt.txt",
+                "index.ipynb",
+                "install.R",
+                "runtime.txt",
+                "superuser_graph-monthly.ipynb",
+                "superuser_graph.ipynb",
+            ],
+        )
+        self.model("image", "wholetale").remove(image)
 
-    @vcr.use_cassette(os.path.join(DATA_PATH, 'tale_import_zip.txt'))
+    @vcr.use_cassette(os.path.join(DATA_PATH, "tale_import_zip.txt"))
     def testTaleImportZip(self):
-        image = self.model('image', 'wholetale').createImage(
+        image = self.model("image", "wholetale").createImage(
             name="Jupyter Classic",
             creator=self.user,
             public=True,
             config=dict(
-                template='base.tpl',
-                buildpack='PythonBuildPack',
-                user='someUser',
+                template="base.tpl",
+                buildpack="PythonBuildPack",
+                user="someUser",
                 port=8888,
-                urlPath='',
+                urlPath="",
             ),
         )
-        with mock.patch('fs.copy.copy_fs') as mock_copy:
+        with mock.patch("fs.copy.copy_fs") as mock_copy:
             with open(
-                os.path.join(DATA_PATH, '5c92fbd472a9910001fbff72.zip'), 'rb'
+                os.path.join(DATA_PATH, "5c92fbd472a9910001fbff72.zip"), "rb"
             ) as fp:
                 resp = self.request(
-                    path='/tale/import',
-                    method='POST',
+                    path="/tale/import",
+                    method="POST",
                     user=self.user,
-                    type='application/zip',
+                    type="application/zip",
                     body=fp.read(),
                 )
 
@@ -286,23 +346,26 @@ class ImportTaleTestCase(base.TestCase):
 
             from girder.plugins.jobs.models.job import Job
 
-            job = Job().findOne({'type': 'wholetale.import_tale'})
-            self.assertEqual(json.loads(job['kwargs'])['tale']['_id']['$oid'], tale['_id'])
+            job = Job().findOne({"type": "wholetale.import_tale"})
+            self.assertEqual(
+                json.loads(job["kwargs"])["tale"]["_id"]["$oid"], tale["_id"]
+            )
             for i in range(300):
-                if job['status'] in {JobStatus.SUCCESS, JobStatus.ERROR}:
+                if job["status"] in {JobStatus.SUCCESS, JobStatus.ERROR}:
                     break
                 time.sleep(0.1)
-                job = Job().load(job['_id'], force=True)
-            self.assertEqual(job['status'], JobStatus.SUCCESS)
+                job = Job().load(job["_id"], force=True)
+            self.assertEqual(job["status"], JobStatus.SUCCESS)
         mock_copy.assert_called_once()
         # TODO: make it more extensive...
         self.assertTrue(
-            self.model('tale', 'wholetale').findOne({'title': 'Water Tale'}) is not None
+            self.model("tale", "wholetale").findOne({"title": "Water Tale"}) is not None
         )
-        self.model('image', 'wholetale').remove(image)
+        self.model("image", "wholetale").remove(image)
 
     def test_binder_heuristics(self):
         from girder.plugins.wholetale.tasks.import_binder import sanitize_binder
+
         tale = Tale().createTale(self.image, [], creator=self.user, title="Binder")
         token = Token().createToken(user=self.user, days=0.25)
         tmpdir = tempfile.mkdtemp()
@@ -337,7 +400,7 @@ class ImportTaleTestCase(base.TestCase):
         Tale().remove(tale)
 
     def tearDown(self):
-        self.model('user').remove(self.user)
-        self.model('user').remove(self.admin)
-        self.model('image', 'wholetale').remove(self.image)
+        self.model("user").remove(self.user)
+        self.model("user").remove(self.admin)
+        self.model("image", "wholetale").remove(self.image)
         super(ImportTaleTestCase, self).tearDown()
