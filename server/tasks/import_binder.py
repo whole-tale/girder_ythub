@@ -26,6 +26,7 @@ from girder.constants import AccessType
 from girder.models.folder import Folder
 from girder.models.item import Item
 from girder.models.token import Token
+from girder.models.user import User
 from girder.utility import config, JsonEncoder
 from girder.plugins.jobs.constants import JobStatus
 from girder.plugins.jobs.models.job import Job
@@ -72,9 +73,9 @@ def run(job):
     jobModel.updateJob(job, status=JobStatus.RUNNING)
 
     lookup_kwargs, = job["args"]
-    user = job["kwargs"]["user"]
+    user = User().load(job["userId"], force=True)
+    tale = Tale().load(job["kwargs"]["taleId"], user=user)
     spawn = job["kwargs"]["spawn"]
-    tale = job["kwargs"]["tale"]
     asTale = job["kwargs"]["asTale"]
     token = Token().createToken(user=user, days=0.5)
 

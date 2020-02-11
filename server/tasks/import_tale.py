@@ -10,9 +10,12 @@ from webdavfs.webdavfs import WebDAVFS
 from fs.osfs import OSFS
 from fs.copy import copy_fs
 from girder import events
+from girder.constants import TokenScope
 from girder.models.file import File
+from girder.models.user import User
+from girder.models.token import Token
 from girder.utility import config
-from girder.plugins.jobs.constants import JobStatus
+from girder.plugins.jobs.constants import JobStatus, REST_CREATE_JOB_TOKEN_SCOPE
 from girder.plugins.jobs.models.job import Job
 
 from ..constants import CATALOG_NAME, TaleStatus
@@ -27,17 +30,19 @@ def run(job):
     jobModel.updateJob(job, status=JobStatus.RUNNING)
 
     tale_dir, manifest_file = job["args"]
-    user = job["kwargs"]["user"]
-    token = job["kwargs"]["token"]
-    tale = job["kwargs"]["tale"]
+    user = User().load(job["userId"], force=True)
+    tale = Tale().load(job["kwargs"]["taleId"], user=user)
+    token = Token().createToken(
+        user=user, days=0.5, scope=(TokenScope.USER_AUTH, REST_CREATE_JOB_TOKEN_SCOPE)
+    )
 
     try:
         os.chdir(tale_dir)
-        with open(manifest_file, 'r') as manifest_fp:
+        with open(manifest_file, "r") as manifest_fp:
             manifest = json.load(manifest_fp)
 
         # 1. Register data
-        dataIds = [obj['identifier'] for obj in manifest["Datasets"]]
+        dataIds = [obj["identifier"] for obj in manifest["Datasets"]]
         dataIds += [
             obj["uri"]
             for obj in manifest["aggregates"]
@@ -53,33 +58,34 @@ def run(job):
             register_dataMap(
                 dataMap,
                 getOrCreateRootFolder(CATALOG_NAME),
-                'folder',
+                "folder",
                 user=user,
                 base_url=DataONELocations.prod_cn,
             )
 
         # 2. Construct the dataSet
         dataSet = []
-        for obj in manifest['aggregates']:
-            if 'bundledAs' not in obj:
+        for obj in manifest["aggregates"]:
+            if "bundledAs" not in obj:
                 continue
-            uri = obj['uri']
+            uri = obj["uri"]
             fobj = File().findOne(
-                {'linkUrl': uri}
+                {"linkUrl": uri}
             )  # TODO: That's expensive, use something else
             if fobj:
                 dataSet.append(
                     {
-                        'itemId': fobj['itemId'],
-                        '_modelType': 'item',
-                        'mountPath': obj['bundledAs']['filename'],
+                        "itemId": fobj["itemId"],
+                        "_modelType": "item",
+                        "mountPath": obj["bundledAs"]["filename"],
                     }
                 )
             # TODO: handle folders
 
         # 3. Update Tale's dataSet
-        update_citations = {_['itemId'] for _ in tale['dataSet']} ^ {
-            _['itemId'] for _ in dataSet}
+        update_citations = {_["itemId"] for _ in tale["dataSet"]} ^ {
+            _["itemId"] for _ in dataSet
+        }
         tale["dataSet"] = dataSet
         tale = Tale().updateTale(tale)
 
@@ -103,7 +109,7 @@ def run(job):
         if workdir:
             password = "token:{_id}".format(**token)
             root = "/tales/{_id}".format(**tale)
-            url = "http://localhost:{}".format(config.getConfig()['server.socket_port'])
+            url = "http://localhost:{}".format(config.getConfig()["server.socket_port"])
             with WebDAVFS(
                 url, login=user["login"], password=password, root=root
             ) as webdav_handle:

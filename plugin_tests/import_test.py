@@ -182,9 +182,7 @@ class ImportTaleTestCase(base.TestCase):
             from girder.plugins.jobs.models.job import Job
 
             job = Job().findOne({"type": "wholetale.import_binder"})
-            self.assertEqual(
-                json.loads(job["kwargs"])["tale"]["_id"]["$oid"], tale["_id"]
-            )
+            self.assertEqual(json.loads(job["kwargs"])["taleId"]["$oid"], tale["_id"])
 
             for i in range(300):
                 if job["status"] in {JobStatus.SUCCESS, JobStatus.ERROR}:
@@ -283,9 +281,7 @@ class ImportTaleTestCase(base.TestCase):
                 from girder.plugins.jobs.models.job import Job
 
                 job = Job().findOne({"type": "wholetale.import_binder"})
-                self.assertEqual(
-                    json.loads(job["kwargs"])["tale"]["_id"]["$oid"], tale["_id"]
-                )
+                self.assertEqual(json.loads(job["kwargs"])["taleId"]["$oid"], tale["_id"])
 
                 for i in range(300):
                     if job["status"] in {JobStatus.SUCCESS, JobStatus.ERROR}:
@@ -348,7 +344,7 @@ class ImportTaleTestCase(base.TestCase):
 
             job = Job().findOne({"type": "wholetale.import_tale"})
             self.assertEqual(
-                json.loads(job["kwargs"])["tale"]["_id"]["$oid"], tale["_id"]
+                json.loads(job["kwargs"])["taleId"]["$oid"], tale["_id"]
             )
             for i in range(300):
                 if job["status"] in {JobStatus.SUCCESS, JobStatus.ERROR}:

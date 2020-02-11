@@ -8,7 +8,7 @@ import tempfile
 import zipfile
 
 from girder import events
-from girder.constants import AccessType, TokenScope
+from girder.constants import AccessType
 from girder.exceptions import AccessException, GirderException, ValidationException
 from girder.models.assetstore import Assetstore
 from girder.models.folder import Folder
@@ -17,7 +17,6 @@ from girder.models.user import User
 from girder.models.model_base import AccessControlledModel
 from girder.models.token import Token
 from girder.plugins.jobs.models.job import Job
-from girder.plugins.jobs.constants import REST_CREATE_JOB_TOKEN_SCOPE
 from girder.utility import assetstore_utilities
 
 from .image import Image as imageModel
@@ -393,13 +392,7 @@ class Tale(AccessControlledModel):
                 z.extractall(path=temp_dir)
         return temp_dir, manifest_file, manifest, environment
 
-    def createTaleFromStream(self, stream, user=None, token=None, publishInfo=None):
-        if token is None:
-            token = Token().createToken(
-                user=user,
-                days=0.5,
-                scope=(TokenScope.USER_AUTH, REST_CREATE_JOB_TOKEN_SCOPE)
-            )
+    def createTaleFromStream(self, stream, user=None, publishInfo=None):
         temp_dir, manifest_file, manifest, environment = self._extractZipPayload(
             stream
         )
@@ -453,7 +446,7 @@ class Tale(AccessControlledModel):
             type='wholetale.import_tale', public=False, async=True,
             module='girder.plugins.wholetale.tasks.import_tale',
             args=(temp_dir, manifest_file),
-            kwargs={'user': user, 'token': token, 'tale': tale}
+            kwargs={'taleId': tale["_id"]}
         )
         Job().scheduleJob(job)
         return tale
