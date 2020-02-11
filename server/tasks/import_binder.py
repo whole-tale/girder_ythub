@@ -88,11 +88,12 @@ def run(job):
             instance = Instance().createInstance(tale, user, token, spawn=spawn)
 
         # 1. Register data using url
+        progressCurrent += 1
         jobModel.updateJob(
             job,
             status=JobStatus.RUNNING,
             progressTotal=progressTotal,
-            progressCurrent=progressCurrent + 1,
+            progressCurrent=progressCurrent,
             progressMessage="Registering external data",
         )
         dataIds = lookup_kwargs.pop("dataId")
@@ -158,12 +159,13 @@ def run(job):
             session = Session().createSession(user, dataSet=workspace_data_set)
 
             # 3. Copy data to the workspace using WebDAVFS
+            progressCurrent += 1
             jobModel.updateJob(
                 job,
                 status=JobStatus.RUNNING,
                 log="Copying files to workspace",
                 progressTotal=progressTotal,
-                progressCurrent=progressCurrent + 1,
+                progressCurrent=progressCurrent,
                 progressMessage="Copying files to workspace",
             )
             girder_root = "http://localhost:{}".format(
@@ -202,12 +204,13 @@ def run(job):
 
         # 4. Wait for container to show up
         if spawn:
+            progressCurrent += 1
             jobModel.updateJob(
                 job,
                 status=JobStatus.RUNNING,
                 log="Waiting for a Tale container",
                 progressTotal=progressTotal,
-                progressCurrent=progressCurrent + 1,
+                progressCurrent=progressCurrent,
                 progressMessage="Waiting for a Tale container",
             )
 

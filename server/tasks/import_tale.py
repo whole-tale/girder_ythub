@@ -36,12 +36,23 @@ def run(job):
         user=user, days=0.5, scope=(TokenScope.USER_AUTH, REST_CREATE_JOB_TOKEN_SCOPE)
     )
 
+    progressTotal = 3
+    progressCurrent = 0
+
     try:
         os.chdir(tale_dir)
         with open(manifest_file, "r") as manifest_fp:
             manifest = json.load(manifest_fp)
 
         # 1. Register data
+        progressCurrent += 1
+        jobModel.updateJob(
+            job,
+            status=JobStatus.RUNNING,
+            progressTotal=progressTotal,
+            progressCurrent=progressCurrent,
+            progressMessage="Registering external data",
+        )
         dataIds = [obj["identifier"] for obj in manifest["Datasets"]]
         dataIds += [
             obj["uri"]
@@ -49,9 +60,6 @@ def run(job):
             if obj["uri"].startswith("http")
         ]
         if dataIds:
-            jobModel.updateJob(
-                job, status=JobStatus.RUNNING, log="Registering external data"
-            )
             dataMap = pids_to_entities(
                 dataIds, user=user, base_url=DataONELocations.prod_cn, lookup=True
             )  # DataONE shouldn't be here
@@ -96,8 +104,13 @@ def run(job):
                 tale = Tale().updateTale(event.responses[-1])
 
         # 4. Copy data to the workspace using WebDAVFS (if it exists)
+        progressCurrent += 1
         jobModel.updateJob(
-            job, status=JobStatus.RUNNING, log="Copying files to workspace"
+            job,
+            status=JobStatus.RUNNING,
+            progressTotal=progressTotal,
+            progressCurrent=progressCurrent,
+            progressMessage="Copying files to workspace",
         )
         orig_tale_id = pathlib.Path(manifest_file).parts[0]
         for workdir in ("workspace", "data/workspace", None):
@@ -120,7 +133,15 @@ def run(job):
         tale["status"] = TaleStatus.READY
         tale = Tale().updateTale(tale)
 
-        jobModel.updateJob(job, status=JobStatus.SUCCESS, log="Tale created")
+        progressCurrent += 1
+        jobModel.updateJob(
+            job,
+            status=JobStatus.SUCCESS,
+            log="Tale created",
+            progressTotal=progressTotal,
+            progressCurrent=progressCurrent,
+            progressMessage="Tale created",
+        )
     except Exception:
         tale = Tale().load(tale["_id"], user=user)  # Refresh state
         tale["status"] = TaleStatus.ERROR
