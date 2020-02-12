@@ -374,6 +374,26 @@ class ZenodoHarversterTestCase(base.TestCase):
         tale = Tale().load(tale_id, user=self.user)
         self.assertEqual(tale["title"], "Water Tale")
 
+        with httmock.HTTMock(mock_get_record, mock_other_request):
+            with mock.patch(
+                "girder.plugins.wholetale.lib.zenodo.provider.urlopen", fake_urlopen
+            ):
+                resp = self.request(
+                    path="/integration/zenodo",
+                    method="GET",
+                    user=self.user,
+                    params={
+                        "record_id": "430905",
+                        "resource_server": "sandbox.zenodo.org",
+                    },
+                    isJson=False,
+                )
+        self.assertTrue("Location" in resp.headers)
+        location = urlparse(resp.headers["Location"])
+        self.assertEqual(location.netloc, "dashboard.wholetale.org")
+        existing_tale_id = location.path.rsplit("/")[-1]
+        self.assertEqual(tale_id, existing_tale_id)
+
     def test_analyze_in_wt_failures(self):
         def not_a_zip(url):
             return io.BytesIO(b"blah")

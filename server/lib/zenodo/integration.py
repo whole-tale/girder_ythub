@@ -20,9 +20,16 @@ from .. import IMPORT_PROVIDERS
     .param("record_id", "ID", required=False)
     .param("resource_server", "resource server", required=False)
     .param("environment", "The environment that should be selected.", required=False)
+    .param(
+        "force",
+        "If True, create a new Tale regardless of the fact it was previously imported.",
+        required=False,
+        dataType="boolean",
+        default=False,
+    )
 )
 @boundHandler()
-def zenodoDataImport(self, doi, record_id, resource_server, environment):
+def zenodoDataImport(self, doi, record_id, resource_server, environment, force):
     """Fetch and unpack a Zenodo record"""
     if not (doi or record_id):
         raise RestException("You need to provide either 'doi' or 'record_id'")
@@ -54,7 +61,7 @@ def zenodoDataImport(self, doi, record_id, resource_server, environment):
     url = "https://{}/record/{}".format(resource_server, record_id)
     provider = IMPORT_PROVIDERS.providerMap["Zenodo"]
     try:
-        tale = provider.import_tale(url, user)
+        tale = provider.import_tale(url, user, force=force)
     except GirderException as exc:
         raise RestException(
             "Failed to import Tale. Server returned: '{}'".format(exc.message)
