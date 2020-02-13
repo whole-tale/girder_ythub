@@ -44,6 +44,7 @@ class Manifest:
         self.manifest.update(self.create_basic_attributes())
         self.add_tale_creator()
         self.manifest.update(self.create_author_record())
+        self.manifest.update(self.create_related_identifiers())
         self.add_tale_records()
         # Add any external datasets to the manifest
         self.add_dataset_records()
@@ -132,6 +133,26 @@ class Manifest:
                     "schema:familyName": author["lastName"]
                 }
                 for author in self.tale['authors']
+            ]
+        }
+
+    def create_related_identifiers(self):
+        def derive_id_type(identifier):
+            if identifier.lower().startswith("doi"):
+                return "DOI"
+            elif identifier.lower().startswith("http"):
+                return "URL"
+            elif identifier.lower().startswith("urn"):
+                return "URN"
+
+        return {
+            "relatedIdentifiers": [
+                {
+                    "@id": rel_id["identifier"],
+                    "relationType": rel_id["relation"],
+                    "relatedIdentifierType": derive_id_type(rel_id["identifier"]),
+                }
+                for rel_id in self.tale["relatedIdentifiers"]
             ]
         }
 
