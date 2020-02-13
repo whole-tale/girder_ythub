@@ -298,3 +298,63 @@ repository_to_provider_schema = {
         },
     },
 }
+
+related_identifier_schema = {
+    "title": "relatedIdentifier",
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "description": (
+        "A schema representing persistent identifier of "
+        "related publication or dataset."
+    ),
+    "type": "object",
+    "properties": {
+        "relation": {
+            "type": "string",
+            "enum": [
+                "IsCitedBy",
+                "Cites",
+                "IsSupplementTo",
+                "IsSupplementedBy",
+                "IsContinuedBy",
+                "Continues",
+                "HasMetadata",
+                "IsMetadataFor",
+                "IsNewVersionOf",
+                "IsPreviousVersionOf",
+                "IsPartOf",
+                "HasPart",
+                "IsReferencedBy",
+                "References",
+                "IsDocumentedBy",
+                "Documents",
+                "IsCompiledBy",
+                "Compiles",
+                "IsVariantFormOf",
+                "IsOriginalFormOf",
+                "IsIdenticalTo",
+                "IsReviewedBy",
+                "Reviews",
+                "IsDerivedFrom",
+                "IsSourceOf",
+            ],
+            "description": (
+                "Relationship controlled vocab taken from DataCite Metadata Schema"
+            ),
+        },
+        "identifier": {
+            "type": "string",
+            "description": (
+                "The persistent identifier, such as: DOI, Handle, ARK, PURL, ISSN,"
+                "ISBN, PubMed ID, PubMed Central ID, ADS Bibliographic Code, arXiv"
+                ", Life Science Identifiers (LSID), EAN-13, ISTC, URNs and URLs"
+            ),
+        },
+    },
+}
+
+related_identifiers_schema = {
+    "title": "List of relatedIdentifiers",
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "type": "array",
+    "items": related_identifier_schema,
+}
