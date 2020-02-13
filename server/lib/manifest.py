@@ -148,9 +148,11 @@ class Manifest:
         return {
             "DataCite:relatedIdentifiers": [
                 {
-                    "@id": rel_id["identifier"],
-                    "DataCite:relationType": "DataCite:" + rel_id["relation"],
-                    "DataCite:relatedIdentifierType": derive_id_type(rel_id["identifier"]),
+                    "DataCite:relatedIdentifier": {
+                        "@id": rel_id["identifier"],
+                        "DataCite:relationType": "DataCite:" + rel_id["relation"],
+                        "DataCite:relatedIdentifierType": derive_id_type(rel_id["identifier"]),
+                    }
                 }
                 for rel_id in self.tale["relatedIdentifiers"]
             ],
@@ -166,7 +168,7 @@ class Manifest:
             "@context": [
                 "https://w3id.org/bundle/context",
                 {"schema": "http://schema.org/"},
-                {"DataCite": "https://schema.datacite.org/meta/kernel-4.2/metadata.xsd"},
+                {"DataCite": "http://datacite.org/schema/kernel-4"},
                 {"Datasets": {"@type": "@id"}}
             ]
         }

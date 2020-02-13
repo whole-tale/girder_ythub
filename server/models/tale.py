@@ -436,8 +436,10 @@ class Tale(AccessControlledModel):
 
         manifest_related_ids = [
             {
-                "identifier": rel_id["@id"],
-                "relation": rel_id["DataCite:relationType"].split(":")[-1],
+                "identifier": rel_id["DataCite:relatedIdentifier"]["@id"],
+                "relation": rel_id["DataCite:relatedIdentifier"][
+                    "DataCite:relationType"
+                ].split(":")[-1],
             }
             for rel_id in manifest.get("DataCite:relatedIdentifiers", [])
         ]
