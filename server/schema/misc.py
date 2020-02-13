@@ -107,7 +107,7 @@ dataSetItemSchema = {
             "description": "Either a Girder item or a Girder folder",
         },
         "itemId": {
-            "type": "string",
+            # TODO: Can't enforce type cause it may be ObjectId
             "description": "ID of a Girder item or a Girder folder",
         },
         "mountPath": {
