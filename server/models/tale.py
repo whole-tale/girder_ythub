@@ -431,6 +431,22 @@ class Tale(AccessControlledModel):
             for author in manifest["schema:author"]
         ]
 
+        if relatedIdentifiers is None:
+            relatedIdentifiers = []
+
+        manifest_related_ids = [
+            {
+                "identifier": rel_id["@id"],
+                "relation": rel_id["DataCite:relationType"].split(":")[-1],
+            }
+            for rel_id in manifest.get("DataCite:relatedIdentifiers", [])
+        ]
+        all_related_ids = relatedIdentifiers + manifest_related_ids
+        all_related_ids = [
+            json.loads(rel_id)
+            for rel_id in {json.dumps(_, sort_keys=True) for _ in all_related_ids}
+        ]
+
         # TODO: related identifiers should be read from manifest...
 
         tale = self.createTale(
@@ -449,7 +465,7 @@ class Tale(AccessControlledModel):
             licenseSPDX=licenseSPDX,
             status=TaleStatus.PREPARING,
             publishInfo=publishInfo,
-            relatedIdentifiers=relatedIdentifiers,
+            relatedIdentifiers=all_related_ids,
         )
 
         job = Job().createLocalJob(

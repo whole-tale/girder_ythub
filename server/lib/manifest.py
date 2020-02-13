@@ -139,21 +139,21 @@ class Manifest:
     def create_related_identifiers(self):
         def derive_id_type(identifier):
             if identifier.lower().startswith("doi"):
-                return "DOI"
+                return "DataCite:DOI"
             elif identifier.lower().startswith("http"):
-                return "URL"
+                return "DataCite:URL"
             elif identifier.lower().startswith("urn"):
-                return "URN"
+                return "DataCite:URN"
 
         return {
-            "relatedIdentifiers": [
+            "DataCite:relatedIdentifiers": [
                 {
                     "@id": rel_id["identifier"],
-                    "relationType": rel_id["relation"],
-                    "relatedIdentifierType": derive_id_type(rel_id["identifier"]),
+                    "DataCite:relationType": "DataCite:" + rel_id["relation"],
+                    "DataCite:relatedIdentifierType": derive_id_type(rel_id["identifier"]),
                 }
                 for rel_id in self.tale["relatedIdentifiers"]
-            ]
+            ],
         }
 
     def create_context(self):
@@ -166,6 +166,7 @@ class Manifest:
             "@context": [
                 "https://w3id.org/bundle/context",
                 {"schema": "http://schema.org/"},
+                {"DataCite": "https://schema.datacite.org/meta/kernel-4.2/metadata.xsd"},
                 {"Datasets": {"@type": "@id"}}
             ]
         }
