@@ -104,8 +104,14 @@ class ZenodoImportProvider(ImportProvider):
                 "repository": urlparse(dataId).netloc,
             }
         ]
+        relatedIdentifiers = [
+            {"relation": "IsDerivedFrom", "identifier": record["doi"]}
+        ]
         return Tale().createTaleFromStream(
-            stream_zipfile, user=user, publishInfo=publishInfo
+            stream_zipfile,
+            user=user,
+            publishInfo=publishInfo,
+            relatedIdentifiers=relatedIdentifiers,
         )
 
     @staticmethod

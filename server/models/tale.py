@@ -22,6 +22,7 @@ from girder.utility import assetstore_utilities
 from .image import Image as imageModel
 from ..schema.misc import dataSetSchema
 from ..constants import WORKSPACE_NAME, DATADIRS_NAME, SCRIPTDIRS_NAME, TaleStatus
+from ..schema.misc import related_identifiers_schema
 from ..utils import getOrCreateRootFolder, init_progress
 from ..lib.license import WholeTaleLicense
 
@@ -31,7 +32,7 @@ from gwvolman.tasks import build_tale_image, BUILD_TALE_IMAGE_STEP_TOTAL
 # Whenever the Tale object schema is modified (e.g. fields are added or
 # removed) increase `_currentTaleFormat` to retroactively apply those
 # changes to existing Tales.
-_currentTaleFormat = 7
+_currentTaleFormat = 8
 
 
 class Tale(AccessControlledModel):
@@ -46,7 +47,7 @@ class Tale(AccessControlledModel):
         self.modifiableFields = {
             'title', 'description', 'public', 'config', 'updated', 'authors',
             'category', 'icon', 'iframe', 'illustration', 'dataSet', 'licenseSPDX',
-            'workspaceModified', 'publishInfo', 'imageId', 'status'
+            'workspaceModified', 'publishInfo', 'imageId', 'status', 'relatedIdentifiers',
         }
         self.exposeFields(
             level=AccessType.READ,
@@ -77,6 +78,13 @@ class Tale(AccessControlledModel):
                 exc=True
             )
 
+    @staticmethod
+    def _validate_related_identifiers(tale):
+        try:
+            jsonschema.validate(tale["relatedIdentifiers"], related_identifiers_schema)
+        except jsonschema.exceptions.ValidationError as exc:
+            raise ValidationException(str(exc))
+
     def validate(self, tale):
         if 'status' not in tale:
             tale['status'] = TaleStatus.READY
@@ -87,12 +95,11 @@ class Tale(AccessControlledModel):
         if '_id' not in tale:
             return tale
 
-        if 'publishInfo' not in tale:
-            tale['publishInfo'] = []
-
-        if 'dataSet' not in tale:
-            tale['dataSet'] = []
-        self._validate_dataset(tale)
+        for array_key in (
+            'publishInfo', 'dataSet', 'dataSetCitation', 'relatedIdentifiers', 'authors',
+        ):
+            if not isinstance(tale.get(array_key), list):
+                tale[array_key] = []
 
         if 'licenseSPDX' not in tale:
             tale['licenseSPDX'] = WholeTaleLicense.default_spdx()
@@ -103,16 +110,13 @@ class Tale(AccessControlledModel):
         if tale.get('config') is None:
             tale['config'] = {}
 
-        if tale.get('dataSetCitation') is None:
-            tale['dataSetCitation'] = []
-
         if 'copyOfTale' not in tale:
             tale['copyOfTale'] = None
 
         tale['format'] = _currentTaleFormat
 
-        if not isinstance(tale['authors'], list):
-            tale['authors'] = []
+        self._validate_dataset(tale)
+        self._validate_related_identifiers(tale)
         return tale
 
     def list(self, user=None, data=None, image=None, limit=0, offset=0,
@@ -149,7 +153,8 @@ class Tale(AccessControlledModel):
                    description=None, public=None, config=None, authors=None,
                    icon=None, category=None, illustration=None, narrative=None,
                    licenseSPDX=WholeTaleLicense.default_spdx(),
-                   status=TaleStatus.READY, publishInfo=None):
+                   status=TaleStatus.READY, publishInfo=None,
+                   relatedIdentifiers=None):
 
         if creator is None:
             creatorId = None
@@ -180,6 +185,7 @@ class Tale(AccessControlledModel):
             'title': title,
             'public': public,
             'publishInfo': publishInfo or [],
+            'relatedIdentifiers': relatedIdentifiers or [],
             'updated': now,
             'licenseSPDX': licenseSPDX,
             'status': status,
@@ -392,7 +398,9 @@ class Tale(AccessControlledModel):
                 z.extractall(path=temp_dir)
         return temp_dir, manifest_file, manifest, environment
 
-    def createTaleFromStream(self, stream, user=None, publishInfo=None):
+    def createTaleFromStream(
+        self, stream, user=None, publishInfo=None, relatedIdentifiers=None
+    ):
         temp_dir, manifest_file, manifest, environment = self._extractZipPayload(
             stream
         )
@@ -423,6 +431,8 @@ class Tale(AccessControlledModel):
             for author in manifest["schema:author"]
         ]
 
+        # TODO: related identifiers should be read from manifest...
+
         tale = self.createTale(
             image,
             [],
@@ -439,6 +449,7 @@ class Tale(AccessControlledModel):
             licenseSPDX=licenseSPDX,
             status=TaleStatus.PREPARING,
             publishInfo=publishInfo,
+            relatedIdentifiers=relatedIdentifiers,
         )
 
         job = Job().createLocalJob(

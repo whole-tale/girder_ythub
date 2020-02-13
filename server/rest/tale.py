@@ -251,6 +251,23 @@ class Tale(Resource):
                 tale = provider.import_tale(dataMap["dataId"], user)
                 return tale
 
+            if asTale:
+                relation = "IsDerivedFrom"
+            else:
+                relation = "Cites"
+            related_id = [
+                {
+                    "relation": relation,
+                    "identifier": dataMap["doi"] or dataMap["dataId"]
+                }
+            ]
+
+            all_related_ids = related_id + taleKwargs.get("relatedIdentifiers", [])
+            taleKwargs["relatedIdentifiers"] = [
+                json.loads(rel_id)
+                for rel_id in {json.dumps(_, sort_keys=True) for _ in all_related_ids}
+            ]
+
             if "title" not in taleKwargs:
                 long_name = dataMap["name"]
                 long_name = long_name.replace('-', ' ').replace('_', ' ')
@@ -343,7 +360,8 @@ class Tale(Resource):
                 authors=tale.get('authors', default_author),
                 category=tale.get('category', 'science'),
                 narrative=tale.get('narrative'),
-                licenseSPDX=tale.get('licenseSPDX')
+                licenseSPDX=tale.get('licenseSPDX'),
+                relatedIdentifiers=tale.get('relatedIdentifiers'),
             )
 
     @access.user(scope=TokenScope.DATA_OWN)
@@ -519,6 +537,7 @@ class Tale(Resource):
             narrative=tale.get('narrative'),
             licenseSPDX=tale.get('licenseSPDX'),
             status=TaleStatus.PREPARING,
+            relatedIdentifiers=tale.get('relatedIdentifiers'),
         )
         new_tale['copyOfTale'] = tale['_id']
         new_tale = self._model.save(new_tale)
