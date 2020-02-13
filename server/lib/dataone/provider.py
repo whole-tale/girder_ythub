@@ -113,14 +113,12 @@ class DataOneImportProvider(ImportProvider):
         yield ImportItem(ImportItem.END_FOLDER)
         logger.debug('Finished registering dataset')
 
-    def _addResolutionUrls(self, list, base_url):
+    def _addResolutionUrls(self, docs, base_url):
         """
-        The download url is different between DataONE production and DataONE dev.
-        Check which place we're registering from and set the url section.
+        Combines the base coordinating node URL with the resolve endpoint and identifier
+        :param docs: List of metadata/data objects
+        :param base_url: The coordinating node base URL (including the version)
+        :return: None
         """
-        if base_url == DataONELocations.prod_cn:
-            url_insert = 'resolve'
-        else:
-            url_insert = 'object'
-        for d in list:
-            d['url'] = "{}/{}/{}".format(base_url, url_insert, d['identifier'])
+        for d in docs:
+            d['url'] = "{}/{}/{}".format(base_url, 'resolve', d['identifier'])
