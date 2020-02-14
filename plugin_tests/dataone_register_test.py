@@ -78,6 +78,11 @@ class TestDataONERegister(base.TestCase):
         res = find_initial_pid(pid)
         self.assertEqual(res, 'abcdefg')
 
+        # Test that the regex works for full 'view' urls
+        pid = 'https://test.arcticdata.io/view/urn:uuid:7e5e9f32-c3b6-448b-9ce0-5c5901d0c6ee'
+        res = find_initial_pid(pid)
+        self.assertEqual(res, 'urn:uuid:7e5e9f32-c3b6-448b-9ce0-5c5901d0c6ee')
+
         # Test that if nothing was found, the passed in path is returned
         bad_url = 'localhost_01'
         res = find_initial_pid(bad_url)
