@@ -195,9 +195,13 @@ def listFolder(self, folder, params):
 def getDataSet(self, folder, params):
     modelFolder = self.model('folder')
 
-    def _getPath(folder, user, path='/'):
+    def _getPath(folder, user, path=''):
         dataSet = [
-            {'itemId': item['_id'], 'mountPoint': path + item['name']}
+            {
+                'itemId': item['_id'],
+                'mountPoint': path + item['name'],
+                '_modelType': 'item',
+            }
             for item in modelFolder.childItems(folder=folder)
         ]
         for childFolder in modelFolder.childFolders(

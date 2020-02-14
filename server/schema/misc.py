@@ -107,7 +107,7 @@ dataSetItemSchema = {
             "description": "Either a Girder item or a Girder folder",
         },
         "itemId": {
-            "type": "string",
+            # TODO: Can't enforce type cause it may be ObjectId
             "description": "ID of a Girder item or a Girder folder",
         },
         "mountPath": {
@@ -115,7 +115,7 @@ dataSetItemSchema = {
             "description": "An absolute path where the item/folder are mounted in the EFS",
         },
     },
-    "required": ["itemId", "mountPath"],
+    "required": ["itemId", "mountPath", "_modelType"],
 }
 
 dataSetSchema = {
