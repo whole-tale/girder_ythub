@@ -92,9 +92,6 @@ class Tale(AccessControlledModel):
         if 'iframe' not in tale:
             tale['iframe'] = False
 
-        if '_id' not in tale:
-            return tale
-
         for array_key in (
             'publishInfo', 'dataSet', 'dataSetCitation', 'relatedIdentifiers', 'authors',
         ):
