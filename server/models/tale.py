@@ -245,7 +245,7 @@ class Tale(AccessControlledModel):
         auxFolder = self.model('folder').createFolder(
             rootFolder, str(tale['_id']), parentType='folder',
             public=public, reuseExisting=True)
-        self.setUserAccess(
+        self.model('folder').setUserAccess(
             auxFolder, user=creator, level=AccessType.ADMIN,
             save=True)
         auxFolder = self.model('folder').setMetadata(
