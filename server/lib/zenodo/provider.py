@@ -97,15 +97,22 @@ class ZenodoImportProvider(ImportProvider):
 
         publishInfo = [
             {
-                "pid": record["doi"],
+                "pid": self._get_doi_from_record(record),
                 "uri": record["links"]["doi"],
                 "date": record["created"],
                 "repository_id": str(record["id"]),
                 "repository": urlparse(dataId).netloc,
             }
         ]
+
+        relatedIdentifiers = [
+            {"relation": "IsDerivedFrom", "identifier": self._get_doi_from_record(record)}
+        ]
         return Tale().createTaleFromStream(
-            stream_zipfile, user=user, publishInfo=publishInfo
+            stream_zipfile,
+            user=user,
+            publishInfo=publishInfo,
+            relatedIdentifiers=relatedIdentifiers,
         )
 
     @staticmethod
