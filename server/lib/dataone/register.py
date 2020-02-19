@@ -255,7 +255,7 @@ def D1_lookup(path, base_url):
     total_size = sum([int(doc.get('size', 0)) for doc in docs])
 
     return DataMap(package_pid, total_size, name=metadata[0].get('title', 'no title'),
-                   doi=metadata[0].get('identifier', 'no DOI').split('doi:')[-1],
+                   doi=metadata[0].get('identifier', 'no DOI'),
                    repository='DataONE')
 
 
