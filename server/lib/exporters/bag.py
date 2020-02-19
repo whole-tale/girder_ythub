@@ -94,8 +94,6 @@ class BagTaleExporter(TaleExporter):
         )
         extra_files = {
             'data/LICENSE': self.tale_license['text'],
-            'README.md': top_readme,
-            'run-local.sh': run_file,
         }
         oxum = dict(size=0, num=0)
 
@@ -169,6 +167,8 @@ class BagTaleExporter(TaleExporter):
 
         tagmanifest = dict(md5="", sha256="")
         for payload, fname in (
+            (lambda: top_readme, 'README.md'),
+            (lambda: run_file, 'run-local.sh'),
             (lambda: self.default_bagit, 'bagit.txt'),
             (lambda: bag_info, 'bag-info.txt'),
             (lambda: fetch_file, 'fetch.txt'),
