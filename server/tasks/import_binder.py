@@ -19,11 +19,14 @@ from fs.path import basename
 from fs.permissions import Permissions
 from fs.tarfs import ReadTarFS
 from fs.zipfs import ReadZipFS
+from girder import events
 from girderfs.core import WtDmsGirderFS
 from girder_client import GirderClient
 from girder.constants import AccessType
 from girder.models.folder import Folder
+from girder.models.item import Item
 from girder.models.token import Token
+from girder.models.user import User
 from girder.utility import config, JsonEncoder
 from girder.plugins.jobs.constants import JobStatus
 from girder.plugins.jobs.models.job import Job
@@ -70,9 +73,10 @@ def run(job):
     jobModel.updateJob(job, status=JobStatus.RUNNING)
 
     lookup_kwargs, = job["args"]
-    user = job["kwargs"]["user"]
+    user = User().load(job["userId"], force=True)
+    tale = Tale().load(job["kwargs"]["taleId"], user=user)
     spawn = job["kwargs"]["spawn"]
-    tale = job["kwargs"]["tale"]
+    asTale = job["kwargs"]["asTale"]
     token = Token().createToken(user=user, days=0.5)
 
     progressTotal = 3 + int(spawn)
@@ -84,11 +88,12 @@ def run(job):
             instance = Instance().createInstance(tale, user, token, spawn=spawn)
 
         # 1. Register data using url
+        progressCurrent += 1
         jobModel.updateJob(
             job,
             status=JobStatus.RUNNING,
             progressTotal=progressTotal,
-            progressCurrent=progressCurrent + 1,
+            progressCurrent=progressCurrent,
             progressMessage="Registering external data",
         )
         dataIds = lookup_kwargs.pop("dataId")
@@ -104,56 +109,93 @@ def run(job):
             base_url=base_url,
         )
 
-        # Warning: We assume it's coming from a provider that creates a root folder for ds,
-        # i.e. it's not HTTP/HTTPS resource, which makes sense at the time when I'm writing this
-        # since we support only D1 and DV
-        data_folder = Folder().load(imported_data[0], user=user, level=AccessType.READ)
-        # Create a dataset with the content of root ds folder, so that it looks nicely and it's easy
-        # to copy to workspace later on
+        if dataMap[0]["repository"].lower().startswith("http"):
+            resource = Item().load(imported_data[0], user=user, level=AccessType.READ)
+            resourceType = "item"
+        else:
+            resource = Folder().load(imported_data[0], user=user, level=AccessType.READ)
+            resourceType = "folder"
+
         data_set = [
-            {"itemId": folder["_id"], "mountPath": "/" + folder["name"]}
-            for folder in Folder().childFolders(
-                parentType="folder", parent=data_folder, user=user
+            {
+                "itemId": imported_data[0],
+                "mountPath": resource["name"],
+                "_modelType": resourceType,
+            }
+        ]
+
+        if asTale:
+            if resourceType == "folder":
+                # Create a dataset with the content of root ds folder,
+                # so that it looks nicely and it's easy to copy to workspace later on
+                workspace_data_set = [
+                    {
+                        "itemId": folder["_id"],
+                        "mountPath": folder["name"],
+                        "_modelType": "folder ",
+                    }
+                    for folder in Folder().childFolders(
+                        parentType="folder", parent=resource, user=user
+                    )
+                ]
+                workspace_data_set += [
+                    {
+                        "itemId": item["_id"],
+                        "mountPath": item["name"],
+                        "_modelType": "item",
+                    }
+                    for item in Folder().childItems(resource)
+                ]
+            else:
+                workspace_data_set = data_set
+
+            # 2. Create a session
+            # TODO: yay circular dependencies! IMHO we really should merge
+            # wholetale and wt_data_manager plugins...
+            from girder.plugins.wt_data_manager.models.session import Session
+
+            # Session is created so that we can easily copy files to workspace,
+            # without worrying about how to handler transfers. DMS will do that for us <3
+            session = Session().createSession(user, dataSet=workspace_data_set)
+
+            # 3. Copy data to the workspace using WebDAVFS
+            progressCurrent += 1
+            jobModel.updateJob(
+                job,
+                status=JobStatus.RUNNING,
+                log="Copying files to workspace",
+                progressTotal=progressTotal,
+                progressCurrent=progressCurrent,
+                progressMessage="Copying files to workspace",
             )
-        ]
-        data_set += [
-            {"itemId": item["_id"], "mountPath": "/" + item["name"]}
-            for item in Folder().childItems(data_folder)
-        ]
+            girder_root = "http://localhost:{}".format(
+                config.getConfig()["server.socket_port"]
+            )
+            with WebDAVFS(
+                girder_root,
+                login=user["login"],
+                password="token:{_id}".format(**token),
+                root="/tales/{_id}".format(**tale),
+            ) as destination_fs, DMSFS(
+                str(session["_id"]), girder_root + "/api/v1", str(token["_id"])
+            ) as source_fs:
+                copy_fs(source_fs, destination_fs)
+                sanitize_binder(destination_fs)
 
-        # 2. Create a session
-        # TODO: yay circular dependencies! IMHO we really should merge wholetale and wt_data_manager
-        # plugins...
-        from girder.plugins.wt_data_manager.models.session import Session
+            Session().deleteSession(user, session)
+        else:
+            # 3. Update Tale's dataSet
+            update_citations = {_["itemId"] for _ in tale["dataSet"]} ^ {
+                _["itemId"] for _ in data_set
+            }
+            tale["dataSet"] = data_set
+            tale = Tale().updateTale(tale)
 
-        # Session is created so that we can easily copy files to workspace, without worrying about
-        # how to handler transfers. DMS will do that for us <3
-        session = Session().createSession(user, dataSet=data_set)
-
-        # 3. Copy data to the workspace using WebDAVFS
-        jobModel.updateJob(
-            job,
-            status=JobStatus.RUNNING,
-            log="Copying files to workspace",
-            progressTotal=progressTotal,
-            progressCurrent=progressCurrent + 1,
-            progressMessage="Copying files to workspace",
-        )
-        girder_root = "http://localhost:{}".format(
-            config.getConfig()["server.socket_port"]
-        )
-        with WebDAVFS(
-            girder_root,
-            login=user["login"],
-            password="token:{_id}".format(**token),
-            root="/tales/{_id}".format(**tale),
-        ) as destination_fs, DMSFS(
-            str(session["_id"]), girder_root + "/api/v1", str(token["_id"])
-        ) as source_fs:
-            copy_fs(source_fs, destination_fs)
-            sanitize_binder(destination_fs)
-
-        Session().deleteSession(user, session)
+            if update_citations:
+                eventParams = {"tale": tale, "user": user}
+                event = events.trigger("tale.update_citation", eventParams)
+                if len(event.responses):
+                    tale = Tale().updateTale(event.responses[-1])
 
         # Tale is ready to be built
         tale = Tale().load(tale["_id"], user=user)  # Refresh state
@@ -162,12 +204,13 @@ def run(job):
 
         # 4. Wait for container to show up
         if spawn:
+            progressCurrent += 1
             jobModel.updateJob(
                 job,
                 status=JobStatus.RUNNING,
                 log="Waiting for a Tale container",
                 progressTotal=progressTotal,
-                progressCurrent=progressCurrent + 1,
+                progressCurrent=progressCurrent,
                 progressMessage="Waiting for a Tale container",
             )
 

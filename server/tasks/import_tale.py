@@ -10,9 +10,12 @@ from webdavfs.webdavfs import WebDAVFS
 from fs.osfs import OSFS
 from fs.copy import copy_fs
 from girder import events
+from girder.constants import TokenScope
 from girder.models.file import File
+from girder.models.user import User
+from girder.models.token import Token
 from girder.utility import config
-from girder.plugins.jobs.constants import JobStatus
+from girder.plugins.jobs.constants import JobStatus, REST_CREATE_JOB_TOKEN_SCOPE
 from girder.plugins.jobs.models.job import Job
 
 from ..constants import CATALOG_NAME, TaleStatus
@@ -27,59 +30,70 @@ def run(job):
     jobModel.updateJob(job, status=JobStatus.RUNNING)
 
     tale_dir, manifest_file = job["args"]
-    user = job["kwargs"]["user"]
-    token = job["kwargs"]["token"]
-    tale = job["kwargs"]["tale"]
+    user = User().load(job["userId"], force=True)
+    tale = Tale().load(job["kwargs"]["taleId"], user=user)
+    token = Token().createToken(
+        user=user, days=0.5, scope=(TokenScope.USER_AUTH, REST_CREATE_JOB_TOKEN_SCOPE)
+    )
+
+    progressTotal = 3
+    progressCurrent = 0
 
     try:
         os.chdir(tale_dir)
-        with open(manifest_file, 'r') as manifest_fp:
+        with open(manifest_file, "r") as manifest_fp:
             manifest = json.load(manifest_fp)
 
         # 1. Register data
-        dataIds = [obj['identifier'] for obj in manifest["Datasets"]]
+        progressCurrent += 1
+        jobModel.updateJob(
+            job,
+            status=JobStatus.RUNNING,
+            progressTotal=progressTotal,
+            progressCurrent=progressCurrent,
+            progressMessage="Registering external data",
+        )
+        dataIds = [obj["identifier"] for obj in manifest["Datasets"]]
         dataIds += [
             obj["uri"]
             for obj in manifest["aggregates"]
             if obj["uri"].startswith("http")
         ]
         if dataIds:
-            jobModel.updateJob(
-                job, status=JobStatus.RUNNING, log="Registering external data"
-            )
             dataMap = pids_to_entities(
                 dataIds, user=user, base_url=DataONELocations.prod_cn, lookup=True
             )  # DataONE shouldn't be here
             register_dataMap(
                 dataMap,
                 getOrCreateRootFolder(CATALOG_NAME),
-                'folder',
+                "folder",
                 user=user,
                 base_url=DataONELocations.prod_cn,
             )
 
         # 2. Construct the dataSet
         dataSet = []
-        for obj in manifest['aggregates']:
-            if 'bundledAs' not in obj:
+        for obj in manifest["aggregates"]:
+            if "bundledAs" not in obj:
                 continue
-            uri = obj['uri']
+            uri = obj["uri"]
             fobj = File().findOne(
-                {'linkUrl': uri}
+                {"linkUrl": uri}
             )  # TODO: That's expensive, use something else
             if fobj:
                 dataSet.append(
                     {
-                        'itemId': fobj['itemId'],
-                        '_modelType': 'item',
-                        'mountPath': obj['bundledAs']['filename'],
+                        "itemId": fobj["itemId"],
+                        "_modelType": "item",
+                        "mountPath": obj["bundledAs"]["filename"],
                     }
                 )
             # TODO: handle folders
 
         # 3. Update Tale's dataSet
-        update_citations = {_['itemId'] for _ in tale['dataSet']} ^ {
-            _['itemId'] for _ in dataSet}
+        update_citations = {_["itemId"] for _ in tale["dataSet"]} ^ {
+            _["itemId"] for _ in dataSet
+        }
         tale["dataSet"] = dataSet
         tale = Tale().updateTale(tale)
 
@@ -90,8 +104,13 @@ def run(job):
                 tale = Tale().updateTale(event.responses[-1])
 
         # 4. Copy data to the workspace using WebDAVFS (if it exists)
+        progressCurrent += 1
         jobModel.updateJob(
-            job, status=JobStatus.RUNNING, log="Copying files to workspace"
+            job,
+            status=JobStatus.RUNNING,
+            progressTotal=progressTotal,
+            progressCurrent=progressCurrent,
+            progressMessage="Copying files to workspace",
         )
         orig_tale_id = pathlib.Path(manifest_file).parts[0]
         for workdir in ("workspace", "data/workspace", None):
@@ -103,7 +122,7 @@ def run(job):
         if workdir:
             password = "token:{_id}".format(**token)
             root = "/tales/{_id}".format(**tale)
-            url = "http://localhost:{}".format(config.getConfig()['server.socket_port'])
+            url = "http://localhost:{}".format(config.getConfig()["server.socket_port"])
             with WebDAVFS(
                 url, login=user["login"], password=password, root=root
             ) as webdav_handle:
@@ -114,7 +133,15 @@ def run(job):
         tale["status"] = TaleStatus.READY
         tale = Tale().updateTale(tale)
 
-        jobModel.updateJob(job, status=JobStatus.SUCCESS, log="Tale created")
+        progressCurrent += 1
+        jobModel.updateJob(
+            job,
+            status=JobStatus.SUCCESS,
+            log="Tale created",
+            progressTotal=progressTotal,
+            progressCurrent=progressCurrent,
+            progressMessage="Tale created",
+        )
     except Exception:
         tale = Tale().load(tale["_id"], user=user)  # Refresh state
         tale["status"] = TaleStatus.ERROR
