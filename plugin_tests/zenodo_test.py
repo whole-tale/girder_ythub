@@ -348,6 +348,7 @@ class ZenodoHarversterTestCase(base.TestCase):
                 "record_id": ["430905"],
                 "resource_server": ["sandbox.zenodo.org"],
                 "token": ["{girderToken}"],
+                "force": ["False"],
             },
         )
 
