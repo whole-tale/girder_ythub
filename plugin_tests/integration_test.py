@@ -1,9 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import mock
 import os
 import vcr
 from tests import base
 from urllib.parse import urlparse, parse_qs
+
+from girder.models.user import User
 
 DATA_PATH = os.path.join(
     os.path.dirname(os.environ["GIRDER_TEST_DATA_PREFIX"]),
@@ -23,6 +26,27 @@ def tearDownModule():
 
 
 class IntegrationTestCase(base.TestCase):
+    def setUp(self):
+        super(IntegrationTestCase, self).setUp()
+        users = (
+            {
+                "email": "root@dev.null",
+                "login": "admin",
+                "firstName": "Root",
+                "lastName": "van Klompf",
+                "password": "secret",
+            },
+            {
+                "email": "joe@dev.null",
+                "login": "joeregular",
+                "firstName": "Joe",
+                "lastName": "Regular",
+                "password": "secret",
+            },
+        )
+
+        self.admin, self.user = [User().createUser(**user) for user in users]
+
     @vcr.use_cassette(os.path.join(DATA_PATH, "dataverse_integration.txt"))
     def testDataverseIntegration(self):
         error_handling_cases = [
@@ -42,7 +66,9 @@ class IntegrationTestCase(base.TestCase):
         ]
 
         for params, errmsg in error_handling_cases:
-            resp = self.request("/integration/dataverse", method="GET", params=params)
+            resp = self.request(
+                "/integration/dataverse", method="GET", params=params, user=self.user
+            )
             self.assertStatus(resp, 400)
             self.assertEqual(resp.json, {"message": errmsg, "type": "rest"})
 
@@ -111,24 +137,43 @@ class IntegrationTestCase(base.TestCase):
         ]
 
         for params, response in valid_cases:
-            resp = self.request("/integration/dataverse", method="GET", params=params)
+            resp = self.request(
+                "/integration/dataverse", method="GET", params=params, user=self.user
+            )
             self.assertStatus(resp, 303)
             self.assertEqual(
                 parse_qs(urlparse(resp.headers["Location"]).query), response
             )
 
     def testDataoneIntegration(self):
-        resp = self.request(
-            "/integration/dataone",
-            method="GET",
-            params={
-                "uri": "urn:uuid:12345.6789",
-                "title": "dataset title",
-                "environment": "rstudio",
-            },
-        )
+        from girder.plugins.wholetale.lib.data_map import DataMap
+
+        class fakeProvider:
+            def lookup(self, entity):
+                return DataMap("urn:uuid:12345.6789", 0)
+
+        with mock.patch(
+            "girder.plugins.wholetale.lib.dataone.integration.DataOneImportProvider",
+            fakeProvider,
+        ):
+            resp = self.request(
+                "/integration/dataone",
+                method="GET",
+                user=self.user,
+                params={
+                    "uri": "urn:uuid:12345.6789",
+                    "title": "dataset title",
+                    "environment": "rstudio",
+                },
+            )
+
         self.assertStatus(resp, 303)
         query = parse_qs(urlparse(resp.headers["Location"]).query)
         self.assertEqual(query["name"][0], "dataset title")
         self.assertEqual(query["uri"][0], "urn:uuid:12345.6789")
         self.assertEqual(query["environment"][0], "rstudio")
+
+    def tearDown(self):
+        User().remove(self.user)
+        User().remove(self.admin)
+        super(IntegrationTestCase, self).tearDown()
