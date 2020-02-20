@@ -7,6 +7,7 @@ from tests import base
 from urllib.parse import urlparse, parse_qs
 
 from girder.models.user import User
+from girder.models.setting import Setting
 
 DATA_PATH = os.path.join(
     os.path.dirname(os.environ["GIRDER_TEST_DATA_PREFIX"]),
@@ -172,6 +173,59 @@ class IntegrationTestCase(base.TestCase):
         self.assertEqual(query["name"][0], "dataset title")
         self.assertEqual(query["uri"][0], "urn:uuid:12345.6789")
         self.assertEqual(query["environment"][0], "rstudio")
+
+    def testAutoLogin(self):
+        from girder.plugins.oauth.constants import PluginSettings as OAuthSettings
+
+        Setting().set(OAuthSettings.PROVIDERS_ENABLED, ["globus"])
+        Setting().set(OAuthSettings.GLOBUS_CLIENT_ID, "client_id")
+        Setting().set(OAuthSettings.GLOBUS_CLIENT_SECRET, "secret_id")
+
+        resp = self.request(
+            "/integration/dataverse",
+            method="GET",
+            params={"fileId": "3371438", "siteUrl": "https://dataverse.harvard.edu"},
+            isJson=False,
+        )
+        self.assertStatus(resp, 303)
+        query = parse_qs(urlparse(resp.headers["Location"]).query)
+        self.assertIn("state", query)
+        redirect = query["state"][0].split(".", 1)[-1]
+        query = parse_qs(urlparse(redirect).query)
+        self.assertEqual(query["fileId"][0], "3371438")
+        self.assertEqual(query["force"][0], "False")
+        self.assertEqual(query["siteUrl"][0], "https://dataverse.harvard.edu")
+
+    def testSingletonDataverse(self):
+        from girder.plugins.wholetale.models.tale import Tale
+        from bson import ObjectId
+
+        tale = Tale().createTale(
+            {"_id": ObjectId()},
+            [],
+            creator=self.user,
+            title="Some Tale",
+            relatedIdentifiers=[
+                {"identifier": "doi:10.7910/DVN/TJCLKP", "relation": "IsDerivedFrom"}
+            ],
+        )
+
+        resp = self.request(
+            "/integration/dataverse",
+            method="GET",
+            params={
+                "datasetId": "3035124",
+                "siteUrl": "https://dataverse.harvard.edu",
+                "fullDataset": False,
+            },
+            user=self.user,
+            isJson=False,
+        )
+        self.assertStatus(resp, 303)
+        self.assertEqual(
+            urlparse(resp.headers["Location"]).path, "/run/{}".format(tale["_id"])
+        )
+        Tale().remove(tale)
 
     def tearDown(self):
         User().remove(self.user)
