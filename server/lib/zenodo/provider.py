@@ -73,9 +73,19 @@ class ZenodoImportProvider(ImportProvider):
     def _get_doi_from_record(record):
         return "doi:" + record["doi"]
 
-    def import_tale(self, dataId, user):
+    def import_tale(self, dataId, user, force=False):
         # dataId in this case == record["links"]["record_html"]
         record = self._get_record(dataId)
+        existing_tale_id = Tale().findOne(
+            query={
+                "creatorId": user["_id"],
+                "publishInfo.pid": {"$eq": self._get_doi_from_record(record)},
+            },
+            fields={"_id"},
+        )
+        if existing_tale_id and not force:
+            return Tale().load(existing_tale_id["_id"], user=user)
+
         if not self._is_tale(record):
             raise ValueError(
                 "{} doesn't look like a Tale.".format(record["links"]["record_html"])
@@ -106,7 +116,10 @@ class ZenodoImportProvider(ImportProvider):
         ]
 
         relatedIdentifiers = [
-            {"relation": "IsDerivedFrom", "identifier": self._get_doi_from_record(record)}
+            {
+                "relation": "IsDerivedFrom",
+                "identifier": self._get_doi_from_record(record),
+            }
         ]
         return Tale().createTaleFromStream(
             stream_zipfile,

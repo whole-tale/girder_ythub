@@ -47,7 +47,7 @@ class ImportProvider:
         """Given a registered object, return a URI for it"""
         raise NotImplementedError()
 
-    def import_tale(self, dataId):
+    def import_tale(self, dataId: str, user: object, force=False) -> object:
         """Given a dataId import dataset as Tale"""
         raise NotImplementedError()
 

@@ -2,15 +2,15 @@
 # -*- coding: utf-8 -*-
 import cherrypy
 import os
-from urllib.parse import urlencode, urlparse, urlunparse
+from urllib.parse import urlparse, urlunparse
 
 from girder.api import access
 from girder.api.describe import Description, autoDescribeRoute
 from girder.api.rest import boundHandler, RestException
 from girder.exceptions import GirderException
-from girder.plugins.oauth.rest import OAuth as OAuthResource
 
 from .. import IMPORT_PROVIDERS
+from ..integration_utils import autologin
 
 
 @access.public
@@ -20,9 +20,16 @@ from .. import IMPORT_PROVIDERS
     .param("record_id", "ID", required=False)
     .param("resource_server", "resource server", required=False)
     .param("environment", "The environment that should be selected.", required=False)
+    .param(
+        "force",
+        "If True, create a new Tale regardless of the fact it was previously imported.",
+        required=False,
+        dataType="boolean",
+        default=False,
+    )
 )
 @boundHandler()
-def zenodoDataImport(self, doi, record_id, resource_server, environment):
+def zenodoDataImport(self, doi, record_id, resource_server, environment, force):
     """Fetch and unpack a Zenodo record"""
     if not (doi or record_id):
         raise RestException("You need to provide either 'doi' or 'record_id'")
@@ -41,20 +48,16 @@ def zenodoDataImport(self, doi, record_id, resource_server, environment):
 
     user = self.getCurrentUser()
     if user is None:
-        redirect = cherrypy.request.base + cherrypy.request.app.script_name
-        redirect += cherrypy.request.path_info + "?"
-        redirect += urlencode(
-            {"record_id": record_id, "resource_server": resource_server}
-        )
-        redirect += "&token={girderToken}"
-
-        oauth_providers = OAuthResource().listProviders(params={"redirect": redirect})
-        raise cherrypy.HTTPRedirect(oauth_providers["Globus"])  # TODO: hardcoded var
+        args = {
+            "record_id": record_id, "resource_server": resource_server,
+            "environment": environment, "force": force
+        }
+        autologin(args=args)
 
     url = "https://{}/record/{}".format(resource_server, record_id)
     provider = IMPORT_PROVIDERS.providerMap["Zenodo"]
     try:
-        tale = provider.import_tale(url, user)
+        tale = provider.import_tale(url, user, force=force)
     except GirderException as exc:
         raise RestException(
             "Failed to import Tale. Server returned: '{}'".format(exc.message)
