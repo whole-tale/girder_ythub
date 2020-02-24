@@ -112,6 +112,11 @@ def update_citation(event):
         if top_identifier:
             dataset_top_identifiers.add(top_identifier)
 
+    # Generate citations for DOIs in related identifiers too
+    for related_id in tale.get("relatedIdentifers", []):
+        if related_id["identifier"].startswith("doi:"):
+            dataset_top_identifiers.add(related_id["identifier"])
+
     citations = []
     for doi in dataset_top_identifiers:
         if doi.startswith('doi:'):
