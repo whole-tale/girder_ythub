@@ -9,6 +9,7 @@ from girder.api.describe import Description, autoDescribeRoute
 from girder.api.rest import RestException, setResponseHeader, boundHandler
 
 from .provider import DataverseImportProvider
+from ..integration_utils import autologin, redirect_if_tale_exists
 
 
 @access.public
@@ -71,6 +72,13 @@ from .provider import DataverseImportProvider
         default=True,
         required=False,
     )
+    .param(
+        "force",
+        "If True, create a new Tale regardless of the fact it was previously imported.",
+        required=False,
+        dataType="boolean",
+        default=False,
+    )
     .notes("apiToken is currently ignored.")
 )
 @boundHandler()
@@ -84,12 +92,28 @@ def dataverseExternalTools(
     datasetPid,
     datasetVersion,
     fullDataset,
+    force,
 ):
     if not validators.url(siteUrl):
         raise RestException("Not a valid URL: siteUrl")
 
     if all(arg is None for arg in (fileId, filePid, datasetId, datasetPid)):
         raise RestException("No data Id provided")
+
+    user = self.getCurrentUser()
+    if user is None:
+        args = {
+            "siteUrl": siteUrl,
+            "fileId": fileId,
+            "filePid": filePid,
+            "apiToken": apiToken,
+            "datasetId": datasetId,
+            "datasetPid": datasetPid,
+            "datasetVersion": datasetVersion,
+            "fullDataset": fullDataset,
+            "force": force,
+        }
+        autologin(args=args)
 
     site = urlparse(siteUrl)
 
@@ -120,7 +144,10 @@ def dataverseExternalTools(
         title, _, doi = DataverseImportProvider._parse_file_url(urlparse(url))
     elif datasetPid:
         url = _dataset_full_url(site, datasetPid)
-        title, _, _ = DataverseImportProvider._parse_dataset(urlparse(url))
+        title, _, doi = DataverseImportProvider._parse_dataset(urlparse(url))
+
+    if not force:
+        redirect_if_tale_exists(user, self.getCurrentToken(), doi)
 
     if fullDataset and (fileId or filePid):
         url = _dataset_full_url(site, doi)

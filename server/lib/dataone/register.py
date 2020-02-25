@@ -160,14 +160,16 @@ def find_nonobsolete_resmaps(pids, base_url):
 
 def find_initial_pid(path):
     """
-    Extracts the pid from an arbitrary path to a DataOne object.
+    Takes a string that *should* have a DatONE identifier in it and returns the identifier.
+    It first checks against the most popular and common DataONE deployments and then broadens
+    the search to try to match any CN or MN.
+    If an ID wasn't found, the path passed in is returned.
     Supports:
        - HTTP & HTTPS
-       - The MetacatUI landing page (#view)
-       - The D1 v2 Object URI (/object)
-       - The D1 v2 Resolve URI (/resolve)
+       - MetacatUI landing pages (#view)
+       - The coordinating node resolve endpoint (/resolve)
 
-    :param path:
+    :param path: The string the should contain an identifier
     :type path: str
     :return: The object's pid, or the original path if one wasn't found
     :rtype: str
@@ -188,6 +190,8 @@ def find_initial_pid(path):
         return path.split("resolve/", 1)[1]
     elif doi is not None:
         return 'doi:{}'.format(doi.group())
+    elif re.search(r'view', path):
+        return path.split("view/", 1)[1]
     else:
         return path
 
@@ -251,7 +255,7 @@ def D1_lookup(path, base_url):
     total_size = sum([int(doc.get('size', 0)) for doc in docs])
 
     return DataMap(package_pid, total_size, name=metadata[0].get('title', 'no title'),
-                   doi=metadata[0].get('identifier', 'no DOI').split('doi:')[-1],
+                   doi=metadata[0].get('identifier', 'no DOI'),
                    repository='DataONE')
 
 

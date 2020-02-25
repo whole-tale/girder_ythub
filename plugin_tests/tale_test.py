@@ -6,6 +6,7 @@ from io import BytesIO
 import json
 import mock
 import os
+import pytest
 import re
 import time
 import urllib.request
@@ -19,6 +20,7 @@ from girder.models.assetstore import Assetstore
 from .tests_helpers import mockOtherRequest
 from girder.models.item import Item
 from girder.models.upload import Upload
+from girder.exceptions import ValidationException
 from girder.models.folder import Folder
 
 
@@ -482,7 +484,7 @@ class TaleTestCase(base.TestCase):
                 'name': 'my_fake_data', 'parentId': data_dir['_id']
             })
         sub_data_dir = resp.json
-        Item().createItem('data.dat', self.user, sub_data_dir)
+        item = Item().createItem('data.dat', self.user, sub_data_dir)
 
         # Mock old format
         tale = {
@@ -515,6 +517,20 @@ class TaleTestCase(base.TestCase):
         tale = self.model('tale', 'wholetale').save(tale)
         self.assertEqual(tale['licenseSPDX'], WholeTaleLicense.default_spdx())
         self.assertTrue(isinstance(tale['authors'], list))
+        self.model('tale', 'wholetale').remove(tale)
+
+        tale["dataSet"] = [()]
+        with pytest.raises(ValidationException):
+            self.model('tale', 'wholetale').save(tale)
+
+        tale["dataSet"] = [
+            {"_modelType": "folder", "itemId": str(item["_id"]), "mountPath": "data.dat"}
+        ]
+        with pytest.raises(ValidationException):
+            self.model('tale', 'wholetale').save(tale)
+
+        tale["dataSet"][0]["_modelType"] = "item"
+        self.model('tale', 'wholetale').save(tale)
         self.model('tale', 'wholetale').remove(tale)
 
     def testTaleUpdate(self):

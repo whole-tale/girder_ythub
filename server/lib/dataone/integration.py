@@ -7,6 +7,11 @@ from girder.api import access
 from girder.api.describe import Description, autoDescribeRoute
 from girder.api.rest import setResponseHeader, boundHandler
 
+from . import DataONELocations
+from .provider import DataOneImportProvider
+from ..integration_utils import autologin, redirect_if_tale_exists
+from ..entity import Entity
+
 
 @access.public
 @autoDescribeRoute(
@@ -20,10 +25,35 @@ from girder.api.rest import setResponseHeader, boundHandler
            required=False)
     .param('apiToken', 'The DataONE JWT of the user importing the data, '
            'if available.', required=False)
+    .param(
+        "force",
+        "If True, create a new Tale regardless of the fact it was previously imported.",
+        required=False,
+        dataType="boolean",
+        default=False,
+    )
     .notes('apiToken is currently ignored.')
 )
 @boundHandler()
-def dataoneDataImport(self, uri, title, environment, api, apiToken):
+def dataoneDataImport(self, uri, title, environment, api, apiToken, force):
+    user = self.getCurrentUser()
+    if user is None:
+        args = {
+            "uri": uri,
+            "title": title,
+            "environment": environment,
+            "api": api,
+            "apiToken": apiToken,
+            "force": force,
+        }
+        autologin(args=args)
+
+    entity = Entity(uri, user)
+    entity["base_url"] = api or DataONELocations.prod_cn
+    data_map = DataOneImportProvider().lookup(entity)
+    doi = data_map.doi or data_map.dataId
+    if not force:
+        redirect_if_tale_exists(user, self.getCurrentToken(), doi)
 
     query = dict()
     query['uri'] = uri

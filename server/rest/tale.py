@@ -24,8 +24,7 @@ from girder.models.folder import Folder
 from girder.models.token import Token
 from girder.models.setting import Setting
 from girder.plugins.jobs.models.job import Job
-from girder.plugins.jobs.constants import REST_CREATE_JOB_TOKEN_SCOPE
-from gwvolman.tasks import import_tale, publish
+from gwvolman.tasks import publish
 
 from girder.plugins.jobs.constants import JobStatus
 
@@ -215,20 +214,17 @@ class Tale(Resource):
         .jsonParam('lookupKwargs', 'Optional keyword arguments passed to '
                    'GET /repository/lookup', requireObject=True, required=False)
         .jsonParam('taleKwargs', 'Optional keyword arguments passed to POST /tale',
-                   required=False, default={})
+                   required=False, default=None)
         .responseClass('tale')
         .errorResponse('You are not authorized to create tales.', 403)
     )
     def createTaleFromDataset(self, imageId, url, spawn, asTale, lookupKwargs, taleKwargs):
         user = self.getCurrentUser()
-        token = Token().createToken(
-            user=user,
-            days=0.5,
-            scope=(TokenScope.USER_AUTH, REST_CREATE_JOB_TOKEN_SCOPE)
-        )
+        if taleKwargs is None:
+            taleKwargs = {}
 
         if cherrypy.request.headers.get('Content-Type') == 'application/zip':
-            tale = taleModel().createTaleFromStream(iterBody, user=user, token=token)
+            tale = taleModel().createTaleFromStream(iterBody, user=user)
         else:
             if not url:
                 msg = (
@@ -254,6 +250,23 @@ class Tale(Resource):
                 provider = IMPORT_PROVIDERS.providerMap[dataMap["repository"]]
                 tale = provider.import_tale(dataMap["dataId"], user)
                 return tale
+
+            if asTale:
+                relation = "IsDerivedFrom"
+            else:
+                relation = "Cites"
+            related_id = [
+                {
+                    "relation": relation,
+                    "identifier": dataMap["doi"] or dataMap["dataId"]
+                }
+            ]
+
+            all_related_ids = related_id + taleKwargs.get("relatedIdentifiers", [])
+            taleKwargs["relatedIdentifiers"] = [
+                json.loads(rel_id)
+                for rel_id in {json.dumps(_, sort_keys=True) for _ in all_related_ids}
+            ]
 
             if "title" not in taleKwargs:
                 long_name = dataMap["name"]
@@ -299,23 +312,17 @@ class Tale(Resource):
                 **taleKwargs
             )
 
-            if asTale:
-                job = Job().createLocalJob(
-                    title="Import Tale from external dataset",
-                    user=user,
-                    type="wholetale.import_binder",
-                    public=False,
-                    async=True,
-                    module="girder.plugins.wholetale.tasks.import_binder",
-                    args=(lookupKwargs,),
-                    kwargs={"user": user, "tale": tale, "spawn": spawn},
-                )
-                Job().scheduleJob(job)
-            else:
-                import_tale.delay(
-                    lookupKwargs, tale, spawn=spawn,
-                    girder_client_token=str(token['_id'])
-                )
+            job = Job().createLocalJob(
+                title="Import Tale from external dataset",
+                user=user,
+                type="wholetale.import_binder",
+                public=False,
+                async=True,
+                module="girder.plugins.wholetale.tasks.import_binder",
+                args=(lookupKwargs,),
+                kwargs={"taleId": tale["_id"], "spawn": spawn, "asTale": asTale},
+            )
+            Job().scheduleJob(job)
         return tale
 
     @access.user
@@ -353,7 +360,8 @@ class Tale(Resource):
                 authors=tale.get('authors', default_author),
                 category=tale.get('category', 'science'),
                 narrative=tale.get('narrative'),
-                licenseSPDX=tale.get('licenseSPDX')
+                licenseSPDX=tale.get('licenseSPDX'),
+                relatedIdentifiers=tale.get('relatedIdentifiers'),
             )
 
     @access.user(scope=TokenScope.DATA_OWN)
@@ -529,6 +537,7 @@ class Tale(Resource):
             narrative=tale.get('narrative'),
             licenseSPDX=tale.get('licenseSPDX'),
             status=TaleStatus.PREPARING,
+            relatedIdentifiers=tale.get('relatedIdentifiers'),
         )
         new_tale['copyOfTale'] = tale['_id']
         new_tale = self._model.save(new_tale)

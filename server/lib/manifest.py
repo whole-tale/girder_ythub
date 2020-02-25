@@ -44,6 +44,7 @@ class Manifest:
         self.manifest.update(self.create_basic_attributes())
         self.add_tale_creator()
         self.manifest.update(self.create_author_record())
+        self.manifest.update(self.create_related_identifiers())
         self.add_tale_records()
         # Add any external datasets to the manifest
         self.add_dataset_records()
@@ -135,6 +136,28 @@ class Manifest:
             ]
         }
 
+    def create_related_identifiers(self):
+        def derive_id_type(identifier):
+            if identifier.lower().startswith("doi"):
+                return "DataCite:DOI"
+            elif identifier.lower().startswith("http"):
+                return "DataCite:URL"
+            elif identifier.lower().startswith("urn"):
+                return "DataCite:URN"
+
+        return {
+            "DataCite:relatedIdentifiers": [
+                {
+                    "DataCite:relatedIdentifier": {
+                        "@id": rel_id["identifier"],
+                        "DataCite:relationType": "DataCite:" + rel_id["relation"],
+                        "DataCite:relatedIdentifierType": derive_id_type(rel_id["identifier"]),
+                    }
+                }
+                for rel_id in self.tale["relatedIdentifiers"]
+            ],
+        }
+
     def create_context(self):
         """
         Creates the manifest namespace. When a new vocabulary is used, it shoud
@@ -145,6 +168,7 @@ class Manifest:
             "@context": [
                 "https://w3id.org/bundle/context",
                 {"schema": "http://schema.org/"},
+                {"DataCite": "http://datacite.org/schema/kernel-4"},
                 {"Datasets": {"@type": "@id"}}
             ]
         }

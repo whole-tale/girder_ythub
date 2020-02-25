@@ -159,4 +159,4 @@ class WholeTaleTestCase(base.TestCase):
             path='/folder/{_id}/dataset'.format(**f1), user=self.user)
         self.assertStatusOk(resp)
         self.assertEqual({_['mountPoint'] for _ in resp.json},
-                         {'/i1', '/i2', '/f3/i1', '/f3/i2'})
+                         {'i1', 'i2', 'f3/i1', 'f3/i2'})
