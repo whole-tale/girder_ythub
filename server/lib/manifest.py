@@ -45,6 +45,7 @@ class Manifest:
         self.add_tale_creator()
         self.manifest.update(self.create_author_record())
         self.manifest.update(self.create_related_identifiers())
+        self.manifest.update(self.create_repo2docker_version())
         self.add_tale_records()
         # Add any external datasets to the manifest
         self.add_dataset_records()
@@ -134,6 +135,15 @@ class Manifest:
                 }
                 for author in self.tale['authors']
             ]
+        }
+
+    def create_repo2docker_version(self):
+        return {
+            'schema:hasPart': [{
+            '@id': 'https://github.com/jupyter/repo2docker',
+            '@type': 'schema:SoftwareApplication',
+            'schema:softwareVersion': self.tale['imageInfo']['repo2docker_version']
+        }]
         }
 
     def create_related_identifiers(self):

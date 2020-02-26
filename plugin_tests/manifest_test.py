@@ -168,6 +168,21 @@ class ManifestTestCase(base.TestCase):
             authors=self.tale_info["authors"],
         )
 
+        self.fake_imageInfo = {
+            "digest": (
+                "registry.local.wholetale.org/5c8fe826da39aa00013e9609/1552934951@"
+                "sha256:4f604e6fab47f79e28251657347ca20ee89b737b4b1048c18ea5cf2fe9a9f098"
+            ),
+            "jobId": ObjectId("5c9009deda39aa0001d702b7"),
+            "last_build": 1552943449,
+            "repo2docker_version": "craigwillis/repo2docker:latest",
+            "status": 3
+        }
+
+        self.tale["imageInfo"] = fake_imageInfo
+        self.model('tale', 'wholetale').save(self.tale)
+
+
         self.tale2 = self.model("tale", "wholetale").createTale(
             {"_id": self.tale_info["_id"]},
             data=[],
@@ -190,6 +205,7 @@ class ManifestTestCase(base.TestCase):
         self._testWorkspace()
         self._testRelatedIdentifiers()
         self._testValidate()
+        self._test_create_repo2docker_version()
 
     def _testRelatedIdentifiers(self):
         from girder.plugins.wholetale.lib.manifest import Manifest
@@ -478,6 +494,18 @@ class ManifestTestCase(base.TestCase):
         )
         with self.assertRaises(ValueError):
             Manifest(tale_blank_orcid, self.user)
+
+    def _test_create_repo2docker_version(self):
+        from server.lib.manifest import Manifest
+
+        manifest = Manifest(self.tale, self.user)
+        self.assertTrue(len(manifest['schema:hasPart']))
+
+        version_block = manifest['schema:hasPart'][0]
+        self.assertDictEqual(version_block['schema:softwareVersion'],
+                             self.tale_info['repo2docker_version'])
+        self.assertDictEqual(version_block['@id'], 'https://github.com/jupyter/repo2docker')
+        self.assertDictEqual(version_block['@type'], 'schema:SoftwareApplication')
 
     def tearDown(self):
         self.model("user").remove(self.user)
