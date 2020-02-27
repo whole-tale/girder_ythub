@@ -48,7 +48,7 @@ class Manifest:
         self.add_tale_records()
         # Add any external datasets to the manifest
         self.add_dataset_records()
-        self.add_system_files()
+        self.add_license_record()
 
     publishers = {
         "DataONE":
@@ -387,18 +387,15 @@ class Manifest:
             bundle['filename'] = filename
         return bundle
 
-    def add_system_files(self):
+    def add_license_record(self):
         """
-        Add records for files that we inject (README, LICENSE, etc)
+        Adds a record for the License file. When exporting to a bag, this gets placed
+        in their data/ folder.
         """
-
         self.manifest['aggregates'].append({'uri': '../LICENSE',
                                             'schema:license':
                                                 self.tale.get('licenseSPDX',
                                                               WholeTaleLicense.default_spdx())})
-
-        self.manifest['aggregates'].append({'uri': '../README.md',
-                                            '@type': 'schema:HowTo'})
 
 
 def clean_workspace_path(tale_id, path):
