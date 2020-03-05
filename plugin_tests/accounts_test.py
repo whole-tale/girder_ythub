@@ -60,6 +60,64 @@ def mockOtherRequests(url, request):
     raise Exception("Unexpected url %s" % str(request.url))
 
 
+@httmock.urlmatch(
+    scheme="https",
+    netloc="sandbox.zenodo.org",
+    path="/api/deposit/depositions",
+    method="POST",
+)
+def mockCreateDeposition(url, request):
+    if request.headers["Authorization"].endswith("valid_key"):
+        return httmock.response(
+            status_code=201,
+            content={"id": 123},
+            headers={},
+            reason=None,
+            elapsed=5,
+            request=request,
+            stream=False,
+        )
+    else:
+        return httmock.response(
+            status_code=401,
+            content={"cause": "reason"},
+            headers={},
+            reason="Some reason",
+            elapsed=5,
+            request=request,
+            stream=False,
+        )
+
+
+@httmock.urlmatch(
+    scheme="https",
+    netloc="sandbox.zenodo.org",
+    path="/api/deposit/depositions/123",
+    method="DELETE",
+)
+def mockDeleteDeposition(url, request):
+    if request.headers["Authorization"].endswith("valid_key"):
+        return httmock.response(
+            status_code=204,
+            content=None,
+            headers={},
+            reason=None,
+            elapsed=5,
+            request=request,
+            stream=False,
+        )
+    else:
+        return httmock.response(
+            status_code=401,
+            content={"cause": "reason"},
+            headers={},
+            reason="Some reason",
+            elapsed=5,
+            request=request,
+            stream=False,
+        )
+
+
 def setUpModule():
     base.enabledPlugins.append("wholetale")
     base.startServer()
@@ -430,35 +488,54 @@ class ExternalAccountsTestCase(base.TestCase):
         self.assertStatus(resp, 400)
         self.assertEqual(resp.json["message"], 'Unsupported resource server "blah".')
 
-        resp = self.request(
-            method="POST",
-            path="/account/zenodo/key",
-            params={"resource_server": "sandbox.zenodo.org", "key": "key"},
-            user=self.user,
-        )
-        self.assertStatusOk(resp)
+        with httmock.HTTMock(
+            mockDeleteDeposition, mockCreateDeposition, mockOtherRequests
+        ):
+            resp = self.request(
+                method="POST",
+                path="/account/zenodo/key",
+                params={"resource_server": "sandbox.zenodo.org", "key": "key"},
+                user=self.user,
+            )
+            self.assertStatus(resp, 400)
+            self.assertEqual(
+                resp.json["message"], "Key 'key' is not valid for 'sandbox.zenodo.org'"
+            )
 
-        self.user = User().load(self.user["_id"], force=True)
-        self.assertEqual(
-            self.user["otherTokens"][0]["resource_server"], "sandbox.zenodo.org"
-        )
-        self.assertEqual(self.user["otherTokens"][0]["access_token"], "key")
+            resp = self.request(
+                method="POST",
+                path="/account/zenodo/key",
+                params={"resource_server": "sandbox.zenodo.org", "key": "valid_key"},
+                user=self.user,
+            )
+            self.assertStatusOk(resp)
 
-        # Update
-        resp = self.request(
-            method="POST",
-            path="/account/zenodo/key",
-            params={"resource_server": "sandbox.zenodo.org", "key": "newkey"},
-            user=self.user,
-        )
-        self.assertStatusOk(resp)
+            self.user = User().load(self.user["_id"], force=True)
+            self.assertEqual(
+                self.user["otherTokens"][0]["resource_server"], "sandbox.zenodo.org"
+            )
+            self.assertEqual(self.user["otherTokens"][0]["access_token"], "valid_key")
 
-        self.user = User().load(self.user["_id"], force=True)
-        self.assertEqual(len(self.user["otherTokens"]), 1)
-        self.assertEqual(
-            self.user["otherTokens"][0]["resource_server"], "sandbox.zenodo.org"
-        )
-        self.assertEqual(self.user["otherTokens"][0]["access_token"], "newkey")
+            # Update
+            resp = self.request(
+                method="POST",
+                path="/account/zenodo/key",
+                params={
+                    "resource_server": "sandbox.zenodo.org",
+                    "key": "new_valid_key",
+                },
+                user=self.user,
+            )
+            self.assertStatusOk(resp)
+
+            self.user = User().load(self.user["_id"], force=True)
+            self.assertEqual(len(self.user["otherTokens"]), 1)
+            self.assertEqual(
+                self.user["otherTokens"][0]["resource_server"], "sandbox.zenodo.org"
+            )
+            self.assertEqual(
+                self.user["otherTokens"][0]["access_token"], "new_valid_key"
+            )
 
         # Return to defaults
         for key in (

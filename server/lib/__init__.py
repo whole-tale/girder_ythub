@@ -15,9 +15,12 @@ from .resolvers import Resolvers, DOIResolver, ResolutionException
 from .import_providers import ImportProviders
 from .http_provider import HTTPImportProvider
 from .null_provider import NullImportProvider
+from .dataone.auth import DataONEVerificator
 from .dataone.provider import DataOneImportProvider
+from .dataverse.auth import DataverseVerificator
 from .dataverse.provider import DataverseImportProvider
 from .globus.globus_provider import GlobusImportProvider
+from .zenodo.auth import ZenodoVerificator
 from .zenodo.provider import ZenodoImportProvider
 
 
@@ -33,6 +36,16 @@ IMPORT_PROVIDERS.addProvider(DataOneImportProvider())
 IMPORT_PROVIDERS.addProvider(HTTPImportProvider())
 # just throws exceptions
 IMPORT_PROVIDERS.addProvider(NullImportProvider())
+
+
+Verificators = {
+    "zenodo": ZenodoVerificator,
+    "dataverse": DataverseVerificator,
+    "dataoneprod": DataONEVerificator,
+    "dataonedev": DataONEVerificator,
+    "dataonestage": DataONEVerificator,
+    "dataonestage2": DataONEVerificator,
+}
 
 
 def pids_to_entities(pids, user=None, base_url=None, lookup=True):
