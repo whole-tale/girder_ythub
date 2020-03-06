@@ -63,7 +63,9 @@ class SettingDefault:
                 "tags": ["data", "publish"],
                 "url": "",
                 "type": "apikey",
-                "docs_href": "http://guides.dataverse.org/en/latest/api/auth.html",
+                "docs_href": (
+                    "https://dataverse.harvard.org/dataverseuser.xhtml?selectTab=apiTokenTab"
+                ),
                 "targets": [],
             },
             {
