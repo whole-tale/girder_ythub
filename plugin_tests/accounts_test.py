@@ -26,6 +26,16 @@ AUTH_PROVIDERS = [
         "docs_href": "https://zenodo.org/account/settings/applications/tokens/new/",
         "targets": [],
     },
+    {
+        "name": "dataverse",
+        "logo": "",
+        "fullName": "Dataverse",
+        "tags": ["data", "publish"],
+        "url": "",
+        "type": "apikey",
+        "docs_href": "https://dataverse.org/",
+        "targets": [],
+    },
 ]
 
 DATAONE_PROVIDER = {
@@ -38,7 +48,10 @@ DATAONE_PROVIDER = {
     "state": "unauthorized",
 }
 
-APIKEY_GROUPS = [{"name": "zenodo", "targets": ["sandbox.zenodo.org", "zenodo.org"]}]
+APIKEY_GROUPS = [
+    {"name": "zenodo", "targets": ["sandbox.zenodo.org", "zenodo.org"]},
+    {"name": "dataverse", "targets": ["demo.dataverse.org"]},
+]
 
 
 @httmock.urlmatch(
@@ -58,6 +71,64 @@ def mockRevokeOrcidToken(url, request):
 @httmock.all_requests
 def mockOtherRequests(url, request):
     raise Exception("Unexpected url %s" % str(request.url))
+
+
+@httmock.urlmatch(
+    scheme="https",
+    netloc="sandbox.zenodo.org",
+    path="/api/deposit/depositions",
+    method="POST",
+)
+def mockCreateDeposition(url, request):
+    if request.headers["Authorization"].endswith("valid_key"):
+        return httmock.response(
+            status_code=201,
+            content={"id": 123},
+            headers={},
+            reason=None,
+            elapsed=5,
+            request=request,
+            stream=False,
+        )
+    else:
+        return httmock.response(
+            status_code=401,
+            content={"cause": "reason"},
+            headers={},
+            reason="Some reason",
+            elapsed=5,
+            request=request,
+            stream=False,
+        )
+
+
+@httmock.urlmatch(
+    scheme="https",
+    netloc="sandbox.zenodo.org",
+    path="/api/deposit/depositions/123",
+    method="DELETE",
+)
+def mockDeleteDeposition(url, request):
+    if request.headers["Authorization"].endswith("valid_key"):
+        return httmock.response(
+            status_code=204,
+            content=None,
+            headers={},
+            reason=None,
+            elapsed=5,
+            request=request,
+            stream=False,
+        )
+    else:
+        return httmock.response(
+            status_code=401,
+            content={"cause": "reason"},
+            headers={},
+            reason="Some reason",
+            elapsed=5,
+            request=request,
+            stream=False,
+        )
 
 
 def setUpModule():
@@ -406,6 +477,69 @@ class ExternalAccountsTestCase(base.TestCase):
         ):
             Setting().set(key, SettingDefault.defaults[key])
 
+    def test_dataverse_apikey(self):
+        from girder.plugins.wholetale.constants import SettingDefault, PluginSettings
+
+        Setting().set(PluginSettings.EXTERNAL_AUTH_PROVIDERS, [AUTH_PROVIDERS[2]])
+        Setting().set(PluginSettings.EXTERNAL_APIKEY_GROUPS, APIKEY_GROUPS)
+
+        @httmock.urlmatch(
+            scheme="https",
+            netloc="demo.dataverse.org",
+            path="/api/users/token",
+            method="GET",
+        )
+        def mockDataverseVerification(url, request):
+            if request.headers["X-Dataverse-key"].endswith("valid_key"):
+                return httmock.response(
+                    status_code=200,
+                    content={"id": 123},
+                    headers={},
+                    reason=None,
+                    elapsed=5,
+                    request=request,
+                    stream=False,
+                )
+            else:
+                return httmock.response(
+                    status_code=401,
+                    content={"cause": "reason"},
+                    headers={},
+                    reason="Some reason",
+                    elapsed=5,
+                    request=request,
+                    stream=False,
+                )
+
+        with httmock.HTTMock(mockDataverseVerification, mockOtherRequests):
+            resp = self.request(
+                method="POST",
+                path="/account/dataverse/key",
+                params={"resource_server": "demo.dataverse.org", "key": "key"},
+                user=self.user,
+            )
+            self.assertStatus(resp, 400)
+            self.assertEqual(
+                resp.json["message"], "Key 'key' is not valid for 'demo.dataverse.org'"
+            )
+
+            resp = self.request(
+                method="POST",
+                path="/account/dataverse/key",
+                params={"resource_server": "demo.dataverse.org", "key": "valid_key"},
+                user=self.user,
+            )
+            self.assertStatusOk(resp)
+
+        # Return to defaults
+        for key in (
+            PluginSettings.EXTERNAL_AUTH_PROVIDERS,
+            PluginSettings.EXTERNAL_APIKEY_GROUPS,
+        ):
+            Setting().set(key, SettingDefault.defaults[key])
+        self.user["otherTokens"] = []
+        User().save(self.user)
+
     def test_adding_apikeys(self):
         from girder.plugins.wholetale.constants import SettingDefault, PluginSettings
 
@@ -430,35 +564,54 @@ class ExternalAccountsTestCase(base.TestCase):
         self.assertStatus(resp, 400)
         self.assertEqual(resp.json["message"], 'Unsupported resource server "blah".')
 
-        resp = self.request(
-            method="POST",
-            path="/account/zenodo/key",
-            params={"resource_server": "sandbox.zenodo.org", "key": "key"},
-            user=self.user,
-        )
-        self.assertStatusOk(resp)
+        with httmock.HTTMock(
+            mockDeleteDeposition, mockCreateDeposition, mockOtherRequests
+        ):
+            resp = self.request(
+                method="POST",
+                path="/account/zenodo/key",
+                params={"resource_server": "sandbox.zenodo.org", "key": "key"},
+                user=self.user,
+            )
+            self.assertStatus(resp, 400)
+            self.assertEqual(
+                resp.json["message"], "Key 'key' is not valid for 'sandbox.zenodo.org'"
+            )
 
-        self.user = User().load(self.user["_id"], force=True)
-        self.assertEqual(
-            self.user["otherTokens"][0]["resource_server"], "sandbox.zenodo.org"
-        )
-        self.assertEqual(self.user["otherTokens"][0]["access_token"], "key")
+            resp = self.request(
+                method="POST",
+                path="/account/zenodo/key",
+                params={"resource_server": "sandbox.zenodo.org", "key": "valid_key"},
+                user=self.user,
+            )
+            self.assertStatusOk(resp)
 
-        # Update
-        resp = self.request(
-            method="POST",
-            path="/account/zenodo/key",
-            params={"resource_server": "sandbox.zenodo.org", "key": "newkey"},
-            user=self.user,
-        )
-        self.assertStatusOk(resp)
+            self.user = User().load(self.user["_id"], force=True)
+            self.assertEqual(
+                self.user["otherTokens"][0]["resource_server"], "sandbox.zenodo.org"
+            )
+            self.assertEqual(self.user["otherTokens"][0]["access_token"], "valid_key")
 
-        self.user = User().load(self.user["_id"], force=True)
-        self.assertEqual(len(self.user["otherTokens"]), 1)
-        self.assertEqual(
-            self.user["otherTokens"][0]["resource_server"], "sandbox.zenodo.org"
-        )
-        self.assertEqual(self.user["otherTokens"][0]["access_token"], "newkey")
+            # Update
+            resp = self.request(
+                method="POST",
+                path="/account/zenodo/key",
+                params={
+                    "resource_server": "sandbox.zenodo.org",
+                    "key": "new_valid_key",
+                },
+                user=self.user,
+            )
+            self.assertStatusOk(resp)
+
+            self.user = User().load(self.user["_id"], force=True)
+            self.assertEqual(len(self.user["otherTokens"]), 1)
+            self.assertEqual(
+                self.user["otherTokens"][0]["resource_server"], "sandbox.zenodo.org"
+            )
+            self.assertEqual(
+                self.user["otherTokens"][0]["access_token"], "new_valid_key"
+            )
 
         # Return to defaults
         for key in (
