@@ -168,7 +168,7 @@ class ManifestTestCase(base.TestCase):
             authors=self.tale_info["authors"],
         )
 
-        self.fake_imageInfo = {
+        self.tale["imageInfo"] = {
             "digest": (
                 "registry.local.wholetale.org/5c8fe826da39aa00013e9609/1552934951@"
                 "sha256:4f604e6fab47f79e28251657347ca20ee89b737b4b1048c18ea5cf2fe9a9f098"
@@ -178,10 +178,7 @@ class ManifestTestCase(base.TestCase):
             "repo2docker_version": "craigwillis/repo2docker:latest",
             "status": 3
         }
-
-        self.tale["imageInfo"] = fake_imageInfo
         self.model('tale', 'wholetale').save(self.tale)
-
 
         self.tale2 = self.model("tale", "wholetale").createTale(
             {"_id": self.tale_info["_id"]},
@@ -498,14 +495,14 @@ class ManifestTestCase(base.TestCase):
     def _test_create_repo2docker_version(self):
         from server.lib.manifest import Manifest
 
-        manifest = Manifest(self.tale, self.user)
+        manifest = Manifest(self.tale, self.user).manifest
         self.assertTrue(len(manifest['schema:hasPart']))
 
         version_block = manifest['schema:hasPart'][0]
-        self.assertDictEqual(version_block['schema:softwareVersion'],
-                             self.tale_info['repo2docker_version'])
-        self.assertDictEqual(version_block['@id'], 'https://github.com/jupyter/repo2docker')
-        self.assertDictEqual(version_block['@type'], 'schema:SoftwareApplication')
+        self.assertEqual(version_block['schema:softwareVersion'],
+                             self.tale["imageInfo"]['repo2docker_version'])
+        self.assertEqual(version_block['@id'], 'https://github.com/whole-tale/repo2docker_wholetale')
+        self.assertEqual(version_block['@type'], 'schema:SoftwareApplication')
 
     def tearDown(self):
         self.model("user").remove(self.user)
