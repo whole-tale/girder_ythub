@@ -1,13 +1,14 @@
 import os
 
-from .license import WholeTaleLicense
-from . import IMPORT_PROVIDERS
-
 from girder import logger
 from girder.models.folder import Folder
 from girder.utility.model_importer import ModelImporter
 from girder.exceptions import ValidationException
 from girder.constants import AccessType
+from gwvolman.constants import REPO2DOCKER_VERSION
+
+from .license import WholeTaleLicense
+from . import IMPORT_PROVIDERS
 
 
 class Manifest:
@@ -138,12 +139,13 @@ class Manifest:
         }
 
     def create_repo2docker_version(self):
+        image_info = self.tale.get("imageInfo", {"repo2docker_version": REPO2DOCKER_VERSION})
         return {
             'schema:hasPart': [{
-            '@id': 'https://github.com/jupyter/repo2docker',
-            '@type': 'schema:SoftwareApplication',
-            'schema:softwareVersion': self.tale['imageInfo']['repo2docker_version']
-        }]
+                '@id': 'https://github.com/whole-tale/repo2docker_wholetale',
+                '@type': 'schema:SoftwareApplication',
+                'schema:softwareVersion': image_info['repo2docker_version']
+            }]
         }
 
     def create_related_identifiers(self):
