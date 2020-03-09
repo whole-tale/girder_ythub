@@ -401,7 +401,6 @@ class ManifestTestCase(base.TestCase):
                 "size": 1005007,
             },
             {"uri": "../LICENSE", "schema:license": "CC-BY-4.0"},
-            {"uri": "../README.md", "@type": "schema:HowTo"},
         ]
         from operator import itemgetter
 

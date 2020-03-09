@@ -15,9 +15,12 @@ from .resolvers import Resolvers, DOIResolver, ResolutionException
 from .import_providers import ImportProviders
 from .http_provider import HTTPImportProvider
 from .null_provider import NullImportProvider
+from .dataone.auth import DataONEVerificator
 from .dataone.provider import DataOneImportProvider
+from .dataverse.auth import DataverseVerificator
 from .dataverse.provider import DataverseImportProvider
 from .globus.globus_provider import GlobusImportProvider
+from .zenodo.auth import ZenodoVerificator
 from .zenodo.provider import ZenodoImportProvider
 
 
@@ -35,6 +38,16 @@ IMPORT_PROVIDERS.addProvider(HTTPImportProvider())
 IMPORT_PROVIDERS.addProvider(NullImportProvider())
 
 
+Verificators = {
+    "zenodo": ZenodoVerificator,
+    "dataverse": DataverseVerificator,
+    "dataoneprod": DataONEVerificator,
+    "dataonedev": DataONEVerificator,
+    "dataonestage": DataONEVerificator,
+    "dataonestage2": DataONEVerificator,
+}
+
+
 def pids_to_entities(pids, user=None, base_url=None, lookup=True):
     """
     Resolve unique external identifiers into WholeTale Entities or file listings
@@ -48,7 +61,7 @@ def pids_to_entities(pids, user=None, base_url=None, lookup=True):
     try:
         for pid in pids:
             entity = Entity(pid.strip(), user)
-            entity['base_url'] = base_url
+            entity["base_url"] = base_url
             entity = RESOLVERS.resolve(entity)
             provider = IMPORT_PROVIDERS.getProvider(entity)
             if lookup:
@@ -80,7 +93,7 @@ def register_dataMap(dataMaps, parent, parentType, user=None, base_url=None):
     """
     progress = True
     importedData = []
-    with ProgressContext(progress, user=user, title='Registering resources') as ctx:
+    with ProgressContext(progress, user=user, title="Registering resources") as ctx:
         for dataMap in DataMap.fromList(dataMaps):
             # probably would be nicer if Entity kept all details and the dataMap
             # would be merged into it
@@ -88,22 +101,22 @@ def register_dataMap(dataMaps, parent, parentType, user=None, base_url=None):
             objType, obj = provider.register(
                 parent, parentType, ctx, user, dataMap, base_url=base_url
             )
-            importedData.append(obj['_id'])
+            importedData.append(obj["_id"])
     return importedData
 
 
 def update_citation(event):
-    tale = event.info['tale']
-    user = event.info['user']
+    tale = event.info["tale"]
+    user = event.info["user"]
 
     dataset_top_identifiers = set()
-    for obj in tale.get('dataSet', []):
+    for obj in tale.get("dataSet", []):
         try:
-            doc = ModelImporter.model(obj['_modelType']).load(
-                obj['itemId'], user=user, level=AccessType.READ, exc=True
+            doc = ModelImporter.model(obj["_modelType"]).load(
+                obj["itemId"], user=user, level=AccessType.READ, exc=True
             )
-            provider_name = doc['meta']['provider']
-            if provider_name.startswith('HTTP'):
+            provider_name = doc["meta"]["provider"]
+            if provider_name.startswith("HTTP"):
                 continue
             provider = IMPORT_PROVIDERS.providerMap[provider_name]
         except (KeyError, ValidationException):
@@ -113,13 +126,19 @@ def update_citation(event):
             dataset_top_identifiers.add(top_identifier)
 
     citations = []
+    related_ids = [
+        related_id
+        for related_id in tale["relatedIdentifiers"]
+        if related_id["relation"] != "Cites"
+    ]
     for doi in dataset_top_identifiers:
-        if doi.startswith('doi:'):
+        related_ids.append(dict(identifier=doi, relation="Cites"))
+        if doi.startswith("doi:"):
             doi = doi[4:]
         try:
             url = (
-                'https://api.datacite.org/dois/'
-                'text/x-bibliography/{}?style=harvard-cite-them-right'
+                "https://api.datacite.org/dois/"
+                "text/x-bibliography/{}?style=harvard-cite-them-right"
             )
             citations.append(
                 html2markdown.convert(urlopen(url.format(doi)).read().decode())
@@ -127,8 +146,9 @@ def update_citation(event):
         except Exception as ex:
             logger.info('Unable to get a citation for %s, getting "%s"', doi, str(ex))
 
-    tale['dataSetCitation'] = citations
+    tale["dataSetCitation"] = citations
+    tale["relatedIdentifiers"] = related_ids
     event.preventDefault().addResponse(tale)
 
 
-events.bind('tale.update_citation', 'wholetale', update_citation)
+events.bind("tale.update_citation", "wholetale", update_citation)

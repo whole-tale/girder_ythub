@@ -13,6 +13,7 @@ from girder.plugins.oauth import constants as OAuthConstants
 from girder.plugins.oauth import providers
 
 from ..constants import PluginSettings
+from ..lib import Verificators
 
 
 class Account(Resource):
@@ -334,6 +335,8 @@ class Account(Resource):
 
         except KeyError:
             raise RestException('Unknown provider "%s".' % provider)
+
+        Verificators[provider](resource_server, key).verify()
 
         user_tokens = user.get("otherTokens", [])
         for i, user_token in enumerate(user_tokens):
