@@ -64,7 +64,7 @@ class SettingDefault:
                 "url": "",
                 "type": "apikey",
                 "docs_href": (
-                    "https://dataverse.harvard.org/dataverseuser.xhtml?selectTab=apiTokenTab"
+                    "https://dataverse.harvard.edu/dataverseuser.xhtml?selectTab=apiTokenTab"
                 ),
                 "targets": [],
             },
@@ -84,7 +84,7 @@ class SettingDefault:
                 "name": "dataverse",
                 "targets": [
                     "dev2.dataverse.org",
-                    "dataverse.harvard.org",
+                    "dataverse.harvard.edu",
                     "demo.dataverse.org",
                 ],
             },
