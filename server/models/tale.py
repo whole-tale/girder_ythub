@@ -456,7 +456,7 @@ class Tale(AccessControlledModel):
             title=manifest["schema:name"],
             description=manifest["schema:description"],
             public=False,
-            config={},
+            config=environment.get("config", {}),
             icon=icon,
             illustration=manifest["schema:image"],
             authors=authors,

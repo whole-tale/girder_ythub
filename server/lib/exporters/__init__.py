@@ -69,6 +69,7 @@ class TaleExporter:
             fields=['config', 'description', 'icon', 'iframe', 'name', 'tags'],
             level=AccessType.READ,
         )
+        self.image["config"].update(tale.get("config", {}))  # respect config precedence
         self.image.pop('_id')
         self.workspace = Folder().load(
             tale['workspaceId'], user=user, level=AccessType.READ
