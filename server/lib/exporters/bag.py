@@ -176,7 +176,7 @@ class BagTaleExporter(TaleExporter):
             (lambda: dump_checksums('sha256'), 'manifest-sha256.txt'),
             (
                 lambda: json.dumps(
-                    self.image,
+                    self.get_environment(),
                     indent=4,
                     cls=JsonEncoder,
                     sort_keys=True,

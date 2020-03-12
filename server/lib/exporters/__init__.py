@@ -1,3 +1,4 @@
+import copy
 from hashlib import sha256, md5
 from girder.utility import hash_state, ziputil
 from girder.constants import AccessType
@@ -69,7 +70,6 @@ class TaleExporter:
             fields=['config', 'description', 'icon', 'iframe', 'name', 'tags'],
             level=AccessType.READ,
         )
-        self.image["config"].update(tale.get("config", {}))  # respect config precedence
         self.image.pop('_id')
         self.workspace = Folder().load(
             tale['workspaceId'], user=user, level=AccessType.READ
@@ -85,6 +85,11 @@ class TaleExporter:
 
     def stream(self):
         raise NotImplementedError
+
+    def get_environment(self):
+        env = copy.deepcopy(self.image)
+        env["taleConfig"] = self.tale.get("config", {})
+        return env
 
     @staticmethod
     def stream_string(string):
