@@ -1,3 +1,4 @@
+import copy
 from hashlib import sha256, md5
 from girder.utility import hash_state, ziputil
 from girder.constants import AccessType
@@ -84,6 +85,11 @@ class TaleExporter:
 
     def stream(self):
         raise NotImplementedError
+
+    def get_environment(self):
+        env = copy.deepcopy(self.image)
+        env["taleConfig"] = self.tale.get("config", {})
+        return env
 
     @staticmethod
     def stream_string(string):

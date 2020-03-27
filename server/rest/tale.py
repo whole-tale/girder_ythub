@@ -142,14 +142,18 @@ class Tale(Resource):
             _['itemId'] for _ in taleObj['dataSet']
         }  # XOR between new and old dataSet
 
+        new_imageId = tale.pop("imageId")
+        if new_imageId != str(taleObj["imageId"]):
+            image = imageModel().load(
+                new_imageId, user=self.getCurrentUser(),
+                level=AccessType.READ, exc=True)
+            taleObj["imageId"] = image["_id"]
+            taleObj["config"] = {}  # Has to be reset, after image change
+            if "config" in tale:
+                tale.pop("config")
+
         for keyword in self._model.modifiableFields:
             try:
-                if keyword == 'imageId':
-                    image = imageModel().load(
-                        tale['imageId'], user=self.getCurrentUser(),
-                        level=AccessType.READ, exc=True)
-                    taleObj['imageId'] = image['_id']
-                    continue
                 taleObj[keyword] = tale.pop(keyword)
             except KeyError:
                 pass
