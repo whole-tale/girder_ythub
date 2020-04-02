@@ -1,13 +1,14 @@
 import os
 
-from .license import WholeTaleLicense
-from . import IMPORT_PROVIDERS
-
 from girder import logger
 from girder.models.folder import Folder
 from girder.utility.model_importer import ModelImporter
 from girder.exceptions import ValidationException
 from girder.constants import AccessType
+from gwvolman.constants import REPO2DOCKER_VERSION
+
+from .license import WholeTaleLicense
+from . import IMPORT_PROVIDERS
 
 
 class Manifest:
@@ -45,6 +46,7 @@ class Manifest:
         self.add_tale_creator()
         self.manifest.update(self.create_author_record())
         self.manifest.update(self.create_related_identifiers())
+        self.manifest.update(self.create_repo2docker_version())
         self.add_tale_records()
         # Add any external datasets to the manifest
         self.add_dataset_records()
@@ -134,6 +136,16 @@ class Manifest:
                 }
                 for author in self.tale['authors']
             ]
+        }
+
+    def create_repo2docker_version(self):
+        image_info = self.tale.get("imageInfo", {"repo2docker_version": REPO2DOCKER_VERSION})
+        return {
+            'schema:hasPart': [{
+                '@id': 'https://github.com/whole-tale/repo2docker_wholetale',
+                '@type': 'schema:SoftwareApplication',
+                'schema:softwareVersion': image_info['repo2docker_version']
+            }]
         }
 
     def create_related_identifiers(self):

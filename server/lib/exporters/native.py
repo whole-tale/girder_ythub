@@ -10,7 +10,7 @@ class NativeTaleExporter(TaleExporter):
             'README.md': self.default_top_readme,
             'LICENSE': self.tale_license['text'],
             'metadata/environment.json': json.dumps(
-                self.image, indent=4, cls=JsonEncoder, sort_keys=True, allow_nan=False
+                self.get_environment(), indent=4, cls=JsonEncoder, sort_keys=True, allow_nan=False
             ),
         }
 
