@@ -94,14 +94,17 @@ class DataverseImportProvider(ImportProvider):
             resp = urlopen(url, timeout=1)
             resp_body = resp.read()
             data = json.loads(resp_body.decode('utf-8'))
-            if 'installations' in data:
-                urls = [_['url'] for _ in data['installations']]
-            else:
-                urls = [self.get_base_url_setting()]
         except Exception:
-            logger.warning('[dataverse] failed to generate regex')
-            urls = []
+            logger.warning(
+                "[dataverse] failed to fetch installations, using a local copy."
+            )
+            with open(os.path.join(os.path.dirname(__file__), "installations.json"), "r") as fp:
+                data = json.load(fp)
 
+        urls = [
+            _["url"]
+            for _ in data.get("installations", [{"url": self.get_base_url_setting()}])
+        ]
         urls += self.get_extra_hosts_setting()
         if urls:
             return re.compile("^" + "|".join(urls) + ".*$")
