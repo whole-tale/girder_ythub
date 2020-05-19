@@ -86,7 +86,7 @@ class DataverseImportProvider(ImportProvider):
 
     def create_regex(self):
         url = self.get_base_url_setting()
-        if not url.endswith('installations-json'):
+        if not url.endswith('json'):
             url = urlunparse(
                 urlparse(url)._replace(path='/api/info/version')
             )
@@ -101,13 +101,16 @@ class DataverseImportProvider(ImportProvider):
             with open(os.path.join(os.path.dirname(__file__), "installations.json"), "r") as fp:
                 data = json.load(fp)
 
-        urls = [
-            _["url"]
-            for _ in data.get("installations", [{"url": self.get_base_url_setting()}])
+        # in case DATAVERSE_URL points to a specific instance rather than an installation JSON
+        # we need to add its domain to the regex
+        single_hostname = urlparse(self.get_base_url_setting()).netloc
+        domains = [
+            _["hostname"]
+            for _ in data.get("installations", [{"hostname": single_hostname}])
         ]
-        urls += self.get_extra_hosts_setting()
-        if urls:
-            return re.compile("^" + "|".join(urls) + ".*$")
+        domains += self.get_extra_hosts_setting()
+        if domains:
+            return re.compile("^https?://(" + "|".join(domains) + ").*$")
         else:
             return re.compile("^$")
 

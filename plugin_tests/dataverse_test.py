@@ -204,7 +204,7 @@ class DataverseHarversterTestCase(base.TestCase):
         from girder.plugins.wholetale.constants import PluginSettings, SettingDefault
         resp = self.request('/system/setting', user=self.admin, method='PUT',
                             params={'key': PluginSettings.DATAVERSE_EXTRA_HOSTS,
-                                    'value': 'https://dataverse.org/'})
+                                    'value': 'dataverse.org'})
         self.assertStatus(resp, 400)
         self.assertEqual(resp.json, {
             'field': 'value',
@@ -214,12 +214,12 @@ class DataverseHarversterTestCase(base.TestCase):
 
         resp = self.request('/system/setting', user=self.admin, method='PUT',
                             params={'key': PluginSettings.DATAVERSE_EXTRA_HOSTS,
-                                    'value': json.dumps(['not a url'])})
+                                    'value': json.dumps(['not a domain'])})
         self.assertStatus(resp, 400)
         self.assertEqual(resp.json, {
             'field': 'value',
             'type': 'validation',
-            'message': 'Invalid URL in Dataverse extra hosts'
+            'message': 'Invalid domain in Dataverse extra hosts'
         })
 
         # defaults
@@ -241,7 +241,7 @@ class DataverseHarversterTestCase(base.TestCase):
             params={'list': json.dumps([
                 {
                     'key': PluginSettings.DATAVERSE_EXTRA_HOSTS,
-                    'value': ['https://random.d.org', 'https://random2.d.org']
+                    'value': ['random.d.org', 'random2.d.org']
                 },
                 {
                     'key': PluginSettings.DATAVERSE_URL,
@@ -252,7 +252,7 @@ class DataverseHarversterTestCase(base.TestCase):
         self.assertStatusOk(resp)
         from girder.plugins.wholetale.lib.dataverse.provider import DataverseImportProvider
         self.assertEqual(
-            '^https://demo.dataverse.org|https://random.d.org|https://random2.d.org.*$',
+            '^https?://(demo.dataverse.org|random.d.org|random2.d.org).*$',
             DataverseImportProvider().regex.pattern
         )
         resp = self.request(

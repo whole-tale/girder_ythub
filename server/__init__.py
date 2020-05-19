@@ -96,8 +96,8 @@ def validateDataverseExtraHosts(doc):
     if not isinstance(doc['value'], list):
         raise ValidationException('Dataverse extra hosts setting must be a list.', 'value')
     for url in doc['value']:
-        if not validators.url(url):
-            raise ValidationException('Invalid URL in Dataverse extra hosts', 'value')
+        if not validators.domain(url):
+            raise ValidationException('Invalid domain in Dataverse extra hosts', 'value')
 
 
 @setting_utilities.validator(PluginSettings.ZENODO_EXTRA_HOSTS)
