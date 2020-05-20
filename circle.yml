@@ -26,6 +26,7 @@ jobs:
             cp /tmp/girder/CMakeLists.txt /girder/
             cp /tmp/girder/.coveragerc /girder/
             cp -r /tmp/girder/tests /girder/
+            cp /root/project/setup.cfg /girder/
       - run:
           name: Running Tests
           environment:

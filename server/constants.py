@@ -33,7 +33,7 @@ class SettingDefault:
     defaults = {
         PluginSettings.INSTANCE_CAP: 2,
         PluginSettings.DATAVERSE_URL: (
-            "https://services.dataverse.harvard.edu/miniverse/map/installations-json"
+            "https://iqss.github.io/dataverse-installations/data/data.json"
         ),
         PluginSettings.DATAVERSE_EXTRA_HOSTS: [],
         PluginSettings.EXTERNAL_AUTH_PROVIDERS: [

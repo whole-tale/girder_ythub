@@ -147,13 +147,13 @@ class FileMap:
                 FileMap._addChild(fm, key, d[key])
 
     @staticmethod
-    def _addFiles(fm: 'FileMap', l: List[Dict[str, Dict[str, object]]]):
+    def _addFiles(fm: 'FileMap', _list: List[Dict[str, Dict[str, object]]]):
         # can this list ever have more than 1 element?
-        if len(l) == 0:
+        if len(_list) == 0:
             return
-        dict = l[0]
-        for name in dict.keys():
-            (_, size) = FileMap._checkSingleEntryDict(dict[name], 'size')
+        _dict = _list[0]
+        for name in _dict.keys():
+            (_, size) = FileMap._checkSingleEntryDict(_dict[name], 'size')
             fm.addFile(name, size)
 
     @staticmethod
