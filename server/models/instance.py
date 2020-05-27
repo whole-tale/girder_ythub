@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from bson import ObjectId
 import datetime
 import ssl
 import time
@@ -293,8 +294,9 @@ def finalizeInstance(event):
                 'url': url,
                 'status': InstanceStatus.RUNNING,
                 'containerInfo': containerInfo,
-                'sessionId': service.get('sessionId')
             })
+            if "sessionId" in service:
+                instance["sessionId"] = ObjectId(service["sessionId"])
         elif (
             status == JobStatus.ERROR
             and instance["status"] != InstanceStatus.ERROR  # noqa
