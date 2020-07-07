@@ -2,8 +2,8 @@ version: 2.0
 jobs:
   build:
     docker:
-      - image: wholetale/girder:latest
-      - image: mongo:3.2
+      - image: wholetale/girder:py37
+      - image: mongo:3.4
     steps:
       - checkout
       - run:
