@@ -321,7 +321,7 @@ class Tale(Resource):
                 user=user,
                 type="wholetale.import_binder",
                 public=False,
-                async=True,
+                _async=True,
                 module="girder.plugins.wholetale.tasks.import_binder",
                 args=(lookupKwargs,),
                 kwargs={"taleId": tale["_id"], "spawn": spawn, "asTale": asTale},
@@ -550,7 +550,7 @@ class Tale(Resource):
         new_tale_workspaceId = self._model.createWorkspace(new_tale)['_id']
         job = Job().createLocalJob(
             title='Copy "{title}" workspace'.format(**tale), user=user,
-            type='wholetale.copy_workspace', public=False, async=True,
+            type='wholetale.copy_workspace', public=False, _async=True,
             module='girder.plugins.wholetale.tasks.copy_workspace',
             args=(tale_workspaceId, new_tale_workspaceId),
             kwargs={'user': user, 'tale': new_tale}
