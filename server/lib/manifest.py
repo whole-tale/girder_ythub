@@ -171,16 +171,16 @@ class Manifest:
 
     def create_context(self):
         """
-        Creates the manifest namespace. When a new vocabulary is used, it shoud
+        Creates the manifest namespace. When a new vocabulary is used, it should
         get added here.
         :return: A structure defining the used vocabularies
         """
         return {
             "@context": [
-                "https://w3id.org/bundle/context",
                 {"schema": "http://schema.org/"},
                 {"DataCite": "http://datacite.org/schema/kernel-4"},
-                {"Datasets": {"@type": "@id"}}
+                {"Datasets": {"@type": "@id"}},
+                "https://w3id.org/bundle/context"
             ]
         }
 
