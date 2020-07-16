@@ -39,7 +39,7 @@ class FakeAsyncResult(object):
             nodeId='123456',
             mountPoint='/foo/bar',
             volumeName='blah_volume',
-            sessionId='sessionId',
+            sessionId='5ecece693fec11b4854a874d',
             instanceId=self.instanceId
         )
 
