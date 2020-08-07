@@ -11,6 +11,10 @@ Girder plugin enabling intergration with tmpnb
     :target: https://codecov.io/gh/whole-tale/girder_wholetale
     :alt: Coverage Status
 
+.. |nsf-badge| image:: https://img.shields.io/badge/NSF-154150-blue.svg
+    :target: https://www.nsf.gov/awardsearch/showAward?AWD_ID=1541450
+    :alt: NSF Grant Badge
+
 Development
 ===========
 
