@@ -158,7 +158,7 @@ This material is based upon work supported by the National Science Foundation un
 .. |GitHub Project| image:: https://img.shields.io/badge/GitHub--blue?style=social&logo=GitHub
    :target: https://github.com/whole-tale/girder_wholetale
 
-.. |build-status| image:: https://circleci.com/gh/girder/girder.png?style=shield
+.. |build-status| image:: https://circleci.com/gh/whole-tale/girder_wholetale.png?style=shield
     :target: https://circleci.com/gh/whole-tale/girder_wholetale
     :alt: Build Status
 
