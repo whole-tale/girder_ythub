@@ -3,6 +3,7 @@
 
 import base64
 import copy
+import datetime
 import jsonschema
 import os
 import six
@@ -444,6 +445,7 @@ def store_other_globus_tokens(event):
         else:
             user_tokens.append(token)
     user["otherTokens"] = user_tokens
+    user["lastLogin"] = datetime.datetime.utcnow()
     User().save(user)
 
 
@@ -493,7 +495,7 @@ def load(info):
     info['apiRoot'].user.route('PUT', ('settings',), setUserMetadata)
     info['apiRoot'].user.route('GET', ('settings',), getUserMetadata)
     ModelImporter.model('user').exposeFields(
-        level=AccessType.WRITE, fields=('meta', 'myData'))
+        level=AccessType.WRITE, fields=('meta', 'myData', 'lastLogin'))
     ModelImporter.model('user').exposeFields(
         level=AccessType.ADMIN, fields=('otherTokens',))
 
