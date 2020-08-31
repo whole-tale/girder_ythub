@@ -178,7 +178,7 @@ class TaskFailTestCase(base.TestCase):
             user=self.user,
             type="wholetale.copy_workspace",
             public=False,
-            async=True,
+            _async=True,
             module="girder.plugins.wholetale.tasks.copy_workspace",
             args=(tale["workspaceId"], "non_existing"),
             kwargs={"user": self.user, "tale": tale},

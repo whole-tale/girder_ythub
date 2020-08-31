@@ -469,7 +469,7 @@ class Tale(AccessControlledModel):
 
         job = Job().createLocalJob(
             title='Import Tale from zip', user=user,
-            type='wholetale.import_tale', public=False, async=True,
+            type='wholetale.import_tale', public=False, _async=True,
             module='girder.plugins.wholetale.tasks.import_tale',
             args=(temp_dir, manifest_file),
             kwargs={'taleId': tale["_id"]}
