@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 import cherrypy
 import json
+import shutil
 import tempfile
 import textwrap
 import time
@@ -195,6 +196,7 @@ class Tale(Resource):
                 message='Calculating folder size...') as ctx:
             if progress:
                 ctx.update(total=Folder().subtreeCount(workspace))
+            shutil.rmtree(workspace["fsPath"], ignore_errors=True)
             Folder().remove(workspace, progress=ctx)
         self._model.remove(tale)
 

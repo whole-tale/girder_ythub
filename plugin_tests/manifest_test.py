@@ -194,7 +194,6 @@ class ManifestTestCase(base.TestCase):
         self._testCreateBasicAttributes()
         self._testAddTaleCreator()
         self._testCreateContext()
-        self._testCleanWorkspacePath()
         self._testCreateAggregationRecord()
         self._testGetFolderIdentifier()
         self._testDataSet()
@@ -286,16 +285,6 @@ class ManifestTestCase(base.TestCase):
         manifest_doc = Manifest(self.tale, self.user)
         context = manifest_doc.create_context()
         self.assertEqual(type(context), type(dict()))
-
-    def _testCleanWorkspacePath(self):
-        # Test that the Tale ID is removed
-        from server.lib.manifest import clean_workspace_path
-
-        path = "mydatapath/moredata/"
-
-        tale_id = "123456"
-        res = clean_workspace_path(tale_id, path + tale_id + "/")
-        self.assertEqual(res, path)
 
     def _testCreateAggregationRecord(self):
         from server.lib.manifest import Manifest

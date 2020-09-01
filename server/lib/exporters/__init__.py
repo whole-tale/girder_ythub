@@ -1,5 +1,7 @@
 import copy
 from hashlib import sha256, md5
+import magic
+import os
 from girder.utility import hash_state, ziputil
 from girder.constants import AccessType
 from girder.models.folder import Folder
@@ -83,6 +85,35 @@ class TaleExporter:
         for alg in self.algs:
             self.state[alg] = []
 
+    def list_workspace(self):
+        """
+        List contents of the workspace directory.
+
+        Returns a tuple for each file:
+           fullpath - absolute path to a file
+           relpath - path to a file relative to workspace root
+        """
+
+        workspace_rootpath = self.workspace["fsPath"]
+        if not workspace_rootpath.endswith("/"):
+            workspace_rootpath += "/"
+
+        for curdir, folder, files in os.walk(workspace_rootpath):
+            for fname in files:
+                fullpath = os.path.join(curdir, fname)
+                relpath = fullpath.replace(workspace_rootpath, "")
+                yield fullpath, relpath
+
+    @staticmethod
+    def bytes_from_file(filename, chunksize=8192):
+        with open(filename, mode="rb") as f:
+            while True:
+                chunk = f.read(chunksize)
+                if chunk:
+                    yield chunk
+                else:
+                    break
+
     def stream(self):
         raise NotImplementedError
 
@@ -127,10 +158,9 @@ class TaleExporter:
         :type prepended_path: str
         :return: None
         """
-        for path, fobj in Folder().fileList(
-            self.workspace, user=self.user, subpath=False, data=False
-        ):
-            uri = prepended_path + path
+        magic_wrapper = magic.Magic(mime=True, uncompress=True)
+        for fullpath, relpath in self.list_workspace():
+            uri = prepended_path + relpath
             index = next(
                 (
                     i
@@ -139,11 +169,12 @@ class TaleExporter:
                 ),
                 None,
             )
+
             if index is not None:
                 self.manifest['aggregates'][index]['mimeType'] = (
-                    fobj['mimeType'] or 'application/octet-stream'
+                    magic_wrapper.from_file(fullpath) or 'application/octet-stream'
                 )
-                self.manifest['aggregates'][index]['size'] = fobj['size']
+            self.manifest['aggregates'][index]['size'] = os.path.getsize(fullpath)
 
     def append_extras_filesize_mimetypes(self, extra_files):
         """

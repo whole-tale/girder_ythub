@@ -14,7 +14,7 @@ from girder.api import access
 from girder.api.describe import Description, describeRoute, autoDescribeRoute
 from girder.api.rest import \
     boundHandler, loadmodel, RestException
-from girder.constants import AccessType, TokenScope, CoreEventHandler
+from girder.constants import AccessType, TokenScope
 from girder.exceptions import GirderException
 from girder.models.model_base import ValidationException
 from girder.models.notification import Notification, ProgressState
@@ -315,21 +315,6 @@ def listResources(self, resources, params):
     return result
 
 
-def addDefaultFolders(event):
-    user = event.info
-    folderModel = ModelImporter.model('folder')
-    defaultFolders = [
-        ('Home', False),
-        ('Data', False),
-        ('Workspace', False)
-    ]
-
-    for folderName, public in defaultFolders:
-        folder = folderModel.createFolder(
-            user, folderName, parentType='user', public=public, creator=user)
-        folderModel.setUserAccess(folder, user, AccessType.ADMIN, save=True)
-
-
 def validateFileLink(event):
     # allow globus URLs
     doc = event.info
@@ -474,8 +459,6 @@ def load(info):
     events.bind('jobs.job.update.after', 'wholetale', finalizeInstance)
     events.bind('jobs.job.update.after', 'wholetale', updateNotification)
     events.bind('model.file.validate', 'wholetale', validateFileLink)
-    events.unbind('model.user.save.created', CoreEventHandler.USER_DEFAULT_FOLDERS)
-    events.bind('model.user.save.created', 'wholetale', addDefaultFolders)
     events.bind('model.file.save', 'wholetale', tale.updateWorkspaceModTime)
     events.bind('model.file.save.created', 'wholetale', tale.updateWorkspaceModTime)
     events.bind('model.file.remove', 'wholetale', tale.updateWorkspaceModTime)

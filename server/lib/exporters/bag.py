@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from hashlib import sha256, md5
 import json
-from girder.models.folder import Folder
+import os
 from girder.utility import JsonEncoder
 from . import TaleExporter
 from gwvolman.constants import REPO2DOCKER_VERSION
@@ -98,17 +98,12 @@ class BagTaleExporter(TaleExporter):
         oxum = dict(size=0, num=0)
 
         # Add files from the workspace computing their checksum
-        for path, file_stream in Folder().fileList(
-            self.workspace, user=self.user, subpath=False
-        ):
-            yield from self.dump_and_checksum(file_stream, 'data/workspace/' + path)
-
-        # Iterate again to get file sizes this time
-        for path, fobj in Folder().fileList(
-            self.workspace, user=self.user, subpath=False, data=False
-        ):
-            oxum['num'] += 1
-            oxum['size'] += fobj['size']
+        for fullpath, relpath in self.list_workspace():
+            yield from self.dump_and_checksum(
+                self.bytes_from_file(fullpath), 'data/workspace/' + relpath
+            )
+            oxum["num"] += 1
+            oxum["size"] += os.path.getsize(fullpath)
 
         # Compute checksums for the extrafiles
         for path, content in extra_files.items():

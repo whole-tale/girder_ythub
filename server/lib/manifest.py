@@ -37,7 +37,6 @@ class Manifest:
         # Create a set that represents any external data packages
         self.datasets = set()
 
-        self.folderModel = ModelImporter.model('folder')
         self.itemModel = ModelImporter.model('item')
         self.userModel = ModelImporter.model('user')
 
@@ -192,10 +191,9 @@ class Manifest:
         :return: Dictionary that describes a dataset
         """
         try:
-            folder = self.folderModel.load(folder_id,
-                                           user=self.user,
-                                           exc=True,
-                                           level=AccessType.READ)
+            folder = Folder().load(
+                folder_id, user=self.user, exc=True, level=AccessType.READ
+            )
             provider = folder['meta']['provider']
             if provider in {'HTTP', 'HTTPS'}:
                 return None
@@ -238,17 +236,18 @@ class Manifest:
         """
 
         # Handle the files in the workspace
-        folder = self.folderModel.load(self.tale['workspaceId'],
-                                       user=self.user,
-                                       level=AccessType.READ)
-        if folder:
-            workspace_folder_files = self.folderModel.fileList(folder,
-                                                               user=self.user,
-                                                               data=False)
-            for workspace_file in workspace_folder_files:
-                self.manifest['aggregates'].append(
-                    {'uri': '../workspace/' + clean_workspace_path(self.tale['_id'],
-                                                                   workspace_file[0])})
+        workspace = Folder().load(
+            self.tale["workspaceId"], user=self.user, level=AccessType.READ
+        )
+        if workspace and "fsPath" in workspace:
+            workspace_rootpath = workspace["fsPath"]
+            if not workspace_rootpath.endswith("/"):
+                workspace_rootpath += "/"
+
+            for curdir, folder, files in os.walk(workspace_rootpath):
+                for fname in files:
+                    wfile = os.path.join(curdir, fname).replace(workspace_rootpath, "")
+                    self.manifest['aggregates'].append({'uri': '../workspace/' + wfile})
 
         """
         Handle objects that are in the dataSet, ie files that point to external sources.
@@ -350,7 +349,7 @@ class Manifest:
                         ext_obj['uri'] = provider.getURI(doc, self.user)
                         #  Find path to root?
                     ext_obj['size'] = 0
-                    for _, f in self.folderModel.fileList(
+                    for _, f in Folder().fileList(
                         doc, user=self.user, subpath=False, data=False
                     ):
                         ext_obj['size'] += f['size']
@@ -408,16 +407,6 @@ class Manifest:
                                             'schema:license':
                                                 self.tale.get('licenseSPDX',
                                                               WholeTaleLicense.default_spdx())})
-
-
-def clean_workspace_path(tale_id, path):
-    """
-    Removes the Tale ID from a path
-    :param tale_id: The Tale's ID
-    :param path: The file path
-    :return: A cleaned path
-    """
-    return path.replace(str(tale_id) + '/', '')
 
 
 def get_folder_identifier(folder_id, user):
