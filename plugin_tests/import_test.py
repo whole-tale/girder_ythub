@@ -48,6 +48,7 @@ class FakeAsyncResult(object):
 def setUpModule():
     base.enabledPlugins.append("wholetale")
     base.enabledPlugins.append("wt_data_manager")
+    base.enabledPlugins.append("virtual_resources")
     base.enabledPlugins.append("wt_home_dir")
     base.startServer(mock=False)
 
@@ -120,9 +121,6 @@ class ImportTaleTestCase(base.TestCase):
         from girder.plugins.wt_home_dir import HOME_DIRS_APPS
 
         self.homeDirsApps = HOME_DIRS_APPS  # nopep8
-        for e in self.homeDirsApps.entries():
-            provider = e.app.providerMap["/"]["provider"]
-            provider.updateAssetstore()
         self.clearDAVAuthCache()
 
     def clearDAVAuthCache(self):
