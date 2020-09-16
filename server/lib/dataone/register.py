@@ -147,9 +147,8 @@ def find_nonobsolete_resmaps(pids, base_url):
     """
 
     result = query(
-        "identifier:(\"{}\")+AND+-obsoletedBy:*".format("\" OR \"".join(pids),
-                                                        base_url=base_url,
-                                                        fields="identifier"))
+        "identifier:(\"{}\")+AND+-obsoletedBy:*".format("\" OR \"".join(pids))
+    )
     result_len = int(result['response']['numFound'])
 
     if result_len == 0:

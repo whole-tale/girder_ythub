@@ -1,14 +1,13 @@
 rdflib
-celery[redis]==4.2.1
-kombu==4.2.2post1
-idna==2.7  # pin for requests
-requests==2.20.1  # https://github.com/requests/requests/issues/4890
-redis==2.10.6
-git+https://github.com/whole-tale/girderfs@v0.9#egg=girderfs
-git+https://github.com/whole-tale/gwvolman@v0.9#egg=gwvolman
-dataone.common==3.2.0
-dataone.libclient==3.2.0
-dataone.cli==3.2.0
+celery[redis]==4.4.6
+kombu==4.6.11
+requests
+redis==3.5.3
+git+https://github.com/whole-tale/girderfs@v0.9.1#egg=girderfs
+git+https://github.com/whole-tale/gwvolman@v0.9.1#egg=gwvolman
+dataone.common==3.4.7
+dataone.libclient==3.4.7
+dataone.cli==3.4.7
 validators
 html2markdown
 fs.webdavfs

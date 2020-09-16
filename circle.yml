@@ -3,7 +3,7 @@ jobs:
   build:
     docker:
       - image: wholetale/girder:latest
-      - image: mongo:3.2
+      - image: mongo:3.4
     steps:
       - checkout
       - run:
@@ -11,7 +11,7 @@ jobs:
           command: |
             rm -rf /girder/plugins/wholetale
             ln -s /root/project /girder/plugins/wholetale
-            set -o pipefail; pip install --upgrade --force-reinstall -r requirements.txt -r requirements-dev.txt | cat
+            set -o pipefail; python3 -m pip install --upgrade --force-reinstall -r requirements.txt -r requirements-dev.txt | cat
       - run:
           name: Install Test Dependencies
           environment:
@@ -22,10 +22,12 @@ jobs:
             curl -OL "http://cmake.org/files/v${CMAKE_SHORT_VERSION}/cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz"
             tar -x -C /usr --strip-components 1 -f "cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz"
             git clone https://github.com/whole-tale/girder /tmp/girder
-            set -o pipefail; cd /tmp/girder ; python3 -m pip install -r requirements-dev.txt | cat
+            set -o pipefail; cd /tmp/girder ; python3 -m pip install -r requirements-dev.txt -e .[plugins,sftp] | cat
+            set -o pipefail; cd /tmp/girder/pytest_girder ; python3 -m pip install . | cat
             cp /tmp/girder/CMakeLists.txt /girder/
             cp /tmp/girder/.coveragerc /girder/
             cp -r /tmp/girder/tests /girder/
+            cp /root/project/setup.cfg /girder/
       - run:
           name: Running Tests
           environment:
@@ -40,7 +42,7 @@ jobs:
             ctest -VV -S /girder/plugins/wholetale/cmake/circle_continuous.cmake
       - run:
           name: Install Codecov client
-          command: pip install codecov
+          command: python3 -m pip install codecov
       - run:
           name: Collect coverage reports
           command: coverage combine /girder/build/test/coverage/python_temp/

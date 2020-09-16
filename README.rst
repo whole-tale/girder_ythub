@@ -1,15 +1,9 @@
-girder_wholetale |build-status| |codecov-badge|
-###############################################
+girder_wholetale
+################
+
+|GitHub Project| |build-status| |codecov-badge| |nsf-badge|
 
 Girder plugin enabling intergration with tmpnb
-
-.. |build-status| image:: https://circleci.com/gh/girder/girder.png?style=shield
-    :target: https://circleci.com/gh/whole-tale/girder_wholetale
-    :alt: Build Status
-
-.. |codecov-badge| image:: https://img.shields.io/codecov/c/github/whole-tale/girder_wholetale.svg
-    :target: https://codecov.io/gh/whole-tale/girder_wholetale
-    :alt: Coverage Status
 
 Development
 ===========
@@ -155,3 +149,24 @@ file.
 ``add_python_test(<testname> PLUGIN wholetale)``.
 
 Note that you do not need to add ``_test`` at the end of the filename.
+
+Acknowledgements
+================
+
+This material is based upon work supported by the National Science Foundation under Grant No. OAC-1541450.
+
+.. |GitHub Project| image:: https://img.shields.io/badge/GitHub--blue?style=social&logo=GitHub
+   :target: https://github.com/whole-tale/girder_wholetale
+
+.. |build-status| image:: https://circleci.com/gh/whole-tale/girder_wholetale.png?style=shield
+    :target: https://circleci.com/gh/whole-tale/girder_wholetale
+    :alt: Build Status
+
+.. |codecov-badge| image:: https://img.shields.io/codecov/c/github/whole-tale/girder_wholetale.svg
+    :target: https://codecov.io/gh/whole-tale/girder_wholetale
+    :alt: Coverage Status
+
+.. |nsf-badge| image:: https://img.shields.io/badge/NSF-154150-blue.svg
+    :target: https://www.nsf.gov/awardsearch/showAward?AWD_ID=1541450
+    :alt: NSF Grant Badge
+

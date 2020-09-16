@@ -3,6 +3,7 @@
 
 import base64
 import copy
+import datetime
 import jsonschema
 import os
 import six
@@ -96,8 +97,8 @@ def validateDataverseExtraHosts(doc):
     if not isinstance(doc['value'], list):
         raise ValidationException('Dataverse extra hosts setting must be a list.', 'value')
     for url in doc['value']:
-        if not validators.url(url):
-            raise ValidationException('Invalid URL in Dataverse extra hosts', 'value')
+        if not validators.domain(url):
+            raise ValidationException('Invalid domain in Dataverse extra hosts', 'value')
 
 
 @setting_utilities.validator(PluginSettings.ZENODO_EXTRA_HOSTS)
@@ -444,6 +445,7 @@ def store_other_globus_tokens(event):
         else:
             user_tokens.append(token)
     user["otherTokens"] = user_tokens
+    user["lastLogin"] = datetime.datetime.utcnow()
     User().save(user)
 
 
@@ -493,7 +495,7 @@ def load(info):
     info['apiRoot'].user.route('PUT', ('settings',), setUserMetadata)
     info['apiRoot'].user.route('GET', ('settings',), getUserMetadata)
     ModelImporter.model('user').exposeFields(
-        level=AccessType.WRITE, fields=('meta', 'myData'))
+        level=AccessType.WRITE, fields=('meta', 'myData', 'lastLogin'))
     ModelImporter.model('user').exposeFields(
         level=AccessType.ADMIN, fields=('otherTokens',))
 

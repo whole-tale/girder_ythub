@@ -16,7 +16,7 @@ form#g-wholetale-config-form(role="form")
     label.control-label(for="wholetale_extra_hosts") Extra Dataverse Installations
     textarea#wholetale_extra_hosts.form-control(
       placeholder=`Default: ${defaults['wholetale.dataverse_extra_hosts'] || '[]'}`,
-      title="Additional supported Dataverse installations. (JSON array [\"data1\", \"data2\", ...])")
+      title="Additional supported Dataverse installations. (JSON array [\"domain1\", \"domain2\", ...])")
         = JSON.stringify(settings['wholetale.dataverse_extra_hosts'] || defaults['wholetale.dataverse_extra_hosts'], null, 4)
     label.control-label(for="wholetale_external_auth_providers") Supported external integrations
     textarea#wholetale_external_auth_providers.form-control(

@@ -86,7 +86,7 @@ class DataverseImportProvider(ImportProvider):
 
     def create_regex(self):
         url = self.get_base_url_setting()
-        if not url.endswith('installations-json'):
+        if not url.endswith('json'):
             url = urlunparse(
                 urlparse(url)._replace(path='/api/info/version')
             )
@@ -94,17 +94,23 @@ class DataverseImportProvider(ImportProvider):
             resp = urlopen(url, timeout=1)
             resp_body = resp.read()
             data = json.loads(resp_body.decode('utf-8'))
-            if 'installations' in data:
-                urls = [_['url'] for _ in data['installations']]
-            else:
-                urls = [self.get_base_url_setting()]
         except Exception:
-            logger.warning('[dataverse] failed to generate regex')
-            urls = []
+            logger.warning(
+                "[dataverse] failed to fetch installations, using a local copy."
+            )
+            with open(os.path.join(os.path.dirname(__file__), "installations.json"), "r") as fp:
+                data = json.load(fp)
 
-        urls += self.get_extra_hosts_setting()
-        if urls:
-            return re.compile("^" + "|".join(urls) + ".*$")
+        # in case DATAVERSE_URL points to a specific instance rather than an installation JSON
+        # we need to add its domain to the regex
+        single_hostname = urlparse(self.get_base_url_setting()).netloc
+        domains = [
+            _["hostname"]
+            for _ in data.get("installations", [{"hostname": single_hostname}])
+        ]
+        domains += self.get_extra_hosts_setting()
+        if domains:
+            return re.compile("^https?://(" + "|".join(domains) + ").*$")
         else:
             return re.compile("^$")
 

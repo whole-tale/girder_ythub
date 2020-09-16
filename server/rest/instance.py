@@ -119,6 +119,7 @@ class Instance(Resource):
             sort=sort, currentUser=currentUser))
 
     @access.user
+    @filtermodel(model='instance', plugin='wholetale')
     @autoDescribeRoute(
         Description('Get an instance by ID.')
         .modelParam('id', model='instance', plugin='wholetale', level=AccessType.READ)
