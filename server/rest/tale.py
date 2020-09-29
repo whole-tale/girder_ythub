@@ -38,7 +38,8 @@ from ..lib.exporters.native import NativeTaleExporter
 
 from girder.plugins.worker import getCeleryApp
 
-from ..constants import ImageStatus, TaleStatus, PluginSettings
+from ..constants import ImageStatus, TaleStatus, PluginSettings, \
+    DEFAULT_IMAGE_ICON, DEFAULT_ILLUSTRATION
 
 
 addModel('tale', taleSchema, resources='tale')
@@ -288,22 +289,8 @@ class Tale(Resource):
             image = imageModel().load(imageId, user=user, level=AccessType.READ,
                                       exc=True)
 
-            if "icon" not in taleKwargs:
-                taleKwargs["icon"] = image.get(
-                    "icon",
-                    (
-                        "https://raw.githubusercontent.com/"
-                        "whole-tale/dashboard/master/public/"
-                        "images/whole_tale_logo.png"
-                    ),
-                )
-
-            if "illustration" not in taleKwargs:
-                taleKwargs["illustration"] = (
-                    "https://raw.githubusercontent.com/"
-                    "whole-tale/dashboard/master/public/"
-                    "images/demo-graph2.jpg"
-                )
+            taleKwargs.setdefault("icon", image.get("icon", DEFAULT_IMAGE_ICON))
+            taleKwargs.setdefault("illustration", DEFAULT_ILLUSTRATION)
 
             tale = taleModel().createTale(
                 image,
@@ -354,13 +341,8 @@ class Tale(Resource):
                 image, tale['dataSet'], creator=user, save=True,
                 title=tale.get('title'), description=tale.get('description'),
                 public=tale.get('public'), config=tale.get('config'),
-                icon=image.get('icon', ('https://raw.githubusercontent.com/'
-                                        'whole-tale/dashboard/master/public/'
-                                        'images/whole_tale_logo.png')),
-                illustration=tale.get(
-                    'illustration', ('https://raw.githubusercontent.com/'
-                                     'whole-tale/dashboard/master/public/'
-                                     'images/demo-graph2.jpg')),
+                icon=image.get('icon', DEFAULT_IMAGE_ICON),
+                illustration=tale.get('illustration', DEFAULT_ILLUSTRATION),
                 authors=tale.get('authors', default_author),
                 category=tale.get('category', 'science'),
                 narrative=tale.get('narrative'),
@@ -508,13 +490,8 @@ class Tale(Resource):
             image, tale['dataSet'], creator=user, save=True,
             title=tale.get('title'), description=tale.get('description'),
             public=False, config=tale.get('config'),
-            icon=image.get('icon', ('https://raw.githubusercontent.com/'
-                                    'whole-tale/dashboard/master/public/'
-                                    'images/whole_tale_logo.png')),
-            illustration=tale.get(
-                'illustration', ('https://raw.githubusercontent.com/'
-                                 'whole-tale/dashboard/master/public/'
-                                 'images/demo-graph2.jpg')),
+            icon=image.get('icon', DEFAULT_IMAGE_ICON),
+            illustration=tale.get('illustration', DEFAULT_ILLUSTRATION),
             authors=tale.get('authors', default_author),
             category=tale.get('category', 'science'),
             narrative=tale.get('narrative'),
