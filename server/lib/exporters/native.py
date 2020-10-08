@@ -1,5 +1,4 @@
 import json
-from girder.models.folder import Folder
 from girder.utility import JsonEncoder
 from . import TaleExporter
 
@@ -15,10 +14,10 @@ class NativeTaleExporter(TaleExporter):
         }
 
         # Add files from the workspace
-        for path, fobj in Folder().fileList(
-            self.workspace, user=self.user, subpath=False
-        ):
-            yield from self.dump_and_checksum(fobj, 'workspace/' + path)
+        for fullpath, relpath in self.list_workspace():
+            yield from self.dump_and_checksum(
+                self.bytes_from_file(fullpath), 'workspace/' + relpath
+            )
 
         # Compute checksums for extra files
         for path, content in extra_files.items():

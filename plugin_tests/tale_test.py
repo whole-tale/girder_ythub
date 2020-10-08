@@ -2,7 +2,6 @@ import bagit
 from bdbag import bdbag_api as bdb
 from bson import ObjectId
 import httmock
-from io import BytesIO
 import json
 import mock
 import os
@@ -15,11 +14,8 @@ import zipfile
 import shutil
 from tests import base
 
-from girder.utility import assetstore_utilities
-from girder.models.assetstore import Assetstore
 from .tests_helpers import mockOtherRequest
 from girder.models.item import Item
-from girder.models.upload import Upload
 from girder.exceptions import ValidationException
 from girder.models.folder import Folder
 
@@ -55,6 +51,7 @@ class FakeAsyncResult(object):
 def setUpModule():
     base.enabledPlugins.append('wholetale')
     base.enabledPlugins.append('wt_home_dir')
+    base.enabledPlugins.append('virtual_resources')
     base.startServer()
 
     global JobStatus, Tale, ImageStatus
@@ -424,12 +421,9 @@ class TaleTestCase(base.TestCase):
 
     def testTaleNarrative(self):
         resp = self.request(
-            path='/resource/lookup', method='GET', user=self.user,
-            params={'path': '/user/{login}/Home'.format(**self.user)})
-        home_dir = resp.json
-        resp = self.request(
-            path='/folder', method='POST', user=self.user, params={
-                'name': 'my_narrative', 'parentId': home_dir['_id']
+            path="/folder", method="POST", user=self.user, params={
+                "parentType": "user", "parentId": self.user["_id"],
+                "name": "my_narrative"
             })
         sub_home_dir = resp.json
         my_narrative = Item().createItem('notebook.ipynb', self.user, sub_home_dir)
@@ -465,33 +459,19 @@ class TaleTestCase(base.TestCase):
     def testTaleValidation(self):
         from server.lib.license import WholeTaleLicense
         resp = self.request(
-            path='/resource/lookup', method='GET', user=self.user,
-            params={'path': '/user/{login}/Home'.format(**self.user)})
-        home_dir = resp.json
-        resp = self.request(
-            path='/folder', method='POST', user=self.user, params={
-                'name': 'validate_my_narrative', 'parentId': home_dir['_id']
+            path="/folder", method="POST", user=self.user, params={
+                "name": "validate_my_narrative", "parentId": self.user["_id"],
+                "parentType": "user",
             })
         sub_home_dir = resp.json
         Item().createItem('notebook.ipynb', self.user, sub_home_dir)
-
-        resp = self.request(
-            path='/resource/lookup', method='GET', user=self.user,
-            params={'path': '/user/{login}/Data'.format(**self.user)})
-        data_dir = resp.json
-        resp = self.request(
-            path='/folder', method='POST', user=self.user, params={
-                'name': 'my_fake_data', 'parentId': data_dir['_id']
-            })
-        sub_data_dir = resp.json
-        item = Item().createItem('data.dat', self.user, sub_data_dir)
 
         # Mock old format
         tale = {
             "config": None,
             "creatorId": self.user['_id'],
             "description": "Fake Tale",
-            "folderId": data_dir['_id'],
+            "folderId": ObjectId("5873dcdbaec030000144d233"),
             "imageId": "5873dcdbaec030000144d233",
             "public": True,
             "publishInfo": [],
@@ -524,13 +504,13 @@ class TaleTestCase(base.TestCase):
             self.model('tale', 'wholetale').save(tale)
 
         tale["dataSet"] = [
-            {"_modelType": "folder", "itemId": str(item["_id"]), "mountPath": "data.dat"}
+            {"_modelType": "folder", "itemId": str(ObjectId()), "mountPath": "data.dat"}
         ]
         with pytest.raises(ValidationException):
             self.model('tale', 'wholetale').save(tale)
 
-        tale["dataSet"][0]["_modelType"] = "item"
-        self.model('tale', 'wholetale').save(tale)
+        # tale["dataSet"][0]["_modelType"] = "item"
+        # self.model('tale', 'wholetale').save(tale)
         self.model('tale', 'wholetale').remove(tale)
 
     def testTaleUpdate(self):
@@ -689,6 +669,10 @@ class TaleTestCase(base.TestCase):
         )
         self.assertStatusOk(resp)
         tale = resp.json
+        workspace = Folder().load(tale["workspaceId"], force=True)
+        with open(os.path.join(workspace["fsPath"], "test_file.txt"), "wb") as f:
+            f.write(b"Hello World!")
+
         export_path = '/tale/{}/export'.format(str(tale['_id']))
         resp = self.request(
             path=export_path, method='GET', isJson=False, user=self.user)
@@ -699,19 +683,14 @@ class TaleTestCase(base.TestCase):
             zip_archive = zipfile.ZipFile(fp, 'r')
             zip_files = zip_archive.namelist()
         # Check the the manifest.json is present
-        manifest_path = str(tale['_id']) + '/metadata/manifest.json'
-        is_present = manifest_path in zip_files
-        self.assertTrue(is_present)
-
-        # Check that the top level README is present
-        readme_path = str(tale['_id']) + '/README.md'
-        is_present = readme_path in zip_files
-        self.assertTrue(is_present)
-
-        # Check that the LICENSE is present
-        license_path = str(tale['_id']) + '/LICENSE'
-        is_present = license_path in zip_files
-        self.assertTrue(is_present)
+        expected_files = [
+            "metadata/manifest.json",
+            "README.md",
+            "LICENSE",
+            "workspace/test_file.txt",
+        ]
+        for content_file in expected_files:
+            self.assertTrue("{}/{}".format(tale["_id"], content_file) in zip_files)
         self.model('tale', 'wholetale').remove(tale)
 
     @mock.patch('gwvolman.tasks.build_tale_image')
@@ -831,14 +810,6 @@ class TaleWithWorkspaceTestCase(base.TestCase):
 
         from girder.plugins.wt_home_dir import HOME_DIRS_APPS
         self.homeDirsApps = HOME_DIRS_APPS  # nopep8
-        for e in self.homeDirsApps.entries():
-            provider = e.app.providerMap['/']['provider']
-            provider.updateAssetstore()
-
-        from girder.plugins.wt_home_dir.lib.WTAssetstoreTypes import WTAssetstoreTypes
-        self.ws_assetstore = Assetstore().find(
-            {'type': WTAssetstoreTypes.WT_TALE_ASSETSTORE}).next()
-
         self.clearDAVAuthCache()
 
     def clearDAVAuthCache(self):
@@ -938,14 +909,14 @@ class TaleWithWorkspaceTestCase(base.TestCase):
                 'mountPath': item['name']
             }], creator=self.user, title="Export Tale", public=True, authors=authors)
         workspace = self.model('folder').load(tale['workspaceId'], force=True)
+        nb_file = os.path.join(workspace["fsPath"], "wt_quickstart.ipynb")
         with urllib.request.urlopen(
             'https://raw.githubusercontent.com/whole-tale/wt-design-docs/'
             '3305527f7eb28d0e0364f4e54fd9e7155a2614d3'
             '/users_guide/wt_quickstart.ipynb'
         ) as url:
-            self.uploadFile(
-                name=item['name'], contents=url.read(), user=self.user,
-                parent=workspace, parentType='folder')
+            with open(nb_file, "wb") as target:
+                target.write(url.read())
         return tale
 
     def testTaleCopy(self):
@@ -959,18 +930,13 @@ class TaleWithWorkspaceTestCase(base.TestCase):
             creator=self.admin,
             public=True
         )
-        workspace = Tale().createWorkspace(tale)
-        # Below workarounds a bug, it will be addressed elsewhere.
-        workspace = Folder().setPublic(workspace, True, save=True)
+        workspace = self.model('folder').load(tale['workspaceId'], force=True)
+        fsPath = workspace["fsPath"]
+        fullPath = os.path.join(fsPath, "file01.txt")
 
-        adapter = assetstore_utilities.getAssetstoreAdapter(self.ws_assetstore)
-        size = 101
-        data = BytesIO(b' ' * size)
-        files = []
-        files.append(Upload().uploadFromFile(
-            data, size, 'file01.txt', parentType='folder', parent=workspace,
-            assetstore=self.ws_assetstore))
-        fullPath = adapter.fullPath(files[0])
+        with open(fullPath, "wb") as f:
+            size = 101
+            f.write(b' ' * size)
 
         # Create a copy
         resp = self.request(

@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import os
+import shutil
 import sys
 import traceback
 from girder.constants import AccessType
@@ -21,11 +23,14 @@ def run(job):
     tale = job["kwargs"]["tale"]
 
     try:
-        parent = Folder().load(
+        source_workspace = Folder().load(
             src_workspace_id, user=user, exc=True, level=AccessType.READ
         )
         workspace = Folder().load(dest_workspace_id, user=user, exc=True)
-        Folder().copyFolderComponents(parent, workspace, user, None)
+
+        if os.path.isdir(workspace["fsPath"]):
+            os.rmdir(workspace["fsPath"])  # TODO: in py38 use dirs_exist_ok below
+        shutil.copytree(source_workspace["fsPath"], workspace["fsPath"])
         tale["status"] = TaleStatus.READY
         Tale().updateTale(tale)
         jobModel.updateJob(job, status=JobStatus.SUCCESS, log="Copying finished")

@@ -9,7 +9,9 @@ from girder.utility.path import lookUpPath
 
 
 def setUpModule():
+    base.enabledPlugins.append("virtual_resources")
     base.enabledPlugins.append("wholetale")
+    base.enabledPlugins.append("wt_home_dir")
     base.startServer()
 
 
@@ -194,7 +196,6 @@ class ManifestTestCase(base.TestCase):
         self._testCreateBasicAttributes()
         self._testAddTaleCreator()
         self._testCreateContext()
-        self._testCleanWorkspacePath()
         self._testCreateAggregationRecord()
         self._testGetFolderIdentifier()
         self._testDataSet()
@@ -287,16 +288,6 @@ class ManifestTestCase(base.TestCase):
         context = manifest_doc.create_context()
         self.assertEqual(type(context), type(dict()))
 
-    def _testCleanWorkspacePath(self):
-        # Test that the Tale ID is removed
-        from server.lib.manifest import clean_workspace_path
-
-        path = "mydatapath/moredata/"
-
-        tale_id = "123456"
-        res = clean_workspace_path(tale_id, path + tale_id + "/")
-        self.assertEqual(res, path)
-
     def _testCreateAggregationRecord(self):
         from server.lib.manifest import Manifest
 
@@ -337,10 +328,10 @@ class ManifestTestCase(base.TestCase):
 
     def _testWorkspace(self):
         from server.lib.manifest import Manifest
-
         workspace = self.model("folder").load(self.tale["workspaceId"], force=True)
-        wi = self.model("item").createItem("file1.csv", self.user, workspace)
-        self.model("file").createFile(self.user, wi, "file1.csv", 7, {"_id": 0})
+        fspath = workspace["fsPath"]
+        with open(os.path.join(fspath, "file1.csv"), "w") as f:
+            f.write("1,2,3,4\n")
 
         manifest_doc = Manifest(self.tale, self.user)
         aggregates_section = manifest_doc.manifest["aggregates"]
@@ -349,7 +340,7 @@ class ManifestTestCase(base.TestCase):
         expected_path = "../workspace/" + "file1.csv"
         file_check = any(x for x in aggregates_section if (x["uri"] == expected_path))
         self.assertTrue(file_check)
-        self.model("item").remove(wi)
+        os.remove(os.path.join(fspath, "file1.csv"))
 
     def _testDataSet(self):
         from server.lib.manifest import Manifest
