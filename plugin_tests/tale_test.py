@@ -1007,6 +1007,20 @@ class TaleWithWorkspaceTestCase(base.TestCase):
         self.model('tale', 'wholetale').remove(tale)
         self.model('collection').remove(self.data_collection)
 
+    def test_tale_defaults(self):
+        tale = Tale().createTale(
+            self.image,
+            [],
+            creator=self.user,
+            title="Export Tale",
+            public=True,
+            authors=None,
+            description=None
+        )
+
+        self.assertTrue(tale['description'] is not None)
+        self.assertTrue(tale['description'].startswith("This Tale"))
+
     def tearDown(self):
         self.model('user').remove(self.user)
         self.model('user').remove(self.admin)

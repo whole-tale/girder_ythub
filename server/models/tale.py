@@ -160,6 +160,10 @@ class Tale(AccessControlledModel):
 
         if title is None:
             title = '{} with {}'.format(image['name'], DATADIRS_NAME)
+
+        if description is None:
+            description = f'This Tale, {title}, represents a computational experiment. ' \
+                          f'It contains code, data, and metadata relevant to the experiment.'
         # if illustration is None:
             # Get image from SILS
 
