@@ -47,14 +47,13 @@ class Tale(AccessControlledModel):
         self.modifiableFields = {
             'title', 'description', 'public', 'config', 'updated', 'authors',
             'category', 'icon', 'iframe', 'illustration', 'dataSet', 'licenseSPDX',
-            'workspaceModified', 'publishInfo', 'imageId', 'status', 'relatedIdentifiers',
+            'publishInfo', 'imageId', 'status', 'relatedIdentifiers',
         }
         self.exposeFields(
             level=AccessType.READ,
             fields=({'_id', 'folderId', 'imageId', 'creatorId', 'created',
                      'format', 'dataSet', 'narrative', 'narrativeId', 'licenseSPDX',
-                     'imageInfo', 'publishInfo', 'workspaceId',
-                     'workspaceModified', 'dataSetCitation',
+                     'imageInfo', 'publishInfo', 'workspaceId', 'dataSetCitation',
                      'copyOfTale'} | self.modifiableFields))
 
     @staticmethod
