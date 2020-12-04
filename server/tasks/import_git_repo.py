@@ -69,11 +69,11 @@ def run(job):
                 )
             repo.create_head(
                 branch, origin.refs[branch]
-            )  # create local branch "master" from remote "master"
+            )  # create a local branch default from remote HEAD symref
             repo.heads[branch].set_tracking_branch(
                 origin.refs[branch]
-            )  # set local "master" to track remote "master"
-            repo.heads[branch].checkout()  # checkout local "master" to working tree
+            )  # set the local branch to track the remote default branch
+            repo.heads[branch].checkout()  # checkout the default branch to working tree
         except git.exc.GitCommandError as exc:
             raise RuntimeError("Failed to import from git:\n {}".format(str(exc)))
 
