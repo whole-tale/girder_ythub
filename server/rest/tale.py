@@ -37,7 +37,6 @@ from ..lib.dataone import DataONELocations  # TODO: get rid of it
 from ..lib.manifest import Manifest
 from ..lib.exporters.bag import BagTaleExporter
 from ..lib.exporters.native import NativeTaleExporter
-from ..utils import init_progress
 
 from girder.plugins.worker import getCeleryApp
 
@@ -332,19 +331,16 @@ class Tale(Resource):
                     kwargs={"taleId": tale["_id"], "spawn": spawn, "asTale": asTale},
                     otherFields={"taleId": tale["_id"]},
                 )
+                Job().scheduleJob(job)
             else:
-                job = Job().createLocalJob(
-                    title="Import a git repository as a Tale",
+                tale = self._model.addGitRepo(
+                    tale,
+                    url,
                     user=user,
-                    type="wholetale.import_git_repo",
-                    public=False,
-                    _async=True,
-                    module="girder.plugins.wholetale.tasks.import_git_repo",
-                    args=(url,),
-                    kwargs={"taleId": tale["_id"], "spawn": spawn},
-                    otherFields={"taleId": tale["_id"]},
+                    spawn=spawn,
+                    change_status=True,
+                    title="Importing git repo as a Tale"
                 )
-            Job().scheduleJob(job)
         return tale
 
     @access.user
@@ -670,30 +666,11 @@ class Tale(Resource):
         )
     )
     def updateTaleWithGitRepo(self, tale, url):
-        resource = {
-            "type": "wt_git_import",
-            "tale_id": tale["_id"],
-            "tale_title": tale["title"]
-        }
-
-        user = self.getCurrentUser()
-        notification = init_progress(
-            resource, user, "Importing from Git", "Initializing", 1
-        )
-
-        job = Job().createLocalJob(
-            title="Import a git repository as a Tale",
+        return self._model.addGitRepo(
+            tale,
+            url,
             user=self.getCurrentUser(),
-            type="wholetale.import_git_repo",
-            public=False,
-            _async=True,
-            module="girder.plugins.wholetale.tasks.import_git_repo",
-            args=(url,),
-            kwargs={"taleId": tale["_id"], "spawn": False, "change_status": False},
-            otherFields={
-                "taleId": tale["_id"],
-                "wt_notification_id": str(notification["_id"])
-            },
+            spawn=False,
+            change_status=False,
+            title="Adding git repo to the Tale's workspace"
         )
-        Job().scheduleJob(job)
-        return tale
