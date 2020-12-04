@@ -3,9 +3,10 @@
 
 import git
 import json
-import sys
+import os
+import re
+import shutil
 import time
-import traceback
 from girder.models.folder import Folder
 from girder.models.token import Token
 from girder.models.user import User
@@ -27,7 +28,7 @@ def run(job):
         repo_url, branch = url.split("@")
     else:
         repo_url = url
-        branch = "master"
+        branch = None
 
     user = User().load(job["userId"], force=True)
     tale = Tale().load(job["kwargs"]["taleId"], user=user)
@@ -39,6 +40,14 @@ def run(job):
     progressCurrent = 0
 
     try:
+        workspace = Folder().load(tale["workspaceId"], force=True)
+        has_dot_git_already = os.path.isdir(os.path.join(workspace["fsPath"], ".git"))
+        if has_dot_git_already:
+            raise RuntimeError(
+                "Workspace is already a git repository. You need to remove it "
+                "before trying to add a new one."
+            )
+
         # 1. Checkout the git repo
         jobModel.updateJob(
             job,
@@ -48,11 +57,16 @@ def run(job):
             progressMessage="Cloning the git repo",
         )
 
-        workspace = Folder().load(tale["workspaceId"], force=True)
         try:
             repo = git.Repo.init(workspace["fsPath"])
             origin = repo.create_remote("origin", repo_url)
             origin.fetch()
+            if not branch:
+                gcmd = git.cmd.Git(workspace["fsPath"])
+                remote_info = gcmd.execute(["git", "remote", "show", "origin"])
+                branch = re.search("HEAD branch: (?P<branch>.*)\n", remote_info).group(
+                    "branch"
+                )
             repo.create_head(
                 branch, origin.refs[branch]
             )  # create local branch "master" from remote "master"
@@ -94,20 +108,23 @@ def run(job):
         else:
             instance = None
 
-    except Exception:
+    except Exception as exc:
+        if not has_dot_git_already:
+            shutil.rmtree(
+                os.path.isdir(os.path.join(workspace["fsPath"], ".git")),
+                ignore_errors=True,
+            )
         if change_status:
             tale = Tale().load(tale["_id"], user=user)  # Refresh state
             tale["status"] = TaleStatus.ERROR
             tale = Tale().updateTale(tale)
-        t, val, tb = sys.exc_info()
-        log = "%s: %s\n%s" % (t.__name__, repr(val), traceback.extract_tb(tb))
         jobModel.updateJob(
             job,
             progressTotal=progressTotal,
             progressCurrent=progressTotal,
             progressMessage="Task failed",
             status=JobStatus.ERROR,
-            log=log,
+            log=str(exc),
         )
         raise
 

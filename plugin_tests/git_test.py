@@ -84,6 +84,8 @@ class GitImportTestCase(base.TestCase):
             fp.write("MAGIC!")
         r.index.add([self.git_file_on_branch])
         r.index.commit("Commit on a branch")
+        r.head.reference = r.refs["master"]
+        r.head.reset(index=True, working_tree=True)
 
     def _import_git_repo(self, tale, url):
         resp = self.request(
