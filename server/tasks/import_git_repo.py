@@ -109,11 +109,9 @@ def run(job):
             instance = None
 
     except Exception as exc:
-        if not has_dot_git_already:
-            shutil.rmtree(
-                os.path.isdir(os.path.join(workspace["fsPath"], ".git")),
-                ignore_errors=True,
-            )
+        dot_git = os.path.join(workspace["fsPath"], ".git")
+        if not has_dot_git_already and os.path.isdir(dot_git):
+            shutil.rmtree(dot_git, ignore_errors=True)
         if change_status:
             tale = Tale().load(tale["_id"], user=user)  # Refresh state
             tale["status"] = TaleStatus.ERROR

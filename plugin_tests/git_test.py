@@ -184,7 +184,6 @@ class GitImportTestCase(base.TestCase):
         self.assertEqual(job["status"], JobStatus.ERROR)
         self.assertTrue("does not appear to be a git repo" in job["log"][0])
         self.assertEqual(tale["status"], TaleStatus.ERROR)
-        shutil.rmtree(os.path.join(workspace_path, ".git"))
         Tale().remove(tale)
 
     def testGitImport(self):
@@ -196,7 +195,8 @@ class GitImportTestCase(base.TestCase):
         job = self._import_git_repo(tale, "blah")
         self.assertEqual(job["status"], JobStatus.ERROR)
         self.assertTrue("does not appear to be a git repo" in job["log"][0])
-        shutil.rmtree(os.path.join(workspace_path, ".git"))
+        if os.path.isdir(os.path.join(workspace_path, ".git")):
+            shutil.rmtree(os.path.join(workspace_path, ".git"))
 
         # Default branch (master)
         job = self._import_git_repo(tale, f"file://{self.git_repo_dir}")
