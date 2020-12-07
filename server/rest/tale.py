@@ -5,7 +5,6 @@ import json
 import shutil
 import tempfile
 import textwrap
-import time
 import zipfile
 
 from girder import events
@@ -18,7 +17,6 @@ from girder.api.rest import Resource, filtermodel, RestException,\
 
 from girder.constants import AccessType, SortDir, TokenScope
 from girder.utility import assetstore_utilities
-from girder.utility.path import getResourcePath
 from girder.utility.progress import ProgressContext
 from girder.models.assetstore import Assetstore
 from girder.models.folder import Folder
@@ -491,27 +489,6 @@ class Tale(Resource):
             # If the status changed, save the object
             if 'status' in tale['imageInfo'] and tale['imageInfo']['status'] != previousStatus:
                 self.model('tale', 'wholetale').updateTale(tale)
-
-    def updateWorkspaceModTime(self, event):
-        """
-        Handler for model.file.save, model.file.save.created and
-        model.file.remove events When files in a workspace are modified or
-        deleted, update the associated Tale with a workspaceModified time.
-        This is used to determine whether to rebuild or not.
-        """
-
-        # Get the path
-        path = getResourcePath('file', event.info, force=True)
-
-        # If the file is in a workspace, parse the Tale ID
-        # e.g., "/collection/WholeTale Workspaces/
-        #  WholeTale Workspaces/5c848784912a470001e9545d/file.txt"
-        if path.startswith('/collection/WholeTale Workspaces/WholeTale Workspaces'):
-            elems = path.split('/')
-            taleId = elems[4]
-            tale = self.model('tale', 'wholetale').load(taleId, force=True)
-            tale['workspaceModified'] = int(time.time())
-            self.model('tale', 'wholetale').save(tale)
 
     @access.user
     @autoDescribeRoute(
