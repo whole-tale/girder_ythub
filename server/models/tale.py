@@ -180,6 +180,7 @@ class Tale(AccessControlledModel):
             'icon': icon,
             'iframe': image.get('iframe', False),
             'imageId': ObjectId(image['_id']),
+            'imageInfo': {},
             'illustration': illustration,
             'narrative': narrative or [],
             'title': title,

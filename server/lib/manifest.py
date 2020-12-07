@@ -138,7 +138,9 @@ class Manifest:
         }
 
     def create_repo2docker_version(self):
-        image_info = self.tale.get("imageInfo", {"repo2docker_version": REPO2DOCKER_VERSION})
+        # TODO: We shouldn't be publishing a Tale that was never built...
+        image_info = self.tale.get("imageInfo", {})
+        image_info.setdefault("repo2docker_version", REPO2DOCKER_VERSION)
         return {
             'schema:hasPart': [{
                 '@id': 'https://github.com/whole-tale/repo2docker_wholetale',
