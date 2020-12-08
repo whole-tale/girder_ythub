@@ -2,9 +2,11 @@
 # -*- coding: utf-8 -*-
 import cherrypy
 import json
+import pathlib
 import shutil
 import tempfile
 import textwrap
+from urllib.parse import urlparse
 import zipfile
 
 from girder import events
@@ -38,7 +40,8 @@ from ..lib.exporters.native import NativeTaleExporter
 
 from girder.plugins.worker import getCeleryApp
 
-from ..constants import ImageStatus, TaleStatus, PluginSettings
+from ..constants import ImageStatus, TaleStatus, PluginSettings, \
+    DEFAULT_IMAGE_ICON, DEFAULT_ILLUSTRATION
 
 
 addModel('tale', taleSchema, resources='tale')
@@ -54,12 +57,13 @@ class Tale(Resource):
         self.route('GET', (), self.listTales)
         self.route('GET', (':id',), self.getTale)
         self.route('PUT', (':id',), self.updateTale)
-        self.route('POST', ('import', ), self.createTaleFromDataset)
+        self.route('POST', ('import', ), self.createTaleFromUrl)
         self.route('POST', (), self.createTale)
         self.route('POST', (':id', 'copy'), self.copyTale)
         self.route('DELETE', (':id',), self.deleteTale)
         self.route('GET', (':id', 'access'), self.getTaleAccess)
         self.route('PUT', (':id', 'access'), self.updateTaleAccess)
+        self.route('PUT', (':id', 'git'), self.updateTaleWithGitRepo)
         self.route('GET', (':id', 'export'), self.exportTale)
         self.route('GET', (':id', 'manifest'), self.generateManifest)
         self.route('PUT', (':id', 'build'), self.buildImage)
@@ -215,6 +219,9 @@ class Tale(Resource):
                default=True, required=False, dataType='boolean')
         .param('asTale', 'If True, assume that external dataset is a Tale.',
                default=False, required=False, dataType='boolean')
+        .param('git', "If True, treat the url as a location of a git repo "
+               "that should be imported as the Tale's workspace.",
+               default=False, required=False, dataType='boolean')
         .jsonParam('lookupKwargs', 'Optional keyword arguments passed to '
                    'GET /repository/lookup', requireObject=True, required=False)
         .jsonParam('taleKwargs', 'Optional keyword arguments passed to POST /tale',
@@ -222,7 +229,7 @@ class Tale(Resource):
         .responseClass('tale')
         .errorResponse('You are not authorized to create tales.', 403)
     )
-    def createTaleFromDataset(self, imageId, url, spawn, asTale, lookupKwargs, taleKwargs):
+    def createTaleFromUrl(self, imageId, url, spawn, asTale, git, lookupKwargs, taleKwargs):
         user = self.getCurrentUser()
         if taleKwargs is None:
             taleKwargs = {}
@@ -244,39 +251,49 @@ class Tale(Resource):
             except TypeError:
                 lookupKwargs = dict(dataId=[url])
 
-            dataMap = pids_to_entities(
-                lookupKwargs["dataId"],
-                user=user,
-                base_url=lookupKwargs.get("base_url", DataONELocations.prod_cn),
-                lookup=True
-            )[0]
-            if dataMap["tale"]:
-                provider = IMPORT_PROVIDERS.providerMap[dataMap["repository"]]
-                tale = provider.import_tale(dataMap["dataId"], user)
-                return tale
+            if not git:
+                dataMap = pids_to_entities(
+                    lookupKwargs["dataId"],
+                    user=user,
+                    base_url=lookupKwargs.get("base_url", DataONELocations.prod_cn),
+                    lookup=True
+                )[0]
+                if dataMap["tale"]:  # url points to a published Tale
+                    provider = IMPORT_PROVIDERS.providerMap[dataMap["repository"]]
+                    tale = provider.import_tale(dataMap["dataId"], user)
+                    return tale
 
-            if asTale:
-                relation = "IsDerivedFrom"
+                if asTale:
+                    relation = "IsDerivedFrom"
+                else:
+                    relation = "Cites"
+                related_id = [
+                    {
+                        "relation": relation,
+                        "identifier": dataMap["doi"] or dataMap["dataId"]
+                    }
+                ]
+
+                if "title" not in taleKwargs:
+                    long_name = dataMap["name"]
+                    long_name = long_name.replace('-', ' ').replace('_', ' ')
+                    shortened_name = textwrap.shorten(text=long_name, width=30)
+                    taleKwargs["title"] = f"A Tale for \"{shortened_name}\""
             else:
-                relation = "Cites"
-            related_id = [
-                {
-                    "relation": relation,
-                    "identifier": dataMap["doi"] or dataMap["dataId"]
-                }
-            ]
+                related_id = [{"relation": "IsSupplementTo", "identifier": url}]
+                if "title" not in taleKwargs:
+                    git_url = urlparse(url)
+                    if git_url.netloc == "github.com":
+                        name = "/".join(pathlib.Path(git_url.path).parts[1:3])
+                        taleKwargs["title"] = f"A Tale for \"gh:{name}\""
+                    else:
+                        taleKwargs["title"] = f"A Tale for \"{url}\""
 
             all_related_ids = related_id + taleKwargs.get("relatedIdentifiers", [])
             taleKwargs["relatedIdentifiers"] = [
                 json.loads(rel_id)
                 for rel_id in {json.dumps(_, sort_keys=True) for _ in all_related_ids}
             ]
-
-            if "title" not in taleKwargs:
-                long_name = dataMap["name"]
-                long_name = long_name.replace('-', ' ').replace('_', ' ')
-                shortened_name = textwrap.shorten(text=long_name, width=30)
-                taleKwargs["title"] = "A Tale for \"{}\"".format(shortened_name)
 
             if not (imageId or url):
                 msg = (
@@ -288,22 +305,8 @@ class Tale(Resource):
             image = imageModel().load(imageId, user=user, level=AccessType.READ,
                                       exc=True)
 
-            if "icon" not in taleKwargs:
-                taleKwargs["icon"] = image.get(
-                    "icon",
-                    (
-                        "https://raw.githubusercontent.com/"
-                        "whole-tale/dashboard/master/public/"
-                        "images/whole_tale_logo.png"
-                    ),
-                )
-
-            if "illustration" not in taleKwargs:
-                taleKwargs["illustration"] = (
-                    "https://raw.githubusercontent.com/"
-                    "whole-tale/dashboard/master/public/"
-                    "images/demo-graph2.jpg"
-                )
+            taleKwargs.setdefault("icon", image.get("icon", DEFAULT_IMAGE_ICON))
+            taleKwargs.setdefault("illustration", DEFAULT_ILLUSTRATION)
 
             tale = taleModel().createTale(
                 image,
@@ -316,17 +319,28 @@ class Tale(Resource):
                 **taleKwargs
             )
 
-            job = Job().createLocalJob(
-                title="Import Tale from external dataset",
-                user=user,
-                type="wholetale.import_binder",
-                public=False,
-                _async=True,
-                module="girder.plugins.wholetale.tasks.import_binder",
-                args=(lookupKwargs,),
-                kwargs={"taleId": tale["_id"], "spawn": spawn, "asTale": asTale},
-            )
-            Job().scheduleJob(job)
+            if not git:
+                job = Job().createLocalJob(
+                    title="Import Tale from external dataset",
+                    user=user,
+                    type="wholetale.import_binder",
+                    public=False,
+                    _async=True,
+                    module="girder.plugins.wholetale.tasks.import_binder",
+                    args=(lookupKwargs,),
+                    kwargs={"taleId": tale["_id"], "spawn": spawn, "asTale": asTale},
+                    otherFields={"taleId": tale["_id"]},
+                )
+                Job().scheduleJob(job)
+            else:
+                tale = self._model.addGitRepo(
+                    tale,
+                    url,
+                    user=user,
+                    spawn=spawn,
+                    change_status=True,
+                    title="Importing git repo as a Tale"
+                )
         return tale
 
     @access.user
@@ -354,13 +368,8 @@ class Tale(Resource):
                 image, tale['dataSet'], creator=user, save=True,
                 title=tale.get('title'), description=tale.get('description'),
                 public=tale.get('public'), config=tale.get('config'),
-                icon=image.get('icon', ('https://raw.githubusercontent.com/'
-                                        'whole-tale/dashboard/master/public/'
-                                        'images/whole_tale_logo.png')),
-                illustration=tale.get(
-                    'illustration', ('https://raw.githubusercontent.com/'
-                                     'whole-tale/dashboard/master/public/'
-                                     'images/demo-graph2.jpg')),
+                icon=image.get('icon', DEFAULT_IMAGE_ICON),
+                illustration=tale.get('illustration', DEFAULT_ILLUSTRATION),
                 authors=tale.get('authors', default_author),
                 category=tale.get('category', 'science'),
                 narrative=tale.get('narrative'),
@@ -508,13 +517,8 @@ class Tale(Resource):
             image, tale['dataSet'], creator=user, save=True,
             title=tale.get('title'), description=tale.get('description'),
             public=False, config=tale.get('config'),
-            icon=image.get('icon', ('https://raw.githubusercontent.com/'
-                                    'whole-tale/dashboard/master/public/'
-                                    'images/whole_tale_logo.png')),
-            illustration=tale.get(
-                'illustration', ('https://raw.githubusercontent.com/'
-                                 'whole-tale/dashboard/master/public/'
-                                 'images/demo-graph2.jpg')),
+            icon=image.get('icon', DEFAULT_IMAGE_ICON),
+            illustration=tale.get('illustration', DEFAULT_ILLUSTRATION),
             authors=tale.get('authors', default_author),
             category=tale.get('category', 'science'),
             narrative=tale.get('narrative'),
@@ -642,3 +646,31 @@ class Tale(Resource):
             girder_client_token=str(girder_token["_id"]),
         )
         return publishTask.job
+
+    @access.user(scope=TokenScope.DATA_WRITE)
+    @filtermodel(model='tale', plugin='wholetale')
+    @autoDescribeRoute(
+        Description("Add git repo to the Tale workspace")
+        .modelParam(
+            "id",
+            description="The ID of the tale that is going to be modified.",
+            model="tale",
+            plugin="wholetale",
+            level=AccessType.ADMIN,
+        )
+        .param(
+            "url",
+            description="A location of a git repo that should be imported"
+                        "as the Tale's workspace.",
+            required=True,
+        )
+    )
+    def updateTaleWithGitRepo(self, tale, url):
+        return self._model.addGitRepo(
+            tale,
+            url,
+            user=self.getCurrentUser(),
+            spawn=False,
+            change_status=False,
+            title="Adding git repo to the Tale's workspace"
+        )

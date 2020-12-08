@@ -148,7 +148,7 @@ class Tale(AccessControlledModel):
     def createTale(self, image, data, creator=None, save=True, title=None,
                    description=None, public=None, config=None, authors=None,
                    icon=None, category=None, illustration=None, narrative=None,
-                   licenseSPDX=WholeTaleLicense.default_spdx(),
+                   licenseSPDX=None,
                    status=TaleStatus.READY, publishInfo=None,
                    relatedIdentifiers=None):
 
@@ -188,7 +188,7 @@ class Tale(AccessControlledModel):
             'publishInfo': publishInfo or [],
             'relatedIdentifiers': relatedIdentifiers or [],
             'updated': now,
-            'licenseSPDX': licenseSPDX,
+            'licenseSPDX': licenseSPDX or WholeTaleLicense.default_spdx(),
             'status': status,
         }
         if public is not None and isinstance(public, bool):
@@ -477,6 +477,37 @@ class Tale(AccessControlledModel):
             module='girder.plugins.wholetale.tasks.import_tale',
             args=(temp_dir, manifest_file),
             kwargs={'taleId': tale["_id"]}
+        )
+        Job().scheduleJob(job)
+        return tale
+
+    def addGitRepo(self, tale, url, user=None, spawn=False, change_status=False, title=None):
+        resource = {
+            "type": "wt_git_import",
+            "tale_id": tale["_id"],
+            "tale_title": tale["title"]
+        }
+        notification = init_progress(
+            resource, user, "Importing from Git", "Initializing", 1
+        )
+
+        job = Job().createLocalJob(
+            title="Import a git repository as a Tale",
+            user=user,
+            type="wholetale.import_git_repo",
+            public=False,
+            _async=True,
+            module="girder.plugins.wholetale.tasks.import_git_repo",
+            args=(url,),
+            kwargs={
+                "taleId": tale["_id"],
+                "spawn": spawn,
+                "change_status": change_status
+            },
+            otherFields={
+                "taleId": tale["_id"],
+                "wt_notification_id": str(notification["_id"])
+            },
         )
         Job().scheduleJob(job)
         return tale
