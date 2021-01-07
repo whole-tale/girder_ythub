@@ -9,7 +9,7 @@ import zipfile
 
 from girder import events
 from girder.constants import AccessType
-from girder.exceptions import AccessException, GirderException, ValidationException
+from girder.exceptions import GirderException, ValidationException
 from girder.models.assetstore import Assetstore
 from girder.models.folder import Folder
 from girder.models.item import Item
@@ -304,19 +304,10 @@ class Tale(AccessControlledModel):
         doc = super().setAccessList(
             doc, access, user=user, save=save, force=force)
 
-        for id_key in ('folderId', 'workspaceId', 'narrativeId'):
-            try:
-                folder = Folder().load(doc[id_key], user=user, level=AccessType.ADMIN)
-            except AccessException:
-                _folder = Folder().load(doc[id_key], force=True)
-                if id_key != 'narrativeId' or _folder['name'] != 'default':
-                    raise
-                folder = None
-
-            if folder:
-                Folder().setAccessList(
-                    folder, access, user=user, save=save, force=force, recurse=True,
-                    setPublic=setPublic, publicFlags=publicFlags)
+        for folder in Folder().find({"meta.taleId": str(doc["_id"])}):
+            Folder().setAccessList(
+                folder, access, user=user, save=save, force=force, recurse=True,
+                setPublic=setPublic, publicFlags=publicFlags)
 
         return doc
 
