@@ -494,6 +494,18 @@ class ManifestTestCase(base.TestCase):
         self.assertEqual(version_block['@id'], 'https://github.com/whole-tale/repo2docker_wholetale')
         self.assertEqual(version_block['@type'], 'schema:SoftwareApplication')
 
+    def test_dataset_roundtrip(self):
+        from server.lib.manifest_parser import ManifestParser
+        from server.lib.manifest import Manifest
+        manifest = Manifest(self.tale, self.user).manifest
+        # NOTE: http(s) folders are expanded into individual files in manifest so the result
+        # won't be 1:1, reverse dataset will have more items
+        dataset = ManifestParser.get_dataset_from_manifest(manifest)
+        self.assertEqual(
+            [_["itemId"] for _ in dataset][:-3],
+            [str(_["itemId"]) for _ in self.tale["dataSet"][:-1]]
+        )
+
     def tearDown(self):
         self.model("user").remove(self.user)
         self.model("user").remove(self.admin)

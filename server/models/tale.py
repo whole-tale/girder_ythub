@@ -25,6 +25,7 @@ from ..constants import WORKSPACE_NAME, DATADIRS_NAME, SCRIPTDIRS_NAME, TaleStat
 from ..schema.misc import related_identifiers_schema
 from ..utils import getOrCreateRootFolder, init_progress
 from ..lib.license import WholeTaleLicense
+from ..lib.manifest_parser import ManifestParser
 
 from gwvolman.tasks import build_tale_image, BUILD_TALE_IMAGE_STEP_TOTAL
 
@@ -405,70 +406,38 @@ class Tale(AccessControlledModel):
         temp_dir, manifest_file, manifest, environment = self._extractZipPayload(
             stream
         )
-        image = imageModel().findOne({"name": environment["name"]})
-        image = imageModel().filter(image, user)
-        icon = image.get(
-            "icon",
-            (
-                "https://raw.githubusercontent.com/"
-                "whole-tale/dashboard/master/public/"
-                "images/whole_tale_logo.png"
-            ),
-        )
-        licenseSPDX = next(
-            (
-                _["schema:license"]
-                for _ in manifest["aggregates"]
-                if "schema:license" in _
-            ),
-            WholeTaleLicense.default_spdx(),
-        )
-        authors = [
-            {
-                "firstName": author["schema:givenName"],
-                "lastName": author["schema:familyName"],
-                "orcid": author["@id"],
-            }
-            for author in manifest["schema:author"]
-        ]
+
+        new_tale = ManifestParser.get_tale_fields_from_environment(environment)
+        image = imageModel().load(new_tale.pop("imageId"), user=user, level=AccessType.READ)
+        new_tale.update(ManifestParser.get_tale_fields_from_manifest(manifest))
 
         if relatedIdentifiers is None:
             relatedIdentifiers = []
 
-        manifest_related_ids = [
-            {
-                "identifier": rel_id["DataCite:relatedIdentifier"]["@id"],
-                "relation": rel_id["DataCite:relatedIdentifier"][
-                    "DataCite:relationType"
-                ].split(":")[-1],
-            }
-            for rel_id in manifest.get("DataCite:relatedIdentifiers", [])
-        ]
-        all_related_ids = relatedIdentifiers + manifest_related_ids
+        all_related_ids = relatedIdentifiers + new_tale["relatedIdentifiers"]
         all_related_ids = [
             json.loads(rel_id)
             for rel_id in {json.dumps(_, sort_keys=True) for _ in all_related_ids}
         ]
+        new_tale["relatedIdentifiers"] = all_related_ids
 
-        # TODO: related identifiers should be read from manifest...
+        new_tale.update(
+            dict(
+                creator=user,
+                save=True,
+                public=False,
+                status=TaleStatus.PREPARING,
+                publishInfo=publishInfo,
+            )
+        )
+
+        # We don't call ManifestParser.get_dataset_from_manifest now, cause it might require
+        # a registration step. It's going to be called inside import_tale job.
 
         tale = self.createTale(
             image,
             [],
-            creator=user,
-            save=True,
-            title=manifest["schema:name"],
-            description=manifest["schema:description"],
-            public=False,
-            config=environment.get("taleConfig", {}),
-            icon=icon,
-            illustration=manifest["schema:image"],
-            authors=authors,
-            category=manifest["schema:category"],
-            licenseSPDX=licenseSPDX,
-            status=TaleStatus.PREPARING,
-            publishInfo=publishInfo,
-            relatedIdentifiers=all_related_ids,
+            **new_tale
         )
 
         job = Job().createLocalJob(
