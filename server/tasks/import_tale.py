@@ -11,7 +11,6 @@ from fs.osfs import OSFS
 from fs.copy import copy_fs
 from girder import events
 from girder.constants import TokenScope
-from girder.models.file import File
 from girder.models.user import User
 from girder.models.token import Token
 from girder.utility import config
@@ -21,6 +20,7 @@ from girder.plugins.jobs.models.job import Job
 from ..constants import CATALOG_NAME, TaleStatus
 from ..lib import pids_to_entities, register_dataMap
 from ..lib.dataone import DataONELocations  # TODO: get rid of it
+from ..lib.manifest_parser import ManifestParser
 from ..models.tale import Tale
 from ..utils import getOrCreateRootFolder
 
@@ -72,23 +72,7 @@ def run(job):
             )
 
         # 2. Construct the dataSet
-        dataSet = []
-        for obj in manifest["aggregates"]:
-            if "bundledAs" not in obj:
-                continue
-            uri = obj["uri"]
-            fobj = File().findOne(
-                {"linkUrl": uri}
-            )  # TODO: That's expensive, use something else
-            if fobj:
-                dataSet.append(
-                    {
-                        "itemId": fobj["itemId"],
-                        "_modelType": "item",
-                        "mountPath": obj["bundledAs"]["filename"],
-                    }
-                )
-            # TODO: handle folders
+        dataSet = ManifestParser.get_dataset_from_manifest(manifest)
 
         # 3. Update Tale's dataSet
         update_citations = {_["itemId"] for _ in tale["dataSet"]} ^ {
