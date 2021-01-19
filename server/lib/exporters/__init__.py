@@ -98,7 +98,7 @@ class TaleExporter:
         if not workspace_rootpath.endswith("/"):
             workspace_rootpath += "/"
 
-        for curdir, folder, files in os.walk(workspace_rootpath):
+        for curdir, _, files in os.walk(workspace_rootpath):
             for fname in files:
                 fullpath = os.path.join(curdir, fname)
                 relpath = fullpath.replace(workspace_rootpath, "")

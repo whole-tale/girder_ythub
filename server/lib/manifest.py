@@ -246,7 +246,7 @@ class Manifest:
             if not workspace_rootpath.endswith("/"):
                 workspace_rootpath += "/"
 
-            for curdir, folder, files in os.walk(workspace_rootpath):
+            for curdir, _, files in os.walk(workspace_rootpath):
                 for fname in files:
                     wfile = os.path.join(curdir, fname).replace(workspace_rootpath, "")
                     self.manifest['aggregates'].append({'uri': '../workspace/' + wfile})

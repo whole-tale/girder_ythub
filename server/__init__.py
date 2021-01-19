@@ -50,7 +50,7 @@ def validatePublisherRepos(doc):
     try:
         jsonschema.validate(doc['value'], repository_to_provider_schema)
     except jsonschema.ValidationError as e:
-        raise ValidationException('Invalid Repository to Auth Provider map: ' + e.message)
+        raise ValidationException('Invalid Repository to Auth Provider map: ' + str(e))
 
 
 @setting_utilities.default(PluginSettings.PUBLISHER_REPOS)
@@ -65,7 +65,7 @@ def validateExternalApikeyGroups(doc):
     try:
         jsonschema.validate(doc['value'], external_apikey_groups_schema)
     except jsonschema.ValidationError as e:
-        raise ValidationException('Invalid External Apikey Groups list: ' + e.message)
+        raise ValidationException('Invalid External Apikey Groups list: ' + str(e))
 
 
 @setting_utilities.validator(PluginSettings.EXTERNAL_AUTH_PROVIDERS)
@@ -73,7 +73,7 @@ def validateOtherSettings(doc):
     try:
         jsonschema.validate(doc['value'], external_auth_providers_schema)
     except jsonschema.ValidationError as e:
-        raise ValidationException('Invalid External Auth Providers list: ' + e.message)
+        raise ValidationException('Invalid External Auth Providers list: ' + str(e))
 
 
 @setting_utilities.default(PluginSettings.EXTERNAL_AUTH_PROVIDERS)
