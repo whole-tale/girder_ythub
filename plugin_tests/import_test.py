@@ -352,8 +352,11 @@ class ImportTaleTestCase(base.TestCase):
             self.assertEqual(job["status"], JobStatus.SUCCESS)
         mock_copy.assert_called_once()
         # TODO: make it more extensive...
-        self.assertTrue(
-            self.model("tale", "wholetale").findOne({"title": "Water Tale"}) is not None
+        tale = Tale().findOne({"title": "Water Tale"})
+        self.assertTrue(tale is not None)
+        self.assertEqual(
+            [(obj["_modelType"], obj["mountPath"]) for obj in tale["dataSet"]],
+            [("item", "usco2005.xls")]
         )
         self.model("image", "wholetale").remove(image)
 

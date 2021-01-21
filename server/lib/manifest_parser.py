@@ -11,7 +11,7 @@ from ..models.image import Image
 
 class ManifestParser:
     @staticmethod
-    def get_dataset_from_manifest(manifest):
+    def get_dataset_from_manifest(manifest, data_prefix="../data/"):
         """Creates a 'dataSet' using manifest's aggregates section."""
         dataSet = []
         for obj in manifest.get("aggregates", []):
@@ -20,7 +20,7 @@ class ManifestParser:
             except KeyError:
                 continue
 
-            folder_path = bundle["folder"].replace("../data/", "")
+            folder_path = bundle["folder"].replace(data_prefix, "")
             if "filename" in bundle:
                 file_obj = File().findOne({"linkUrl": obj["uri"]}, fields=["itemId"])
                 itemId = file_obj["itemId"]
