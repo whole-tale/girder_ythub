@@ -72,7 +72,7 @@ def run(job):
             )
 
         # 2. Construct the dataSet
-        dataSet = ManifestParser.get_dataset_from_manifest(manifest)
+        dataSet = ManifestParser.get_dataset_from_manifest(manifest, data_prefix="../data/data/")
 
         # 3. Update Tale's dataSet
         update_citations = {_["itemId"] for _ in tale["dataSet"]} ^ {

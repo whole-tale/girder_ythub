@@ -8,7 +8,7 @@ from girder.models.notification import Notification
 NOTIFICATION_EXP_HOURS = 1
 
 
-def getOrCreateRootFolder(name, description=str()):
+def getOrCreateRootFolder(name, description=""):
     collection = ModelImporter.model('collection').createCollection(
         name, public=True, reuseExisting=True)
     folder = ModelImporter.model('folder').createFolder(

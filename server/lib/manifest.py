@@ -246,7 +246,7 @@ class Manifest:
             if not workspace_rootpath.endswith("/"):
                 workspace_rootpath += "/"
 
-            for curdir, folder, files in os.walk(workspace_rootpath):
+            for curdir, _, files in os.walk(workspace_rootpath):
                 for fname in files:
                     wfile = os.path.join(curdir, fname).replace(workspace_rootpath, "")
                     self.manifest['aggregates'].append({'uri': '../workspace/' + wfile})
@@ -339,13 +339,13 @@ class Manifest:
                 }
 
                 if obj['_modelType'] == 'folder':
-
-                    if provider_name == 'HTTP' or self.expand_folders:
+                    is_root_folder = doc['meta'].get('identifier') == top_identifier
+                    if provider_name == 'HTTP' or (self.expand_folders and not is_root_folder):
                         external_objects += self._expand_folder_into_items(doc, self.user)
                         continue
 
                     ext_obj['name'] = doc['name']
-                    if doc['meta'].get('identifier') == top_identifier:
+                    if is_root_folder:
                         ext_obj['uri'] = top_identifier
                     else:
                         ext_obj['uri'] = provider.getURI(doc, self.user)
