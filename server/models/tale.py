@@ -21,7 +21,7 @@ from girder.utility import assetstore_utilities
 
 from .image import Image as imageModel
 from ..schema.misc import dataSetSchema
-from ..constants import WORKSPACE_NAME, TaleStatus
+from ..constants import TaleStatus
 from ..schema.misc import related_identifiers_schema
 from ..utils import getOrCreateRootFolder, init_progress
 from ..lib.license import WholeTaleLicense
@@ -54,7 +54,7 @@ class Tale(AccessControlledModel):
             level=AccessType.READ,
             fields=({'_id', 'imageId', 'creatorId', 'created',
                      'format', 'dataSet', 'licenseSPDX',
-                     'imageInfo', 'publishInfo', 'workspaceId', 'dataSetCitation',
+                     'imageInfo', 'publishInfo', 'dataSetCitation',
                      'copyOfTale'} | self.modifiableFields))
 
     @staticmethod
@@ -207,14 +207,8 @@ class Tale(AccessControlledModel):
 
         if save:
             tale = self.save(tale)
-            workspace = self.createWorkspace(tale, creator=creator)
-            tale['workspaceId'] = workspace['_id']
-            tale = self.save(tale)
 
         return tale
-
-    def createWorkspace(self, tale, creator=None):
-        return self._createAuxFolder(tale, WORKSPACE_NAME, creator=creator)
 
     def _createAuxFolder(self, tale, rootFolderName, creator=None):
         if creator is None:

@@ -21,6 +21,7 @@ config.loadConfig()  # Must reload config to pickup correct port
 
 def setUpModule():
     base.enabledPlugins.append("wholetale")
+    base.enabledPlugins.append("wt_home_dir")
     base.startServer()
 
     global JobStatus, Tale, ImageStatus, TaleStatus, Job, Image

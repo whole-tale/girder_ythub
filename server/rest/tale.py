@@ -527,13 +527,11 @@ class Tale(Resource):
         new_tale['copyOfTale'] = tale['_id']
         new_tale = self._model.save(new_tale)
         # asynchronously copy the workspace of a source Tale
-        tale_workspaceId = self._model.createWorkspace(tale)['_id']
-        new_tale_workspaceId = self._model.createWorkspace(new_tale)['_id']
         job = Job().createLocalJob(
             title='Copy "{title}" workspace'.format(**tale), user=user,
             type='wholetale.copy_workspace', public=False, _async=True,
             module='girder.plugins.wholetale.tasks.copy_workspace',
-            args=(tale_workspaceId, new_tale_workspaceId),
+            args=(tale["workspaceId"], new_tale["workspaceId"]),
             kwargs={'user': user, 'tale': new_tale}
         )
         Job().scheduleJob(job)

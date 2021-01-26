@@ -6,7 +6,6 @@ from girder import events
 
 API_VERSION = "2.1"
 CATALOG_NAME = "WholeTale Catalog"
-WORKSPACE_NAME = "WholeTale Workspaces"
 DEFAULT_IMAGE_ICON = (
     "https://raw.githubusercontent.com/whole-tale/dashboard/master/public/"
     "images/whole_tale_logo.png"
