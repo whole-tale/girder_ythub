@@ -372,7 +372,6 @@ class Tale(Resource):
                 illustration=tale.get('illustration', DEFAULT_ILLUSTRATION),
                 authors=tale.get('authors', default_author),
                 category=tale.get('category', 'science'),
-                narrative=tale.get('narrative'),
                 licenseSPDX=tale.get('licenseSPDX'),
                 relatedIdentifiers=tale.get('relatedIdentifiers'),
             )
@@ -521,7 +520,6 @@ class Tale(Resource):
             illustration=tale.get('illustration', DEFAULT_ILLUSTRATION),
             authors=tale.get('authors', default_author),
             category=tale.get('category', 'science'),
-            narrative=tale.get('narrative'),
             licenseSPDX=tale.get('licenseSPDX'),
             status=TaleStatus.PREPARING,
             relatedIdentifiers=tale.get('relatedIdentifiers'),

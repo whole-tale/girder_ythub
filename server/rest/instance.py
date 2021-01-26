@@ -17,7 +17,7 @@ instanceSchema = {
     'type': 'object',
     'required': [
         '_accessLevel', '_id', '_modelType', 'containerId',
-        'containerPath', 'created', 'digest', 'folderId',
+        'containerPath', 'created', 'digest',
         'frontendId', 'imageId',  'lastActivity', 'mountPoint',
         'status', 'userId', 'when'
     ],

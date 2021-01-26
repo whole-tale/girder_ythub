@@ -21,7 +21,7 @@ from girder.utility import assetstore_utilities
 
 from .image import Image as imageModel
 from ..schema.misc import dataSetSchema
-from ..constants import WORKSPACE_NAME, DATADIRS_NAME, SCRIPTDIRS_NAME, TaleStatus
+from ..constants import WORKSPACE_NAME, TaleStatus
 from ..schema.misc import related_identifiers_schema
 from ..utils import getOrCreateRootFolder, init_progress
 from ..lib.license import WholeTaleLicense
@@ -52,8 +52,8 @@ class Tale(AccessControlledModel):
         }
         self.exposeFields(
             level=AccessType.READ,
-            fields=({'_id', 'folderId', 'imageId', 'creatorId', 'created',
-                     'format', 'dataSet', 'narrative', 'narrativeId', 'licenseSPDX',
+            fields=({'_id', 'imageId', 'creatorId', 'created',
+                     'format', 'dataSet', 'licenseSPDX',
                      'imageInfo', 'publishInfo', 'workspaceId', 'dataSetCitation',
                      'copyOfTale'} | self.modifiableFields))
 
@@ -148,7 +148,7 @@ class Tale(AccessControlledModel):
 
     def createTale(self, image, data, creator=None, save=True, title=None,
                    description=None, public=None, config=None, authors=None,
-                   icon=None, category=None, illustration=None, narrative=None,
+                   icon=None, category=None, illustration=None,
                    licenseSPDX=None,
                    status=TaleStatus.READY, publishInfo=None,
                    relatedIdentifiers=None):
@@ -159,7 +159,7 @@ class Tale(AccessControlledModel):
             creatorId = creator.get('_id', None)
 
         if title is None:
-            title = '{} with {}'.format(image['name'], DATADIRS_NAME)
+            title = f"A tale based on {image['name']}"
 
         if description is None:
             description = f'This Tale, {title}, represents a computational experiment. ' \
@@ -183,7 +183,6 @@ class Tale(AccessControlledModel):
             'imageId': ObjectId(image['_id']),
             'imageInfo': {},
             'illustration': illustration,
-            'narrative': narrative or [],
             'title': title,
             'public': public,
             'publishInfo': publishInfo or [],
@@ -209,32 +208,10 @@ class Tale(AccessControlledModel):
         if save:
             tale = self.save(tale)
             workspace = self.createWorkspace(tale, creator=creator)
-            data_folder = self.createDataMountpoint(tale, creator=creator)
-            tale['folderId'] = data_folder['_id']
             tale['workspaceId'] = workspace['_id']
-            narrative_folder = self.createNarrativeFolder(
-                tale, creator=creator, default=not bool(tale['narrative']))
-            for obj_id in tale['narrative']:
-                item = Item().load(obj_id, user=creator)
-                Item().copyItem(item, creator, folder=narrative_folder)
-            tale['narrativeId'] = narrative_folder['_id']
             tale = self.save(tale)
 
         return tale
-
-    def createNarrativeFolder(self, tale, creator=None, default=False):
-        if default:
-            rootFolder = getOrCreateRootFolder(SCRIPTDIRS_NAME)
-            auxFolder = self.model('folder').createFolder(
-                rootFolder, 'default', parentType='folder',
-                public=True, reuseExisting=True)
-        else:
-            auxFolder = self._createAuxFolder(
-                tale, SCRIPTDIRS_NAME, creator=creator)
-        return auxFolder
-
-    def createDataMountpoint(self, tale, creator=None):
-        return self._createAuxFolder(tale, DATADIRS_NAME, creator=creator)
 
     def createWorkspace(self, tale, creator=None):
         return self._createAuxFolder(tale, WORKSPACE_NAME, creator=creator)
