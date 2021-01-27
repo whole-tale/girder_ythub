@@ -15,8 +15,6 @@ from girder import config
 from girder.models.token import Token
 
 
-SCRIPTDIRS_NAME = None
-DATADIRS_NAME = None
 DATA_PATH = os.path.join(
     os.path.dirname(os.environ["GIRDER_TEST_DATA_PREFIX"]),
     "data_src",
@@ -56,9 +54,6 @@ def setUpModule():
     from girder.plugins.jobs.constants import JobStatus
     from girder.plugins.wholetale.models.tale import Tale
     from girder.plugins.wholetale.constants import ImageStatus
-
-    global SCRIPTDIRS_NAME, DATADIRS_NAME
-    from girder.plugins.wholetale.constants import SCRIPTDIRS_NAME, DATADIRS_NAME
 
 
 def tearDownModule():

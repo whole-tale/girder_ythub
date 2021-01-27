@@ -20,8 +20,6 @@ from girder.exceptions import ValidationException
 from girder.models.folder import Folder
 
 
-SCRIPTDIRS_NAME = None
-DATADIRS_NAME = None
 DATA_PATH = os.path.join(
     os.path.dirname(os.environ['GIRDER_TEST_DATA_PREFIX']),
     'data_src',
@@ -58,10 +56,6 @@ def setUpModule():
     from girder.plugins.jobs.constants import JobStatus
     from girder.plugins.wholetale.models.tale import Tale
     from girder.plugins.wholetale.constants import ImageStatus
-
-    global SCRIPTDIRS_NAME, DATADIRS_NAME
-    from girder.plugins.wholetale.constants import \
-        SCRIPTDIRS_NAME, DATADIRS_NAME
 
 
 def tearDownModule():
@@ -135,30 +129,11 @@ class TaleTestCase(base.TestCase):
         self.assertStatusOk(resp)
         tale = resp.json
 
-        # Check that workspace was created
-
-        # Check that data folder was created
-        from girder.plugins.wholetale.constants import DATADIRS_NAME
-        from girder.utility.path import getResourcePath
-        sc = {
-            '_id': tale['_id'],
-            'cname': DATADIRS_NAME,
-            'fname': DATADIRS_NAME
-        }
-        self.assertEqual(
-            getResourcePath(
-                'folder',
-                Folder().load(tale['folderId'], user=self.user),
-                user=self.admin),
-            '/collection/{cname}/{fname}/{_id}'.format(**sc)
-        )
-
         taleLicense = WholeTaleLicense.default_spdx()
         resp = self.request(
             path='/tale/{_id}'.format(**tale), method='PUT',
             type='application/json',
             user=self.user, body=json.dumps({
-                'folderId': tale['folderId'],
                 'dataSet': tale['dataSet'],
                 'imageId': tale['imageId'],
                 'title': 'new name',
@@ -347,19 +322,9 @@ class TaleTestCase(base.TestCase):
             ]
         }
         self.assertEqual(result_tale_access, expected_tale_access)
-        # Check that the access control list propagated to the image that the tale
-        # was built from
-        # resp = self.request(
-        #     path='/image/%s/access' % result_image_id, method='GET',
-        #     user=self.user)
-        # self.assertStatusOk(resp)
-        # result_image_access = resp.json
-        # expected_image_access = input_tale_access
-        # self.assertEqual(result_image_access, expected_image_access)
-
         # Check that the access control list propagated to the folder that the tale
         # is associated with
-        for key in ('folderId', 'workspaceId'):
+        for key in ('workspaceId',):
             resp = self.request(
                 path='/folder/%s/access' % tale[key], method='GET',
                 user=self.user)
@@ -419,43 +384,6 @@ class TaleTestCase(base.TestCase):
         self.assertStatusOk(resp)
         self.assertEqual(resp.json['public'], False)
 
-    def testTaleNarrative(self):
-        resp = self.request(
-            path="/folder", method="POST", user=self.user, params={
-                "parentType": "user", "parentId": self.user["_id"],
-                "name": "my_narrative"
-            })
-        sub_home_dir = resp.json
-        my_narrative = Item().createItem('notebook.ipynb', self.user, sub_home_dir)
-
-        resp = self.request(
-            path='/tale', method='POST', user=self.user,
-            type='application/json',
-            body=json.dumps({
-                'imageId': str(self.image['_id']),
-                'dataSet': [],
-                'narrative': [str(my_narrative['_id'])]
-            })
-        )
-        self.assertStatusOk(resp)
-        tale = resp.json
-
-        path = os.path.join(
-            '/collection', SCRIPTDIRS_NAME, SCRIPTDIRS_NAME,
-            tale['_id'], 'notebook.ipynb')
-        resp = self.request(
-            path='/resource/lookup', method='GET', user=self.user,
-            params={'path': path})
-        self.assertStatusOk(resp)
-        self.assertEqual(resp.json['name'], my_narrative['name'])
-        self.assertNotEqual(resp.json['_id'], str(my_narrative['_id']))
-
-        resp = self.request(
-            path='/tale/{_id}'.format(**tale), method='DELETE',
-            user=self.admin, params={'progress': True})
-        self.assertStatusOk(resp)
-        self.assertEqual(Folder().load(tale['workspaceId'], force=True), None)
-
     def testTaleValidation(self):
         from server.lib.license import WholeTaleLicense
         resp = self.request(
@@ -471,7 +399,6 @@ class TaleTestCase(base.TestCase):
             "config": None,
             "creatorId": self.user['_id'],
             "description": "Fake Tale",
-            "folderId": ObjectId("5873dcdbaec030000144d233"),
             "imageId": "5873dcdbaec030000144d233",
             "public": True,
             "publishInfo": [],
@@ -481,14 +408,7 @@ class TaleTestCase(base.TestCase):
         tale = self.model('tale', 'wholetale').save(tale)  # get's id
         tale = self.model('tale', 'wholetale').save(tale)  # migrate to new format
 
-        # path = os.path.join(
-        #     '/collection', DATADIRS_NAME, DATADIRS_NAME, str(tale['_id']))
-        # resp = self.request(
-        #    path='/resource/lookup', method='GET', user=self.user,
-        #    params={'path': path})
-        # self.assertStatusOk(resp)
         # new_data_dir = resp.json
-        # self.assertEqual(str(tale['folderId']), str(new_data_dir['_id']))
         self.assertEqual(tale['dataSet'], [])
         self.assertEqual(tale['licenseSPDX'], WholeTaleLicense.default_spdx())
         # self.assertEqual(str(tale['dataSet'][0]['itemId']), data_dir['_id'])
@@ -538,7 +458,6 @@ class TaleTestCase(base.TestCase):
             path='/tale', method='POST', user=self.user,
             type='application/json',
             body=json.dumps({
-                'folderId': '1234',
                 'imageId': str(self.image['_id']),
                 'dataSet': [],
                 'title': 'tale tile',
@@ -587,7 +506,6 @@ class TaleTestCase(base.TestCase):
             type='application/json',
             body=json.dumps({
                 'authors': new_authors,
-                'folderId': '1234',
                 'imageId': str(image['_id']),
                 'dataSet': [],
                 'title': title,
@@ -629,7 +547,6 @@ class TaleTestCase(base.TestCase):
             type='application/json',
             body=json.dumps({
                 'authors': self.authors,
-                'folderId': '1234',
                 'imageId': str(self.image['_id']),
                 'dataSet': [],
                 'title': 'tale tile',
